@@ -1,0 +1,23 @@
+"""Interfaces for swappable app components."""
+
+from typing import Protocol
+
+
+class AuthProvider(Protocol):
+    def authenticate(self, username: str, password: str) -> bool: ...
+
+
+class WorkspaceStore(Protocol):
+    def list(self, username: str) -> list[dict]: ...
+
+    def load(self, username: str, workspace_id: str) -> dict | None: ...
+
+    def save(self, username: str, workspace: dict) -> None: ...
+
+    def create(self, username: str, name: str) -> dict: ...
+
+    def save_messages(self, username: str, workspace_id: str, messages: list[dict]) -> None: ...
+
+
+class ChatProvider(Protocol):
+    def get_response(self, messages: list[dict]) -> str: ...

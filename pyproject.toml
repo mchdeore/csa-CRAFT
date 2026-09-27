@@ -1,0 +1,19 @@
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "F",     # pyflakes — unused imports, undefined names
+    "E",     # pycodestyle errors
+    "W",     # pycodestyle warnings
+    "I",     # isort — import ordering
+    "N",     # pep8-naming — snake_case, PascalCase
+    "UP",    # pyupgrade — modern Python syntax
+    "ANN",   # flake8-annotations — enforce type annotations
+]
+ignore = [
+    "ANN401",  # allow Any as annotation
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

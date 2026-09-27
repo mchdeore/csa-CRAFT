@@ -1,0 +1,8 @@
+{
+  "typeCheckingMode": "standard",
+  "venvPath": ".",
+  "venv": "venv",
+  "include": ["."],
+  "exclude": ["venv", ".venv", "tests", "workspaces"],
+  "reportMissingTypeStubs": false
+}

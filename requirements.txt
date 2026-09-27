@@ -1,4 +1,6 @@
-fastapi
-uvicorn
+dash
 openai
+pytest
 python-dotenv
+pyright
+ruff
