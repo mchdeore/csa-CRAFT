@@ -4,3 +4,6 @@ __pycache__/
 *.pyc
 workspaces/*
 !workspaces/.gitkeep
+*.db
+logs/
+storage/database/log/

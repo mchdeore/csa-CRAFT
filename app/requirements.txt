@@ -1,0 +1,24 @@
+dash
+flask
+flask-login
+openai
+pandas
+plotly
+pydantic-ai[openai]
+pytest
+python-dotenv
+pyright
+requests
+ruff
+werkzeug
+
+# CI / quality
+bandit
+pip-audit
+pytest-cov
+detect-secrets
+
+# Document processing (connectors)
+pdfplumber
+python-docx
+msal

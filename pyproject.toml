@@ -10,10 +10,50 @@ select = [
     "N",     # pep8-naming — snake_case, PascalCase
     "UP",    # pyupgrade — modern Python syntax
     "ANN",   # flake8-annotations — enforce type annotations
+    "C90",   # mccabe — cyclomatic complexity
+    "B",     # flake8-bugbear — common bug patterns
+    "SIM",   # flake8-simplify — simplifiable constructs
+    "RET",   # flake8-return — unnecessary return/else patterns
+    "T20",   # flake8-print — no print() in production code
+    "S",     # flake8-bandit — inline security checks
+    "PIE",   # flake8-pie — misc lints (no-op pass, unnecessary spread, etc.)
 ]
 ignore = [
     "ANN401",  # allow Any as annotation
+    "ANN002",  # missing *args annotation — not worth the noise
+    "ANN003",  # missing **kwargs annotation — not worth the noise
+    "S101",    # assert is fine in tests and protocols
+    "S105",    # Flask SECRET_KEY assignments are not real secrets
+    "S110",    # try/except/pass is fine for optional imports
+    "S311",    # random is fine for non-crypto use
+    "S603",    # subprocess calls are controlled by us
+    "S607",    # partial executable path is fine in tests
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"app/tests/*" = ["ANN"]
+"*/tests/*" = ["ANN"]
+"storage/store.py" = ["SIM105"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[tool.bandit]
+exclude_dirs = ["tests", ".venv", "build", "dist", "tools"]
+skips = ["B101", "B311", "B322"]
+
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["app/tests", "auth/tests", "chat/tests", "storage/tests", "connectors/tests"]
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "*/tests/*",
+    "*/venv/*",
+    "*/__init__.py",
+    "app.py",
+]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true

@@ -5,8 +5,8 @@ Minimal FastAPI backend with session management and SSE-streamed messages.
 ## Setup
 
 ```bash
-pip install -r requirements.txt
-cp .env.example .env
+pip install -r app/requirements.txt
+cp app/.env.example app/.env
 # fill in your Azure OpenAI values in .env
 ```
 

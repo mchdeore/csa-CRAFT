@@ -1,8 +1,11 @@
 {
   "typeCheckingMode": "standard",
   "venvPath": ".",
-  "venv": "venv",
+  "venv": ".venv",
   "include": ["."],
   "exclude": ["venv", ".venv", "tests", "workspaces"],
-  "reportMissingTypeStubs": false
+  "reportMissingTypeStubs": false,
+  "reportUnknownParameterType": "warning",
+  "reportUnknownVariableType": "warning",
+  "reportUnknownMemberType": "warning"
 }
