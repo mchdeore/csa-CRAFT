@@ -1,65 +1,155 @@
-# CRAFT — Pitch Package
+---
+title: "CRAFT — Pitch Package"
+margin:
+  x: 1.2cm
+  y: 0.8cm
+fontsize: 8pt
+lin: 1.10
+---
+
+## Legend
+■ Actor · ◇ Gate · ☁ Cloud · ⬡ Terminal · ▦ Store · ···· Planned · ⟨I⟩ Protocol · Blue=Auth · Green=Audit
 
 ## 1. What CRAFT Is
 
-An audited, retrieval-augmented AI assistant for CSA mission engineering and finance. This codebase MVPs the seams. Nothing here ships yet — the pattern shipping is the point.
+Audited retrieval-augmented AI assistant for CSA mission engineering and finance. Scratchpad MVPs the seams. Nothing ships — pattern is the point.
 
-## 2. Architecture
+## 2a. L1 System Context
 
-![L1 Context](diagrams/L1-context.svg)
+```text
+┌─────────────────┐
+│Mission Eng      │──▶┌──────────────────────────────────────────┐
+│Systems Eng      │──▶│                CRAFT                     │
+│Program Admin    │──▶│           Flask + Dash                   │
+│HITL Reviewer    │──▶│                                          │
+└─────────────────┘   └──┬─────────┬─────────┬─────────┬────────┘
+                         │         │         │         │
+                         ▼         ▼         ▼         ▼
+                    ┌─────────┐┌────────┐┌────────┐┌────────────┐
+                    │LLM & AI ││Data Src││ID+Edge ││Ops & Audit │
+                    │AzureOA  ││LocalFs ││Entra(d)││LogAnalyt(d)│
+                    │AI Srch  ││ShPt(d) ││APIM(d) ││AppSvc PBMM │
+                    │ContSfty ││SAP(d)  ││AppGW(d)││LaunchP(d)  │
+                    │(d)      ││STK(d)  ││        ││ContApp(d)  │
+                    └─────────┘└────────┘└────────┘└────────────┘
+```
+In: `/chat/send [base]` `/admin/* [admin]`. Out: thin italic. (d)=planned/dashed.
 
-CRAFT is a Flask + Dash app. Every request enters through a route-gated RBAC layer (see L1, L2). A LangGraph primary agent runs a bounded ReAct loop, binds tools via a `Tool` protocol, and emits `AGENT_ACTION` events after every step. Storage sits behind a `WorkspaceStore` protocol; external corpora sit behind a `DataSource` protocol; connectors line up along the perimeter. The route-gated + audit spine gives the system its safety guarantees — every request checked for auth + role before reaching business logic, every agent step logged with trace IDs for end-to-end reconstruction.
+## 2b. L2 Container
 
-![L2 Container](diagrams/L2-container.svg)
+```text
+┌────────────────────────────────────────────────────────────┐
+│         Route-Gated RBAC Layer (auth-blue)                 │
+│  /chat/send [base] · /uploads [power] · /admin/* [admin]  │
+└───────────────────────┬────────────────────────────────────┘
+        ┌───────────────┼──────────────────┐
+        ▼               ▼                  ▼
+┌──────────────┐┌──────────────┐┌─────────────────────────┐
+│Primary Agent ││Tool Registry ││Storage ⟨I⟩WsStore       │
+│⟨I⟩ChatProvider││⟨I⟩ Tool     ││▦WStore ▦Data(RBAC)      │
+│              ││              ││▦AuditLog JSONL          │
+│  AGNT_ACT ───┼┼── AGNT_ACT ──┼┼──▶                      │
+└──────┬───────┘└──────┬───────┘└─────────────────────────┘
+       │               │
+       ▼               ▼
+┌──────────────┐┌──────────────────────────────────┐
+│Audit Sink    ││Connectors (perimeter):            │
+│⟨I⟩ActLog     ││LocalFile · ShPt(d) · SAP(d) ·     │
+│  │           ││STK/MATLAB(d)    ◆ diamond hd      │
+│  ▼           │└──────────────────────────────────┘
+│AzureLA(d)    │
+└──────────────┘
 
-Component views:
-- [**L3 Trio**](diagrams/L3-cluster.svg) — agent internals (LangGraph ReAct graph, tool wrappers, audit envelope) · tools & connectors (Tool + DataSource protocols, perimeter connectors) · route + auth (RBAC gates, `_ROUTE_RULES`, test anchors).
-- [**UC Trio**](diagrams/UC-cluster.svg) — Risk id + HITL (UC-E2) · Parametric cost + HITL (UC-F1) · Vendor cost + SAP connector (UC-F4).
+┌──────────────┐
+│Test Surface  │──▶ pre-commit · GitHub Actions
+│(audit-green) │
+└──────────────┘
+```
+AGENT_ACTION (green). Connectors ◆. Test surface dotted.
+
+## 2c. L3 Internals
+
+```text
+Panel A · Agent:   chatbot◀─▶ToolNode   Panel B · Tools/Connectors:
+                   │        │           ··Tool Protocol··        
+                   ▼        │           weather docs charts      
+              ◇_should_continue         query_data code-exec(d)  
+                   │                    ··DataSource Protocol··  
+                   ▼                    LocalFile ShPt(d) SAP(d) 
+              END limit=25              STK(d)                   
+              →llm_inf→Audit(green)     ◇HITL Gate(high-risk)   
+              →tool_cl→Audit(green)     POST /tools/exec/<name>  
+              ⟨I⟩ChatProvider            ◆Filesystem Cloud SAP   
+              ⟨I⟩AgentActionLog                                  
+Panel C · Auth:  Public inbound [/route][role]                   
+                 →FlaskRoute→◇before_req(hex,blue)              
+                 auth·role·ws·traceID                            
+                 →handler→after_req(audit,green)                 
+                 →response                                       
+              _ROUTE_RULES: /send→base /upload→power /admin→admin 
+              RBAC: base(1)<power(2)<admin(3)                     
+              ⟨test⟩ arch invariants (audit-green)                
+```
+
+## 2d. UC State Models
+
+```text
+UC-E2 Risk ID+HITL (Eng):  Req→◇Auth→Retrieval[002-006]→Classifier[036-040]→◇HITL[HITL-001]
+                            Approve→RiskReg(d)→Audit→●  Reject→●
+UC-F1 Cost+HITL (Fin):     Req→◇Auth→Retrieval(hist)[031]→CostAgg[032-034]→◇HITL[035]
+                            Approve→Commit(d)→Audit→●  Reject→●
+UC-F4 SAP Conn (blocked):  Req→◇Auth→SAPConn(d)[053-055]→VendorExt→Agg→Audit→●(blocker:SAP)
+```
+●=Terminal. ◇=Gate. (d)=planned. Swim lanes: User→Agent→Services→Terminal.
 
 ## 3. Requirements → Design
 
-| Capability | Req IDs | Chosen dep / pattern | Blocker | Ready when… | UC |
-|---|---|---|---|---|---|
-| Primary agent | UMR-001/011/013/016/018/019/094/095, AAR-001/003/006, ASG-005 | LangGraph ReAct graph · `ChatProvider` protocol · `recursion_limit=25` | none | `ChatProvider` seam; sub-agent = new graph node | E2, F1, F4 |
-| Retrieval + RAG | UMR-002/003/004/005/006/009/010/060/067, ARR-002–007 | Azure AI Search (hybrid vector+BM25) · `DataSource` + `Tool` protocols | IT: Azure AI Search deploy; data: source register | new `HybridRetrievalTool` on `Tool` protocol | E2, F1 |
-| Audit + traceability | UMR-015/027/045/061/062/093, AAR-005, ASG-003 | `AgentAction` envelope · `AgentActionLog` protocol · JSON lines → Azure Log Analytics | IT: Log Analytics workspace + immutability policy | `AgentActionLog` swappable sink | E2, F1, F4 |
-| HITL approvals | UMR-021–026/035/039/044/049, HITL-001–007, ASG-002 | LangGraph `interrupt` primitive · Postgres approval queue · Dash reviewer UI | data: CSA risk-tier taxonomy | `ChatProvider` + interrupt seam; queue = new table | E2, F1 |
-| RBAC + data scoping | UMR-012/017/058/065/066, AAR-002/007 | Route-Gated RBAC (`_ROUTE_RULES`, `_ROLE_LEVEL`) + `SqliteDataStore` scoping + `QueryTool.set_user` | none for perimeter; per-tool RBAC pending | `_ROUTE_RULES` list appends; tool-permission column additive | E2, F1, F4 |
-| Session + workspace (V3) | UMR-014, UMR-092, UMR-095 | Split `WorkspaceStore` into persistent `SqliteStore` + new `SessionScratchStore` (ephemeral) | design: session-scoped agent lifecycle | `WorkspaceStore` protocol; scratch class = drop-in | dream |
-| Guardrails + containment | UMR-020/029/030, ASG-001/004/011 | Azure AI Content Safety · APIM rate limit · Azure Container Apps sandbox (UMR-093) | procurement: Content Safety + Container Apps | tool wrapper adds moderation call; sandbox = new `Tool` class | dream |
-| Connectors + external systems | UMR-051–055 | `DataSource` protocol + MSAL (Entra ID / SharePoint) · Flask REST · SAP / STK / MATLAB planned | procurement: SAP integration path; licenses: STK/MATLAB | each connector = new `DataSource` class + `services.py` line | F4 |
-| Domain capabilities | UMR-007/008/031–034/036–038/040–043/046–048/050/075, ARR-001 | Each domain = new `Tool` impl over existing seams (retrieval, HITL, audit, RBAC) | data: CSA risk taxonomy, historical mission DB; procurement: Translator for reports | uniform pattern — see § 4 | E2, F1 |
-| Deployment, SLA, config | UMR-028/056/057/059/064/069/070/074/085, ASG-006 | Azure App Service (PBMM Canadian region) · APIM + App Gateway (WAF) · SSC LaunchPad HA target · git-versioned config | IT: PBMM landing zone; SSC LaunchPad readiness | env-var config; migrations = numbered SQL | dream |
+**Primary agent** — UMR-001/011/013/016/018/019/094/095, AAR-001/003/006, ASG-005. LangGraph ReAct · `ChatProvider` · `recursion_limit=25`. No blocker. Seam: `ChatProvider`. UC: E2, F1, F4.
+
+**Retrieval + RAG** — UMR-002/003/004/005/006/009/010/060/067, ARR-002–007. Azure AI Search (hybrid vector+BM25) · `DataSource`+`Tool`. Blocker: IT AI Search deploy. Seam: `HybridRetrievalTool`. UC: E2, F1.
+
+**Audit + traceability** — UMR-015/027/045/061/062/093, AAR-005, ASG-003. `AgentAction` envelope · `AgentActionLog` · JSONL→Log Analytics. Blocker: IT Log Analytics+immutability. Seam: `AgentActionLog` sink. UC: E2, F1, F4.
+
+**HITL approvals** — UMR-021–026/035/039/044/049, HITL-001–007, ASG-002. LangGraph `interrupt` · Postgres queue · Dash UI. Blocker: CSA risk taxonomy. Seam: `ChatProvider`+interrupt. UC: E2, F1.
+
+**RBAC + data scoping** — UMR-012/017/058/065/066, AAR-002/007. `_ROUTE_RULES`+`_ROLE_LEVEL`+`SqliteDataStore`+`QueryTool.set_user`. Blocker: per-tool RBAC pending. Seam: rule list appends. UC: E2, F1, F4.
+
+**Session + workspace (V3)** — UMR-014/092/095. Split `WorkspaceStore`→`SqliteStore`+`SessionScratchStore`. Blocker: session lifecycle design. Seam: `WorkspaceStore` protocol. UC: dream.
+
+**Guardrails + containment** — UMR-020/029/030, ASG-001/004/011. Azure Content Safety · APIM rate limit · Container Apps sandbox. Blocker: procurement. Seam: `CodeExecTool`. UC: dream.
+
+**Connectors + external** — UMR-051–055. `DataSource`+MSAL · Flask REST · SAP/STK/MATLAB planned. Blocker: SAP procurement; STK/MATLAB licenses. Seam: `DataSource` classes. UC: F4.
+
+**Domain capabilities** — UMR-007/008/031–034/036–038/040–043/046–048/050/075, ARR-001. New `Tool` over existing seams. Blocker: taxonomy+mission DB+Translator. Seam: uniform pattern. UC: E2, F1.
+
+**Deployment, SLA** — UMR-028/056/057/059/064/069/070/074/085, ASG-006. Azure App Service PBMM · APIM+WAF · SSC LaunchPad HA · git config. Blocker: IT landing zone; LaunchPad. Seam: env-var+SQL migrations. UC: dream.
 
 ## 4. Use Cases
 
-**UC-E2 · Risk identification + HITL (Engineering).** A mission engineer uploads a CADRe Part A document. The primary agent retrieves relevant risk sections, runs a keyword + LLM classifier, flags risks — then hits a HITL gate. A reviewer approves or rejects; approved risks write to the risk register (planned). [View state model →](diagrams/UC-cluster.svg#row1)
+**UC-E2 · Risk ID + HITL.** Engineer uploads CADRe Part A → retrieval → LLM classifier → HITL gate → approve/reject → register write (planned).
 
-**UC-F1 · Parametric cost estimation + HITL (Finance).** A program admin requests a cost estimate for a new mission profile. The agent retrieves 5 most-similar historical missions, computes a weighted Euclidean distance, presents the estimate — then hits a HITL gate before commitment. [View state model →](diagrams/UC-cluster.svg#row2)
+**UC-F1 · Parametric cost + HITL.** Admin requests estimate → 5 similar missions → Euclidean distance → HITL gate before commitment.
 
-**UC-F4 · Vendor cost roll-up + SAP connector.** A finance analyst queries vendor costs across past programs. The agent routes through a planned SAP connector implementing `DataSource`, extracts vendor line items, aggregates, and audits. Blocked on SAP integration — the `DataSource` seam is proven with LocalFileSource. [View state model →](diagrams/UC-cluster.svg#row3)
+**UC-F4 · Vendor cost + SAP.** Analyst queries vendor costs → SAP connector (DataSource planned) → extract+aggregate → audit. Blocked: SAP.
 
-Other flows use the same spine. Parametric budget scenarios, vendor-cost aggregation across missions, anomaly triage, bilingual report drafting, cross-mission telemetry compare, cost-per-requirement decomposition — each lands as a new `Tool` implementation plus (where needed) a new `DataSource`. Retrieval, RBAC scoping, HITL gates, `AGENT_ACTION` audit envelope: unchanged. No new architecture. Timeline gated by the blockers in § 5.
+Other flows: budget scenarios, anomaly triage, bilingual reports, cross-mission compare — each = new `Tool`+(new `DataSource`). Core unchanged. No new architecture. Gated by §5.
 
-## 5. What's Blocked, What We're Ready For
+## 5. Blocked Items
 
-- **Azure AI Search Serverless deploy** (IT + procurement) — unlocks hybrid retrieval, citations, faithfulness scoring. Seam: `DataSource` + new `HybridRetrievalTool`.
-- **Azure Log Analytics workspace + immutability policy** (IT) — unlocks tamper-proof audit at UMR-027 grade. Seam: `AgentActionLog` swappable sink.
-- **Azure AI Content Safety + Container Apps sandbox** (procurement) — unlocks UMR-020 guardrails + UMR-093 sandboxed code exec. Seam: tool wrapper moderation, new `CodeExecTool`.
-- **Entra ID app registration + SharePoint / SAP connectors** (IT + finance team) — unlocks CSA-native corpus + cost data. Seam: each = new `DataSource` class.
-- **CSA risk taxonomy + risk register schema** (CSA domain) — unlocks UMR-036–040 and the HITL flows around risk writes.
-- **Historical mission DB + parametric feature schema** (CSA finance / mission engineering) — unlocks UMR-031–035 cost estimation.
-- **SSC LaunchPad availability** (SSC) — unlocks HA topology for UMR-057.
+- **Azure AI Search** (IT) — retrieval+citations. Seam: `DataSource`+`HybridRetrievalTool`.
+- **Log Analytics+immutability** (IT) — tamper-proof audit. Seam: `AgentActionLog`.
+- **Content Safety+Container Apps** (procurement) — guardrails+sandbox. Seam: `CodeExecTool`.
+- **Entra ID+SharePoint/SAP** (IT+finance) — CSA corpus+cost data. Seam: `DataSource`.
+- **CSA risk taxonomy** (domain) — risk ID+HITL.
+- **Historical mission DB** (finance) — cost estimation.
 
 ## 6. System-Health Tooling
 
-| Tool | Purpose | Runs where |
-|---|---|---|
-| **ruff** | Lint (replaces flake8, isort, pyupgrade) | pre-commit + CI |
-| **pyright** | Strict type checking, no `# type: ignore` | pre-commit + CI |
-| **pytest + pytest-cov** | 156 tests, ~91% coverage, ≥80% threshold enforced | pre-commit + CI |
-| **bandit** | Static security scan | pre-commit |
-| **pip-audit** | CVE audit of installed deps | pre-commit |
-| **detect-secrets** | Prevent committing credentials | pre-commit |
+- **ruff** — Lint (flake8+isort+pyupgrade) · pre-commit+CI
+- **pyright** — Strict type check · pre-commit+CI
+- **pytest+cov** — 156 tests, 91% coverage · pre-commit+CI
+- **bandit** — Security scan · pre-commit
+- **pip-audit** — CVE audit · pre-commit
+- **detect-secrets** — No credentials in git · pre-commit
 
-`app/tests/test_architecture.py` auto-discovers feature folders and enforces: no cross-feature internal imports (protocol boundaries), required files per feature, root file whitelist. `app/tests/test_rules.py` adds: logging coverage audit, no hardcoded secrets, function length caps, import completeness. Same suite runs `.pre-commit-config.yaml` and `.github/workflows/ci.yml`. New invariant = new test. Local warning + CI gate, no extra infra.
+Architecture tests enforce protocol boundaries+required files per feature. Code quality: logging coverage, function length, import completeness. Suite: `.pre-commit-config.yaml`+`.github/workflows/ci.yml`. New invariant=new test. No extra infra.
