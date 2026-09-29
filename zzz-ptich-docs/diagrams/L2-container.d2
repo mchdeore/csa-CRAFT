@@ -1,0 +1,270 @@
+# L2 — CRAFT Container Diagram
+# Legend:
+#   ■ actor | ⬢ terminal | ◇ hexagon gate | ▦ store (cylinder) | ☁ cloud
+#   dashed border = planned/pending · auth-blue fill = auth/RBAC · audit-green fill = audit
+# Arrow taxonomy:
+#   ⟶ public-external inbound (thick stroke, labeled [/route] [role])
+#   → external outbound (thin, italic label)
+#   ◆ exposed CRAFT tool/connector (diamond arrowhead, labeled tool+protocol)
+#   ··> internal route hop (dotted, labeled POST /chat/internal/*)
+
+vars: {
+  d2-config: {
+    layout-engine: tala
+    theme-id: 0
+  }
+}
+
+classes: {
+  actor: {
+    style.fill: "#D9D9D9"
+    style.stroke: "#333333"
+    style.font-color: "#333333"
+  }
+  external: {
+    style.fill: "#FAFAFA"
+    style.stroke: "#666666"
+    style.italic: true
+  }
+  planned: {
+    style.stroke-dash: 5
+  }
+  auth: {
+    style.fill: "#DDE5F0"
+    style.stroke: "#264478"
+    style.font-color: "#264478"
+  }
+  audit: {
+    style.fill: "#DFEBDF"
+    style.stroke: "#2F5E3A"
+    style.font-color: "#2F5E3A"
+  }
+  terminal: {
+    shape: oval
+    style.fill: "#EEEEEE"
+    style.stroke: "#333333"
+    style.stroke-dash: 3
+  }
+  gate: {
+    shape: hexagon
+    style.fill: "#DDE5F0"
+    style.stroke: "#264478"
+  }
+  store: {
+    shape: cylinder
+  }
+  cloud_svc: {
+    shape: cloud
+    style.italic: true
+  }
+  protocol_seam: {
+    style.font-color: "#666666"
+    style.font-size: 12
+  }
+}
+
+# ── LAYER: Route-Gated RBAC (top band, auth-blue) ──
+
+rbac-layer: {
+  label: "Route-Gated RBAC Layer"
+  class: auth
+  width: 1000
+  height: 80
+
+  pseudo-routes: "POST /chat/send [base_user+]  ·  POST /chat/upload [power_user+]  ·  GET /storage/list/* [base_user+]  ·  POST /tools/execute/<name> [internal]  ·  GET /admin/* [admin]" {
+    style.font-size: 11
+    style.font-color: "#264478"
+  }
+}
+
+# ── LAYER: CRAFT Containers (middle band) ──
+
+primary-agent: {
+  label: "Primary Agent\n⟨I⟩ ChatProvider"
+  style.fill: "#EAEAEA"
+  style.stroke: "#333333"
+  style.font-color: "#333333"
+  width: 200
+
+  tool-registry: {
+    label: "Tool Registry\n⟨I⟩ Tool"
+    style.fill: "#EAEAEA"
+    style.stroke: "#333333"
+    style.font-color: "#333333"
+    width: 200
+  }
+
+  data-sources: {
+    label: "Data Sources\n⟨I⟩ DataSource"
+    style.fill: "#EAEAEA"
+    style.stroke: "#333333"
+    style.font-color: "#333333"
+    width: 200
+  }
+
+  storage: {
+    label: "Storage\n⟨I⟩ WorkspaceStore"
+    style.fill: "#EAEAEA"
+    style.stroke: "#333333"
+    style.font-color: "#333333"
+    width: 200
+
+    workspace-store: {
+      label: "Workspace\nStore"
+      class: store
+    }
+
+    data-store: {
+      label: "Data Store\n(RBAC-scoped)"
+      class: store
+    }
+
+    audit-log: {
+      label: "Audit Log\n(JSONL 90-day)"
+      class: audit
+    }
+  }
+
+  auth-provider: {
+    label: "Auth Provider\n⟨I⟩ AuthProvider"
+    style.fill: "#DDE5F0"
+    style.stroke: "#264478"
+    style.font-color: "#264478"
+    width: 180
+  }
+}
+
+# ── LAYER: Connectors along CRAFT perimeter ──
+
+local-file-source: {
+  label: "Local File\nSource"
+  style.fill: "#EAEAEA"
+  style.stroke: "#333333"
+  style.font-color: "#333333"
+}
+
+sharepoint-connector: {
+  label: "SharePoint\n⟨I⟩ DataSource"
+  class: planned
+}
+
+sap-connector: {
+  label: "SAP\n⟨I⟩ DataSource"
+  class: planned
+}
+
+stk-connector: {
+  label: "STK / MATLAB\n⟨I⟩ DataSource"
+  class: planned
+}
+
+# ── LAYER: Audit Sink (bottom-left, audit-green) ──
+
+audit-sink: {
+  label: "Audit Sink\n⟨I⟩ AgentActionLog"
+  class: audit
+  width: 200
+
+  azure-log-analytics: {
+    label: "Azure Log\nAnalytics\n(immutable)"
+    class: cloud_svc
+    class: planned
+  }
+}
+
+# ── LAYER: Test Surface (bottom-right, audit-green) ──
+
+test-surface: {
+  label: "Test Surface"
+  class: audit
+  width: 200
+
+  pre-commit: {
+    label: "pre-commit\n(.pre-commit-config.yaml)"
+    style.fill: "#DFEBDF"
+    style.stroke: "#2F5E3A"
+    style.font-color: "#2F5E3A"
+  }
+
+  github-actions: {
+    label: "GitHub Actions\n(.github/workflows/ci.yml)"
+    style.fill: "#DFEBDF"
+    style.stroke: "#2F5E3A"
+    style.font-color: "#2F5E3A"
+  }
+}
+
+# ── External Systems (right side) ──
+
+azure-openai: {
+  label: "Azure OpenAI\ngpt-4o"
+  class: cloud_svc
+}
+
+azure-ai-search: {
+  label: "Azure AI Search\n(planned)"
+  class: cloud_svc
+  class: planned
+}
+
+entra-id: {
+  label: "Entra ID\n(planned)"
+  class: cloud_svc
+  class: planned
+}
+
+# ── Connections ──
+
+# Inbound connections (public-external inbound arrows — thick stroke, labeled)
+primary-agent -> tool-registry: "POST /tools/execute/<name>" {
+  style.stroke-dash: 4
+  style.stroke: "#999999"
+}
+
+primary-agent -> data-sources: "query" {style.stroke-dash: 4; style.stroke: "#999999"}
+
+primary-agent -> storage: "read/write" {style.stroke-dash: 4; style.stroke: "#999999"}
+
+# Audit arrows (green)
+primary-agent -> audit-sink: "AGENT_ACTION" {
+  style.stroke: "#2F5E3A"
+  style.stroke-width: 2
+}
+tool-registry -> audit-sink: "AGENT_ACTION" {
+  style.stroke: "#2F5E3A"
+  style.stroke-width: 2
+}
+
+# Connector exposed arrows (diamond arrowhead)
+data-sources -> local-file-source: "DataSource · read" {
+  target-arrowhead: {shape: diamond}
+  style.stroke-width: 2
+}
+data-sources -> sharepoint-connector: "DataSource · Graph API (planned)" {
+  target-arrowhead: {shape: diamond}
+  style.stroke-width: 2
+  style.stroke-dash: 5
+}
+data-sources -> sap-connector: "DataSource · REST (planned)" {
+  target-arrowhead: {shape: diamond}
+  style.stroke-width: 2
+  style.stroke-dash: 5
+}
+data-sources -> stk-connector: "DataSource · API (planned)" {
+  target-arrowhead: {shape: diamond}
+  style.stroke-width: 2
+  style.stroke-dash: 5
+}
+
+# External outbound (thin, italic)
+local-file-source -> azure-openai: "local files read" {style.stroke-width: 1; style.italic: true}
+sharepoint-connector -> entra-id: "MSAL (planned)" {style.stroke-width: 1; style.italic: true; style.stroke-dash: 5}
+audit-sink -> azure-log-analytics: "forward (planned)" {style.stroke-width: 1; style.italic: true; style.stroke-dash: 5}
+
+# Test surface connections
+test-surface -> pre-commit: "runs on commit" {style.stroke: "#2F5E3A"; style.stroke-dash: 4}
+test-surface -> github-actions: "CI gate" {style.stroke: "#2F5E3A"; style.stroke-dash: 4}
+
+# Auth connections (blue)
+auth-provider -> primary-agent: "authorize" {style.stroke: "#264478"; style.stroke-dash: 4}
+auth-provider -> entra-id: "MSAL (planned)" {style.stroke: "#264478"; style.stroke-dash: 5; style.italic: true}

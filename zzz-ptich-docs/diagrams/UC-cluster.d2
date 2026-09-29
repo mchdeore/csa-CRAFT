@@ -1,0 +1,302 @@
+# UC-Cluster — Three stacked use-case state models
+# Each row = one UC with 4 swim lanes: User/Governance · Primary Agent · Controlled Services · Terminal
+# grid-columns: 1 = vertical stack
+#
+# Visual grammar matches FloodMapper reference:
+#   solid border = single-actor state
+#   dashed border = shared/gated
+#   oval terminal states (ellipse, dashed)
+#   labeled arrows between states
+#   swim lanes = containers
+
+vars: {
+  d2-config: {
+    layout-engine: tala
+    theme-id: 0
+  }
+}
+
+classes: {
+  auth:    { style.fill: "#DDE5F0"; style.stroke: "#264478"; style.font-color: "#264478" }
+  audit:   { style.fill: "#DFEBDF"; style.stroke: "#2F5E3A"; style.font-color: "#2F5E3A" }
+  gate:    { shape: hexagon; style.fill: "#DDE5F0"; style.stroke: "#264478" }
+  planned: { style.stroke-dash: 5 }
+  terminal: {
+    shape: oval
+    style.fill: "#EEEEEE"
+    style.stroke: "#333333"
+    style.stroke-dash: 3
+  }
+  swimlane: {
+    style.fill: "#F8F8F8"
+    style.stroke: "#CCCCCC"
+    style.font-size: 11
+  }
+  state_node: {
+    style.fill: "#EAEAEA"
+    style.stroke: "#333333"
+    style.font-size: 11
+  }
+}
+
+# grid-columns: 1 means vertical stacking
+grid-columns: 1
+
+# ══════════════════════════════════════
+# ROW 1 — UC-E2: Risk identification + HITL (Engineering)
+# ══════════════════════════════════════
+
+row1-uce2: {
+  label: "Row 1 · UC-E2 · Risk Identification + HITL (Engineering)"
+  style.fill: "#FAFAFA"
+  style.stroke: "#333333"
+  width: 1200
+  height: 280
+
+  # Swim lane 1: User / Governance
+  uc-e2-user: {
+    label: "User / Governance"
+    class: swimlane
+    width: 200
+
+    e2-s0: "S0\nRequest\nReceived" {
+      class: state_node
+    }
+  }
+
+  # Swim lane 2: Primary Agent
+  uc-e2-agent: {
+    label: "Primary Agent"
+    class: swimlane
+    width: 350
+
+    e2-s1: "S1\nAuth Gate" {
+      class: gate
+    }
+    e2-s2: "S2\nRetrieval\n(mission docs)" {
+      class: state_node
+    }
+    e2-s3: "S3\nRisk\nClassifier" {
+      class: state_node
+    }
+    e2-s4: "S4\nHITL Gate\n(review risks)" {
+      style.fill: "#DDE5F0"
+      style.stroke: "#264478"
+      style.stroke-dash: 5
+      style.font-size: 11
+    }
+  }
+
+  # Swim lane 3: Controlled Services
+  uc-e2-svcs: {
+    label: "Controlled Services"
+    class: swimlane
+    width: 300
+
+    e2-s5: "S5\nRisk Register\nWrite (planned)" {
+      class: planned
+      style.font-size: 11
+    }
+    e2-s6: "S6\nAudit\n(AGENT_ACTION)" {
+      class: audit
+      style.font-size: 11
+    }
+  }
+
+  # Swim lane 4: Terminal
+  uc-e2-term: {
+    label: "Terminal"
+    class: swimlane
+    width: 150
+
+    e2-t1: "Terminal\nCompleted" {
+      class: terminal
+    }
+  }
+
+  # Transitions
+  e2-s0 -> e2-s1: "request"
+  e2-s1 -> e2-s2: "authorized"
+  e2-s2 -> e2-s3: "docs retrieved"
+  e2-s3 -> e2-s4: "risks flagged"
+  e2-s4 -> e2-s5: "approved"
+  e2-s5 -> e2-s6: "written"
+  e2-s6 -> e2-t1: "done"
+  e2-s4 -> e2-t1: "rejected" {style.stroke-dash: 4}
+
+  # UMR badges
+  e2-s2.label: "S2\nRetrieval\n(mission docs)\n[UMR-002-006]"
+  e2-s3.label: "S3\nRisk\nClassifier\n[UMR-036-040]"
+  e2-s4.label: "S4\nHITL Gate\n(review risks)\n[HITL-001-007]"
+  e2-s6.label: "S6\nAudit\n(AGENT_ACTION)\n[UMR-027/062]"
+}
+
+# ══════════════════════════════════════
+# ROW 2 — UC-F1: Parametric cost + HITL (Finance)
+# ══════════════════════════════════════
+
+row2-ucf1: {
+  label: "Row 2 · UC-F1 · Parametric Cost Estimation + HITL (Finance)"
+  style.fill: "#FAFAFA"
+  style.stroke: "#333333"
+  width: 1200
+  height: 280
+
+  # Swim lane 1: User / Governance
+  uc-f1-user: {
+    label: "User / Governance"
+    class: swimlane
+    width: 200
+
+    f1-s0: "S0\nRequest\nReceived" {
+      class: state_node
+    }
+  }
+
+  # Swim lane 2: Primary Agent
+  uc-f1-agent: {
+    label: "Primary Agent"
+    class: swimlane
+    width: 350
+
+    f1-s1: "S1\nAuth Gate" {
+      class: gate
+    }
+    f1-s2: "S2\nRetrieval\n(historical missions)" {
+      class: state_node
+    }
+    f1-s3: "S3\nCost\nAggregation" {
+      class: state_node
+    }
+    f1-s4: "S4\nHITL Gate\n(review cost)" {
+      style.fill: "#DDE5F0"
+      style.stroke: "#264478"
+      style.stroke-dash: 5
+      style.font-size: 11
+    }
+  }
+
+  # Swim lane 3: Controlled Services
+  uc-f1-svcs: {
+    label: "Controlled Services"
+    class: swimlane
+    width: 300
+
+    f1-s5: "S5\nCommitment\nWrite (planned)" {
+      class: planned
+      style.font-size: 11
+    }
+    f1-s6: "S6\nAudit\n(AGENT_ACTION)" {
+      class: audit
+      style.font-size: 11
+    }
+  }
+
+  # Swim lane 4: Terminal
+  uc-f1-term: {
+    label: "Terminal"
+    class: swimlane
+    width: 150
+
+    f1-t1: "Terminal\nCompleted" {
+      class: terminal
+    }
+  }
+
+  # Transitions
+  f1-s0 -> f1-s1: "request"
+  f1-s1 -> f1-s2: "authorized"
+  f1-s2 -> f1-s3: "missions retrieved"
+  f1-s3 -> f1-s4: "cost estimated"
+  f1-s4 -> f1-s5: "approved"
+  f1-s5 -> f1-s6: "written"
+  f1-s6 -> f1-t1: "done"
+  f1-s4 -> f1-t1: "rejected" {style.stroke-dash: 4}
+
+  # UMR badges
+  f1-s2.label: "S2\nRetrieval\n(historical)\n[UMR-002/031]"
+  f1-s3.label: "S3\nCost\nAggregation\n[UMR-032-034]"
+  f1-s4.label: "S4\nHITL Gate\n(review cost)\n[UMR-035]"
+  f1-s6.label: "S6\nAudit\n(AGENT_ACTION)\n[UMR-027]"
+}
+
+# ══════════════════════════════════════
+# ROW 3 — UC-F4: Vendor cost roll-up + SAP connector (blocked)
+# ══════════════════════════════════════
+
+row3-ucf4: {
+  label: "Row 3 · UC-F4 · Vendor Cost Roll-Up + SAP Connector (blocked)"
+  style.fill: "#FAFAFA"
+  style.stroke: "#333333"
+  width: 1200
+  height: 280
+
+  # Swim lane 1: User / Governance
+  uc-f4-user: {
+    label: "User / Governance"
+    class: swimlane
+    width: 200
+
+    f4-s0: "S0\nRequest\nReceived" {
+      class: state_node
+    }
+  }
+
+  # Swim lane 2: Primary Agent
+  uc-f4-agent: {
+    label: "Primary Agent"
+    class: swimlane
+    width: 350
+
+    f4-s1: "S1\nAuth Gate" {
+      class: gate
+    }
+    f4-s2: "S2\nSAP Connector\n(DataSource · planned)" {
+      class: planned
+      style.font-size: 11
+    }
+    f4-s3: "S3\nVendor\nExtraction" {
+      class: state_node
+    }
+    f4-s4: "S4\nAggregation\n+ Report" {
+      class: state_node
+    }
+  }
+
+  # Swim lane 3: Controlled Services
+  uc-f4-svcs: {
+    label: "Controlled Services"
+    class: swimlane
+    width: 300
+
+    f4-s5: "S5\nAudit\n(AGENT_ACTION)" {
+      class: audit
+      style.font-size: 11
+    }
+  }
+
+  # Swim lane 4: Terminal
+  uc-f4-term: {
+    label: "Terminal"
+    class: swimlane
+    width: 150
+
+    f4-t1: "Terminal\n(blocker: SAP)" {
+      class: terminal
+      style.fill: "#F5E6E6"
+      style.stroke: "#AA4444"
+    }
+  }
+
+  # Transitions
+  f4-s0 -> f4-s1: "request"
+  f4-s1 -> f4-s2: "authorized"
+  f4-s2 -> f4-s3: "vendors queried\n(blocked — SAP)" {style.stroke-dash: 5}
+  f4-s3 -> f4-s4: "extracted"
+  f4-s4 -> f4-s5: "aggregated"
+  f4-s5 -> f4-t1: "done\n(blocker: SAP integration)" {style.stroke-dash: 5}
+
+  # UMR badges
+  f4-s2.label: "S2\nSAP Connector\n(planned)\n[UMR-053-055]"
+  f4-s5.label: "S5\nAudit\n(AGENT_ACTION)\n[UMR-027]"
+}

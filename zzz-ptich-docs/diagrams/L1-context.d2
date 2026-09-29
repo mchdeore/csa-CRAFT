@@ -1,0 +1,319 @@
+# L1 — CRAFT System Context
+# Legend: ■ actor (grey fill) · dashed border = planned · cloud = external · hexagon = gate · oval = terminal
+# Arrows: ⟶ public-external inbound (solid, open arrowhead, labeled [/route] [role])
+#         → external outbound (thin, italic label)
+#         ◆ exposed CRAFT tool (solid, diamond arrowhead)
+#         ···> internal route hop (dotted, labeled)
+
+vars: {
+  d2-config: {
+    layout-engine: tala
+    theme-id: 0
+  }
+}
+
+classes: {
+  actor: {
+    style.fill: "#D9D9D9"
+    style.stroke: "#333333"
+    style.font-color: "#333333"
+  }
+  external: {
+    style.fill: "#FAFAFA"
+    style.stroke: "#666666"
+    style.italic: true
+  }
+  planned: {
+    style.stroke-dash: 5
+  }
+  auth: {
+    style.fill: "#DDE5F0"
+    style.stroke: "#264478"
+    style.font-color: "#264478"
+  }
+  audit: {
+    style.fill: "#DFEBDF"
+    style.stroke: "#2F5E3A"
+    style.font-color: "#2F5E3A"
+  }
+  terminal: {
+    shape: oval
+    style.fill: "#EEEEEE"
+    style.stroke: "#333333"
+    style.stroke-dash: 3
+  }
+  gate: {
+    shape: hexagon
+    style.fill: "#DDE5F0"
+    style.stroke: "#264478"
+  }
+  store: {
+    shape: cylinder
+  }
+  cloud_svc: {
+    shape: cloud
+    style.italic: true
+  }
+  craft_core: {
+    style.fill: "#EAEAEA"
+    style.stroke: "#333333"
+    style.font-color: "#333333"
+  }
+}
+
+# ── Actors (left column) ──
+
+mission-engineer: {
+  label: "Mission\nEngineer"
+  class: actor
+}
+
+systems-engineer: {
+  label: "Systems\nEngineer"
+  class: actor
+}
+
+program-admin: {
+  label: "Program\nAdmin"
+  class: actor
+}
+
+hitl-reviewer: {
+  label: "HITL\nReviewer"
+  class: actor
+}
+
+# ── CRAFT (centre) ──
+
+craft: {
+  label: "CRAFT\nFlask + Dash AI Assistant"
+  class: craft_core
+  width: 400
+  height: 120
+}
+
+# ── LLM & AI cluster ──
+
+llm-ai: {
+  label: "LLM & AI"
+  class: external
+  width: 280
+
+  azure-openai: "Azure OpenAI\ngpt-4o" {
+    class: cloud_svc
+  }
+
+  ai-search: "Azure AI Search\n(hybrid vector+BM25)" {
+    class: cloud_svc
+    class: planned
+  }
+
+  content-safety: "Azure Content\nSafety" {
+    class: cloud_svc
+    class: planned
+  }
+
+  translator: "Azure\nTranslator" {
+    class: cloud_svc
+    class: planned
+  }
+}
+
+# ── Data Sources cluster ──
+
+data-sources: {
+  label: "Data Sources"
+  class: external
+  width: 280
+
+  local-files: "Local Files\n(reference impl)" {
+    style.fill: "#FAFAFA"
+    style.stroke: "#333333"
+  }
+
+  sharepoint: "SharePoint\n(CSA corpus)" {
+    class: cloud_svc
+    class: planned
+  }
+
+  sap: "SAP\n(finance)" {
+    class: cloud_svc
+    class: planned
+  }
+
+  stk-matlab: "STK / MATLAB" {
+    class: cloud_svc
+    class: planned
+  }
+}
+
+# ── Identity & Edge cluster ──
+
+identity-edge: {
+  label: "Identity & Edge"
+  class: external
+  width: 280
+
+  entra: "Entra ID\n(CSA identity)" {
+    class: cloud_svc
+    class: planned
+  }
+
+  apim: "Azure APIM\n(rate limit)" {
+    class: cloud_svc
+    class: planned
+  }
+
+  app-gw: "App Gateway\n(WAF)" {
+    class: cloud_svc
+    class: planned
+  }
+}
+
+# ── Ops & Audit cluster ──
+
+ops-audit: {
+  label: "Ops & Audit"
+  class: external
+  width: 280
+
+  log-analytics: "Azure Log\nAnalytics\n(immutable audit)" {
+    class: cloud_svc
+    class: planned
+  }
+
+  app-service: "Azure App Service\n(PBMM region)" {
+    class: cloud_svc
+  }
+
+  launchpad: "SSC LaunchPad\n(HA target)" {
+    class: cloud_svc
+    class: planned
+  }
+
+  container-apps: "Container Apps\n(sandbox)" {
+    class: cloud_svc
+    class: planned
+  }
+}
+
+# ── Connections (labeled arrows) ──
+
+# Inbound from actors to CRAFT — public-external inbound arrows
+mission-engineer -> craft: "/chat/send [base_user+]" {
+  style.stroke-width: 3
+  target-arrowhead: {
+    shape: arrow
+  }
+}
+
+systems-engineer -> craft: "/chat/send [base_user+]" {
+  style.stroke-width: 3
+  target-arrowhead: {
+    shape: arrow
+  }
+}
+
+program-admin -> craft: "/admin/* [admin]" {
+  style.stroke-width: 3
+  target-arrowhead: {
+    shape: arrow
+  }
+}
+
+hitl-reviewer -> craft: "/dash/review [HITL]" {
+  style.stroke-width: 3
+  target-arrowhead: {
+    shape: arrow
+  }
+}
+
+# Outbound from CRAFT to external — external outbound (thin, italic)
+
+# To LLM & AI
+craft -> azure-openai: "gpt-4o calls" {
+  style.stroke-width: 1
+  style.italic: true
+}
+craft -> ai-search: "hybrid retrieval (planned)" {
+  style.stroke-width: 1
+  style.italic: true
+  style.stroke-dash: 5
+}
+craft -> content-safety: "moderation (planned)" {
+  style.stroke-width: 1
+  style.italic: true
+  style.stroke-dash: 5
+}
+craft -> translator: "EN↔FR (planned)" {
+  style.stroke-width: 1
+  style.italic: true
+  style.stroke-dash: 5
+}
+
+# To Data Sources — exposed connector arrows (diamond)
+craft -> local-files: "DataSource · read" {
+  target-arrowhead: {
+    shape: diamond
+  }
+  style.stroke-width: 2
+}
+craft -> sharepoint: "DataSource · Graph API (planned)" {
+  target-arrowhead: {
+    shape: diamond
+  }
+  style.stroke-width: 2
+  style.stroke-dash: 5
+}
+craft -> sap: "DataSource · REST (planned)" {
+  target-arrowhead: {
+    shape: diamond
+  }
+  style.stroke-width: 2
+  style.stroke-dash: 5
+}
+craft -> stk-matlab: "DataSource · API (planned)" {
+  target-arrowhead: {
+    shape: diamond
+  }
+  style.stroke-width: 2
+  style.stroke-dash: 5
+}
+
+# To Identity & Edge
+craft -> entra: "MSAL auth (planned)" {
+  style.stroke-width: 1
+  style.italic: true
+  style.stroke-dash: 5
+}
+craft -> apim: "rate-limit perimeter (planned)" {
+  style.stroke-width: 1
+  style.italic: true
+  style.stroke-dash: 5
+}
+craft -> app-gw: "TLS + WAF (planned)" {
+  style.stroke-width: 1
+  style.italic: true
+  style.stroke-dash: 5
+}
+
+# To Ops & Audit
+craft -> log-analytics: "AGENT_ACTION audit (planned)" {
+  style.stroke-width: 1
+  style.italic: true
+  style.stroke-dash: 5
+}
+craft -> app-service: "deploy target" {
+  style.stroke-width: 1
+  style.italic: true
+}
+craft -> launchpad: "HA topology (planned)" {
+  style.stroke-width: 1
+  style.italic: true
+  style.stroke-dash: 5
+}
+craft -> container-apps: "sandbox exec (planned)" {
+  style.stroke-width: 1
+  style.italic: true
+  style.stroke-dash: 5
+}

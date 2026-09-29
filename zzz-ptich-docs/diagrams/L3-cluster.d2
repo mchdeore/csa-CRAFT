@@ -1,0 +1,301 @@
+# L3-Cluster — Three side-by-side panels
+# Panel A: Primary Agent internals (LangGraph + audit)
+# Panel B: Tools + Connectors (Tool/DataSource protocols + perimeter)
+# Panel C: Route + Auth (RBAC gates + test anchors)
+#
+# Arrow taxonomy (same as L1/L2):
+#   ⟶ public-ext inbound · → ext outbound (italic) · ◆ exposed tool (diamond) · ··> internal (dotted)
+
+vars: {
+  d2-config: {
+    layout-engine: tala
+    theme-id: 0
+  }
+}
+
+classes: {
+  auth:    { style.fill: "#DDE5F0"; style.stroke: "#264478"; style.font-color: "#264478" }
+  audit:   { style.fill: "#DFEBDF"; style.stroke: "#2F5E3A"; style.font-color: "#2F5E3A" }
+  gate:    { shape: hexagon; style.fill: "#DDE5F0"; style.stroke: "#264478" }
+  planned: { style.stroke-dash: 5 }
+  protocol_seam: { style.font-color: "#666666"; style.font-size: 11 }
+}
+
+# Direction: right = horizontal triptych
+direction: right
+
+# ═══════════════════════════════════════════════
+# PANEL A — Primary Agent (LangGraph internals)
+# ═══════════════════════════════════════════════
+
+panel-a: {
+  label: "Panel A · Primary Agent (LangGraph ReAct)"
+  style.fill: "#F8F8F8"
+  style.stroke: "#333333"
+  width: 420
+
+  chatbot: {
+    label: "chatbot\n(AzureChatOpenAI)"
+    style.fill: "#EAEAEA"
+    style.stroke: "#333333"
+  }
+
+  tool-node: {
+    label: "ToolNode\n(tool call dispatcher)"
+    style.fill: "#EAEAEA"
+    style.stroke: "#333333"
+  }
+
+  should-continue: {
+    label: "_should_continue\n(router)"
+    class: gate
+  }
+
+  bound: {
+    label: "recursion_limit = 25"
+    style.fill: "#DDDDDD"
+    style.stroke: "#666666"
+    style.font-size: 11
+  }
+
+  wrapper-factory: {
+    label: "tool wrapper\nfactory\n(pydantic args_schema)"
+    style.fill: "#EAEAEA"
+    style.stroke: "#333333"
+    style.font-size: 11
+  }
+
+  chat-provider: {
+    label: "⟨I⟩ ChatProvider"
+    class: protocol_seam
+  }
+
+  action-log: {
+    label: "⟨I⟩ AgentActionLog"
+    class: protocol_seam
+  }
+
+  audit-sink-a: {
+    label: "Audit Sink\n(JSONL)"
+    class: audit
+  }
+
+  # Connections within Panel A
+  chatbot -> tool-node: "tool_calls" {style.stroke-width: 2}
+  chatbot -> should-continue: "no tool_calls → END" {style.stroke-dash: 4}
+  tool-node -> chatbot: "tool responses" {style.stroke-width: 2}
+  should-continue -> tool-node: "tool_calls" {style.stroke-dash: 4}
+  chatbot -> audit-sink-a: "AGENT_ACTION\nllm_inference" {style.stroke: "#2F5E3A"; style.stroke-width: 2}
+  tool-node -> audit-sink-a: "AGENT_ACTION\ntool_call" {style.stroke: "#2F5E3A"; style.stroke-width: 2}
+
+  # Subgraph arrangement
+  chatbot -> wrapper-factory: "builds" {style.stroke-dash: 4; style.stroke: "#999999"}
+  bound -> chatbot: "caps" {style.stroke-dash: 4; style.stroke: "#999999"}
+}
+
+# ═══════════════════════════════════════════════
+# PANEL B — Tools + Connectors
+# ═══════════════════════════════════════════════
+
+panel-b: {
+  label: "Panel B · Tools + Connectors"
+  style.fill: "#F8F8F8"
+  style.stroke: "#333333"
+  width: 420
+
+  tool-protocol: {
+    label: "Tool Protocol"
+    style.stroke-dash: 5
+    style.stroke: "#666666"
+    style.fill: "#FEFEFE"
+
+    weather: "weather" {
+      style.fill: "#EAEAEA"
+      style.stroke: "#333333"
+      style.font-size: 11
+    }
+    docs: "docs" {
+      style.fill: "#EAEAEA"
+      style.stroke: "#333333"
+      style.font-size: 11
+    }
+    charts: "charts\n(bar/pie/scatter/...)" {
+      style.fill: "#EAEAEA"
+      style.stroke: "#333333"
+      style.font-size: 11
+    }
+    query-data: "query_data\n(RBAC-scoped)" {
+      style.fill: "#EAEAEA"
+      style.stroke: "#333333"
+      style.font-size: 11
+    }
+    code-exec: "code-exec\n(planned)" {
+      style.fill: "#EAEAEA"
+      style.stroke: "#333333"
+      class: planned
+      style.font-size: 11
+    }
+  }
+
+  datasource-protocol: {
+    label: "DataSource Protocol"
+    style.stroke-dash: 5
+    style.stroke: "#666666"
+    style.fill: "#FEFEFE"
+
+    local-source: "LocalFileSource\n(reference)" {
+      style.fill: "#EAEAEA"
+      style.stroke: "#333333"
+      style.font-size: 11
+    }
+    sharepoint: "SharePoint\n(planned)" {
+      class: planned
+      style.font-size: 11
+    }
+    sap-b: "SAP\n(planned)" {
+      class: planned
+      style.font-size: 11
+    }
+    stk-b: "STK\n(planned)" {
+      class: planned
+      style.font-size: 11
+    }
+  }
+
+  hitl-gate: {
+    label: "HITL Gate\n(high-risk tools)"
+    class: gate
+  }
+
+  ext-systems: {
+    label: "External Systems"
+    style.fill: "#FAFAFA"
+    style.stroke: "#666666"
+    style.italic: true
+
+    files: "Filesystem" {
+      shape: document
+      style.fill: "#EAEAEA"
+      style.stroke: "#333333"
+    }
+    sharepoint-cloud: "SharePoint\nOnline" {
+      shape: cloud
+      style.italic: true
+    }
+    sap-cloud: "SAP" {
+      shape: cloud
+      style.italic: true
+    }
+  }
+
+  tool-execute: {
+    label: "POST /tools/execute/<name>"
+    style.fill: "#DDE5F0"
+    style.stroke: "#264478"
+    style.font-color: "#264478"
+    style.font-size: 10
+  }
+
+  # Connections
+  local-source -> files: "◆ DataSource · read" {
+    target-arrowhead: {shape: diamond}
+    style.stroke-width: 2
+  }
+  sharepoint -> sharepoint-cloud: "◆ DataSource · Graph API (planned)" {
+    target-arrowhead: {shape: diamond}
+    style.stroke-width: 2
+    style.stroke-dash: 5
+  }
+  sap-b -> sap-cloud: "◆ DataSource · REST (planned)" {
+    target-arrowhead: {shape: diamond}
+    style.stroke-width: 2
+    style.stroke-dash: 5
+  }
+
+  query-data -> hitl-gate: "if high-risk" {style.stroke-dash: 4; style.stroke: "#999999"}
+}
+
+# ═══════════════════════════════════════════════
+# PANEL C — Route + Auth
+# ═══════════════════════════════════════════════
+
+panel-c: {
+  label: "Panel C · Route + Auth"
+  style.fill: "#F8F8F8"
+  style.stroke: "#333333"
+  width: 420
+
+  inbound: {
+    label: "public external\ninbound"
+    style.fill: "#D9D9D9"
+    style.stroke: "#333333"
+  }
+
+  flask-route: {
+    label: "Flask Route\nHandler"
+    style.fill: "#EAEAEA"
+    style.stroke: "#333333"
+  }
+
+  before-request: {
+    label: "before_request\ngate"
+    class: gate
+  }
+
+  handler: {
+    label: "handler\n(business logic)"
+    style.fill: "#EAEAEA"
+    style.stroke: "#333333"
+  }
+
+  after-request: {
+    label: "after_request\naudit emit"
+    class: audit
+  }
+
+  response: {
+    label: "response"
+    style.fill: "#D9D9D9"
+    style.stroke: "#333333"
+  }
+
+  route-rules-box: {
+    label: "_ROUTE_RULES"
+    style.fill: "#F0F4F8"
+    style.stroke: "#264478"
+    style.font-color: "#264478"
+    style.font-size: 10
+
+    rule1: "/chat/send → base_user+" {style.font-size: 9}
+    rule2: "/chat/upload → power_user+" {style.font-size: 9}
+    rule3: "/storage/create → power_user+" {style.font-size: 9}
+    rule4: "/admin/* → admin" {style.font-size: 9}
+  }
+
+  rbac-legend: {
+    label: "RBAC Tiers"
+    style.fill: "#DDE5F0"
+    style.stroke: "#264478"
+    style.font-color: "#264478"
+
+    base: "base_user (1)" {style.font-size: 10}
+    power: "power_user (2)" {style.font-size: 10}
+    admin: "admin (3)" {style.font-size: 10}
+  }
+
+  test-anchor: {
+    label: "⟨test⟩ test_name"
+    class: audit
+    style.font-size: 10
+  }
+
+  # Connections
+  inbound -> flask-route: "[/route] [role]" {style.stroke-width: 3}
+  flask-route -> before-request: "check" {style.stroke-width: 2}
+  before-request -> handler: "auth ✓\nrole ✓\nworkspace ✓\ntrace_id ✓" {style.stroke-width: 2}
+  handler -> after-request: "complete" {style.stroke-width: 2}
+  after-request -> response: "emit" {style.stroke-width: 2}
+  response -> inbound: "· to client" {style.stroke-dash: 4; style.stroke: "#999999"}
+  route-rules-box -> before-request: "matches" {style.stroke-dash: 4; style.stroke: "#264478"}
+  test-anchor -> before-request: "enforces" {style.stroke-dash: 4; style.stroke: "#2F5E3A"}
+}
