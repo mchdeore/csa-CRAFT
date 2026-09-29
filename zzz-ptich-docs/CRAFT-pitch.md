@@ -51,6 +51,15 @@ Other flows use the same spine. Parametric budget scenarios, vendor-cost aggrega
 - **Historical mission DB + parametric feature schema** (CSA finance / mission engineering) — unlocks UMR-031–035 cost estimation.
 - **SSC LaunchPad availability** (SSC) — unlocks HA topology for UMR-057.
 
-## 6. System-Health Invariants
+## 6. System-Health Tooling
 
-Invariants ship as tests. `app/tests/test_architecture.py` + `test_rules.py`. Same suite runs pre-commit (`.pre-commit-config.yaml`) and GitHub Actions (`.github/workflows/ci.yml`). Named guarantees: `test_no_cross_feature_internal_imports` (protocol boundaries), `test_logging_coverage` (audit per function), `test_no_hardcoded_secrets` (security), `test_chat_agent_uses_langgraph` (framework lock). Adding a new invariant = adding a test. Local warning + CI gate, no new infra.
+| Tool | Purpose | Runs where |
+|---|---|---|
+| **ruff** | Lint (replaces flake8, isort, pyupgrade) | pre-commit + CI |
+| **pyright** | Strict type checking, no `# type: ignore` | pre-commit + CI |
+| **pytest + pytest-cov** | 156 tests, ~91% coverage, ≥80% threshold enforced | pre-commit + CI |
+| **bandit** | Static security scan | pre-commit |
+| **pip-audit** | CVE audit of installed deps | pre-commit |
+| **detect-secrets** | Prevent committing credentials | pre-commit |
+
+`app/tests/test_architecture.py` auto-discovers feature folders and enforces: no cross-feature internal imports (protocol boundaries), required files per feature, root file whitelist. `app/tests/test_rules.py` adds: logging coverage audit, no hardcoded secrets, function length caps, import completeness. Same suite runs `.pre-commit-config.yaml` and `.github/workflows/ci.yml`. New invariant = new test. Local warning + CI gate, no extra infra.
