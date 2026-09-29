@@ -16,8 +16,17 @@ from auth.provider import InMemoryAuth
 from chat.provider import DeepSeekChat
 from connectors.local_files import LocalFileSource
 from connectors.protocols import DataSource
-from storage.store import SqliteStore
-from tools.charts import BarChartTool, PieChartTool, ScatterChartTool
+from storage.query_tool import QueryTool
+from storage.store import SqliteDataStore, SqliteStore
+from tools.charts import (
+    BarChartTool,
+    BoxPlotTool,
+    HeatmapTool,
+    HistogramTool,
+    LineChartTool,
+    PieChartTool,
+    ScatterChartTool,
+)
 from tools.documents import DocumentSearchTool, ExcelTool, TextAnalysisTool
 from tools.news import NewsTool
 from tools.weather import HistoricalWeatherTool, WeatherTool
@@ -44,6 +53,10 @@ excel_tool = ExcelTool()
 bar_chart_tool = BarChartTool()
 pie_chart_tool = PieChartTool()
 scatter_chart_tool = ScatterChartTool()
+heatmap_tool = HeatmapTool()
+histogram_tool = HistogramTool()
+line_chart_tool = LineChartTool()
+boxplot_tool = BoxPlotTool()
 
 # Data sources for document tools
 data_sources: dict[str, DataSource] = {
@@ -51,6 +64,10 @@ data_sources: dict[str, DataSource] = {
 }
 document_search_tool = DocumentSearchTool(data_sources)
 text_analysis_tool = TextAnalysisTool(data_sources)
+
+# Unified data store + query tool for workspace-scoped and global data
+data_store = SqliteDataStore()
+query_tool = QueryTool(data_store)
 
 # Wire singletons
 auth: AuthProvider = InMemoryAuth()
@@ -63,6 +80,11 @@ chat_provider: ChatProvider = DeepSeekChat(
     bar_chart=bar_chart_tool,
     pie_chart=pie_chart_tool,
     scatter_chart=scatter_chart_tool,
+    heatmap=heatmap_tool,
+    histogram=histogram_tool,
+    line_chart=line_chart_tool,
+    boxplot=boxplot_tool,
     doc_search=document_search_tool,
     text_analysis=text_analysis_tool,
+    query_tool=query_tool,
 )

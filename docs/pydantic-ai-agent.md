@@ -81,7 +81,7 @@ agent = Agent("CHE-DSV4P", provider=provider, system_prompt=...)
 1. Login as `user1` (password: `1`)
 2. Create a workspace
 3. Ask: "Tell me about today in Montreal"
-4. Agent calls `get_weather("Montreal")` and `search_news("Montreal")` 
+4. Agent calls `get_weather("Montreal")` and `search_news("Montreal")`
 5. Interactive Plotly weather charts and news cards render inline
 6. Logout → login as `user2` → separate workspace
 7. Logout → login as `user1` → Montreal conversation persisted

@@ -25,7 +25,18 @@ def register_routes(flask_app: Flask) -> None:
 
         if auth.try_login(username, password):
             log_function_call("auth.routes", "login", step="success", username=username)
-            return jsonify({"success": True, "username": username}), 200
+            # Return user profile fields so the UI can store them in session
+            user = auth._users.get(username)
+            return jsonify(
+                {
+                    "success": True,
+                    "username": username,
+                    "role": getattr(user, "role", "base_user") or "base_user",
+                    "flags": getattr(user, "flags", []) or [],
+                    "division": getattr(user, "division", "") or "",
+                    "region": getattr(user, "region", "") or "",
+                }
+            ), 200
 
         log_function_call("auth.routes", "login", step="failed", username=username)
         return jsonify({"success": False, "error": "Invalid username or password"}), 401

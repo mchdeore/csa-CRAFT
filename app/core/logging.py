@@ -21,6 +21,7 @@ import fnmatch
 import functools
 import json
 import logging
+import os
 import time
 import uuid
 from datetime import datetime, timezone
@@ -497,21 +498,47 @@ def log_route(func: Any) -> Any:
 
 
 # ---------------------------------------------------------------------------
-# Legacy compatibility — audit logging and permission checks
+# Permission system — route gate with escalated roles and experimental flags
 # ---------------------------------------------------------------------------
 
 logger = logging.getLogger("cheddar.audit")
 
-_ROLE_ROUTES: dict[str, list[str]] = {
-    "viewer": ["/chat/send"],
-    "analyst": [
-        "/chat/*",
-        "/tools/read_document",
-        "/tools/search_documents",
-        "/storage/*",
-    ],
-    "admin": ["*"],
+# Escalated role levels — higher inherits lower. Add new tiers here.
+_ROLE_LEVEL: dict[str, int] = {
+    "base_user": 1,
+    "power_user": 2,
+    "admin": 3,
 }
+
+# Route rules: min_role required to access each route pattern.
+# Optional required_flag gates experimental features behind a user flag.
+_ROUTE_RULES: list[dict] = [
+    # Chat
+    {"pattern": "/chat/send", "min_role": "base_user"},
+    {"pattern": "/chat/upload", "min_role": "power_user"},
+    # Storage
+    {"pattern": "/storage/list/*", "min_role": "base_user"},
+    {"pattern": "/storage/create", "min_role": "power_user"},
+    {"pattern": "/storage/load/*", "min_role": "base_user"},
+    {"pattern": "/storage/save-messages/*", "min_role": "base_user"},
+    # Tools — browser-facing, not the internal execute endpoints
+    {"pattern": "/tools/read_document", "min_role": "base_user"},
+    {"pattern": "/tools/search_documents", "min_role": "base_user"},
+    # Admin
+    {"pattern": "/admin/*", "min_role": "admin"},
+]
+
+# Routes that bypass the perimeter gate — called internally by other handlers.
+# Browser never hits these directly. Parent trace_id preserved for audit.
+_INTERNAL_ROUTE_PREFIXES: tuple[str, ...] = (
+    "/chat/internal/",
+    "/tools/execute/",
+    "/tools/list",
+    "/debug/",
+)
+
+# Routes open to unauthenticated access.
+_PUBLIC_ROUTE_PREFIXES: tuple[str, ...] = ("/auth/", "/_", "/static/")
 
 # Track whether register_middleware has been called so we don't double-register
 _MIDDLEWARE_REGISTERED = False
@@ -555,20 +582,58 @@ def _register_timer(app: Flask) -> None:
 
 
 def _register_permission_check(app: Flask) -> None:
-    """Block requests that the current user's role doesn't allow."""
+    """Block requests that don't meet role or flag requirements.
+
+    Three gate passes:
+      1. Public routes — no auth needed (login, static, dash internals)
+      2. Internal routes — called by other handlers, bypass perimeter
+      3. Regular routes — checked against _ROUTE_RULES for min_role + optional flag
+
+    Escalated roles: admin also passes base_user and power_user checks.
+    """
+    # Shared secret for internal route defense in depth.
+    # Set INTERNAL_API_SECRET in .env to enable. Falls back to a default
+    # for dev — change in production.
+    _internal_secret = os.environ.get("INTERNAL_API_SECRET", "cheddar-internal-dev")
 
     @app.before_request
     def _check_permission() -> tuple[dict[str, str], int] | None:
-        if _is_public_route():
+        path = request.path
+
+        # Gate 1: public routes — no auth needed
+        if any(path.startswith(p) for p in _PUBLIC_ROUTE_PREFIXES):
             return None
 
+        # Gate 2: internal routes — bypass with shared secret or trust
+        if any(path.startswith(p) for p in _INTERNAL_ROUTE_PREFIXES):
+            # If a secret is configured, require it. In dev with default,
+            # this still gates against external callers who don't know it.
+            if request.headers.get("X-Internal-Secret") != _internal_secret:
+                return _json_error("Forbidden"), 403
+            return None
+
+        # Gate 3: regular routes — check auth + role + flag
         user = _get_current_user()
         if user is None:
             return _json_error("Unauthorized"), 401
 
-        role = getattr(user, "role", "viewer") or "viewer"
-        if not _has_permission(role, request.path):
+        # Find a matching rule among the route rules
+        rule = _find_matching_rule(path)
+        if rule is None:
             return _json_error("Forbidden"), 403
+
+        # Check escalated role
+        user_level = _role_number(getattr(user, "role", "base_user") or "base_user")
+        min_level = _role_number(rule["min_role"])
+        if user_level < min_level:
+            return _json_error("Forbidden"), 403
+
+        # Optional: check experimental feature flag
+        required_flag = rule.get("required_flag")
+        if required_flag:
+            user_flags: list[str] = getattr(user, "flags", []) or []
+            if required_flag not in user_flags:
+                return _json_error("Forbidden"), 403
 
         return None
 
@@ -592,14 +657,38 @@ def _register_audit_log(app: Flask) -> None:
         return response
 
 
+# -- Permission helpers ------------------------------------------------------
+
+
+def _role_number(role: str) -> int:
+    """Return the numeric level for a role string. Unknown roles get 0."""
+    return _ROLE_LEVEL.get(role, 0)
+
+
+def _find_matching_rule(path: str) -> dict | None:
+    """Find the first route rule whose fnmatch pattern matches the path.
+
+    Rules are checked in order. First match wins. If no rule matches,
+    the route is implicitly forbidden — only explicitly listed routes
+    are accessible.
+    """
+    for rule in _ROUTE_RULES:
+        if fnmatch.fnmatch(path, rule["pattern"]):
+            return rule
+    return None
+
+
 def _is_public_route() -> bool:
-    """Check if a route is accessible without authentication."""
+    """Check if a route is accessible without authentication.
+
+    Kept for backward compatibility. New code should use the list-based
+    checks in _check_permission instead.
+    """
     if request.endpoint is None:
         return True
     if request.endpoint.startswith("static"):
         return True
-    public_prefixes = ("/auth/", "/_", "/storage/", "/chat/", "/tools/", "/debug/")
-    if any(request.path.startswith(p) for p in public_prefixes):
+    if any(request.path.startswith(p) for p in _PUBLIC_ROUTE_PREFIXES):
         return True
     return request.path == "/"
 
@@ -614,9 +703,15 @@ def _get_current_user() -> Any | None:
 
 
 def _has_permission(role: str, path: str) -> bool:
-    """Check if a role is allowed to access a path based on _ROLE_ROUTES."""
-    patterns = _ROLE_ROUTES.get(role, [])
-    return any(fnmatch.fnmatch(path, pattern) for pattern in patterns)
+    """Check if a role can access a path using the new rule-based system.
+
+    Kept for backward compatibility. Prefer the _check_permission
+    middleware which uses _find_matching_rule directly.
+    """
+    rule = _find_matching_rule(path)
+    if rule is None:
+        return False
+    return _role_number(role) >= _role_number(rule["min_role"])
 
 
 def _json_error(message: str) -> dict[str, str]:
@@ -625,15 +720,32 @@ def _json_error(message: str) -> dict[str, str]:
 
 
 def get_user_context() -> dict[str, str]:
-    """Build a dict of user profile fields for the system prompt."""
+    """Build a dict of user profile fields for the system prompt.
+
+    Includes available data keys scoped by user role so the model
+    knows what it can query without leaking unavailable datasets.
+    """
     user = _get_current_user()
     if user is None:
         return {}
-    return {
+    context: dict = {
         "division": getattr(user, "division", "") or "",
         "region": getattr(user, "region", "") or "",
         "role": getattr(user, "role", "") or "",
     }
+    # Inject available data keys from the store if available
+    username = user.id if hasattr(user, "id") else ""
+    if username:
+        try:
+            from app.core.services import data_store
+
+            # Use an empty workspace_id — list_keys only needs role scoping
+            keys = data_store.list_keys(username, "", context["role"])
+            if keys:
+                context["available_data_keys"] = keys
+        except Exception:
+            pass  # Store may not be initialized yet during startup
+    return context
 
 
 # ---------------------------------------------------------------------------

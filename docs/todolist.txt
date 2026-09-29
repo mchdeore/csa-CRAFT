@@ -2,8 +2,8 @@
 * tests cover route access and logging
 * user access
 * database access
-* canonical names 
-* stored migrations on db modification 
-* push description log 
+* canonical names
+* stored migrations on db modification
+* push description log
 - make routes in depth and separate everything with logged routes
-- 
+-

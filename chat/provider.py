@@ -22,7 +22,12 @@ logger = logging.getLogger(__name__)
 
 
 class DeepSeekChat:
-    """Chat provider using PydanticAI agent with Azure OpenAI."""
+    """Chat provider using PydanticAI agent with Azure OpenAI.
+
+    Accepts username, workspace_id, role, flags, and query_tool so
+    user context flows into every tool call. Data scoping happens
+    automatically based on role.
+    """
 
     def __init__(
         self,
@@ -33,9 +38,18 @@ class DeepSeekChat:
         bar_chart: Any,
         pie_chart: Any,
         scatter_chart: Any,
+        heatmap: Any,
+        histogram: Any,
+        line_chart: Any,
+        boxplot: Any,
         doc_search: Any,
         text_analysis: Any,
+        query_tool: Any = None,
         user_context: dict | None = None,
+        username: str = "",
+        workspace_id: str = "",
+        user_role: str = "base_user",
+        user_flags: list[str] | None = None,
     ) -> None:
         self._weather = weather
         self._historical_weather = historical_weather
@@ -44,9 +58,18 @@ class DeepSeekChat:
         self._bar_chart = bar_chart
         self._pie_chart = pie_chart
         self._scatter_chart = scatter_chart
+        self._heatmap = heatmap
+        self._histogram = histogram
+        self._line_chart = line_chart
+        self._boxplot = boxplot
         self._doc_search = doc_search
         self._text_analysis = text_analysis
+        self._query_tool = query_tool
         self._user_context = user_context
+        self._username = username
+        self._workspace_id = workspace_id
+        self._user_role = user_role
+        self._user_flags = user_flags or []
 
     def _make_provider(self) -> tuple[OpenAIProvider, str] | tuple[None, str]:
         log_function_call("chat.provider", "_make_provider", step="create_azure_client")
@@ -105,6 +128,10 @@ class DeepSeekChat:
         agent = create_agent(deployment, provider, system_prompt)
 
         deps = ChatDeps(
+            username=self._username,
+            workspace_id=self._workspace_id,
+            user_role=self._user_role,
+            user_flags=self._user_flags,
             weather=self._weather,
             historical_weather=self._historical_weather,
             news=self._news,
@@ -112,8 +139,13 @@ class DeepSeekChat:
             bar_chart=self._bar_chart,
             pie_chart=self._pie_chart,
             scatter_chart=self._scatter_chart,
+            heatmap=self._heatmap,
+            histogram=self._histogram,
+            line_chart=self._line_chart,
+            boxplot=self._boxplot,
             doc_search=self._doc_search,
             text_analysis=self._text_analysis,
+            query_tool=self._query_tool,
         )
 
         history = _build_history(prior)

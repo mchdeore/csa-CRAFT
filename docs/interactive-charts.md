@@ -2,11 +2,13 @@
 
 ## What Was Built
 
-Three new tools for agents to display interactive charts in chat: bar chart, pie chart, scatter plot. The agent passes structured data objects through the normal tool-calling loop. Charts render inline as Plotly figures using the existing `rich_content` pipeline.
+Seven chart tools for agents to display interactive charts in chat: bar chart, pie chart, scatter plot (with polynomial fit and residuals), heatmap, histogram, line chart, box plot. The agent passes structured data objects through the normal tool-calling loop. Charts render inline as Plotly figures using the existing `rich_content` pipeline.
 
-## Why Three Separate Tools Instead of One God Tool
+All tools are also accessible via direct REST routes at `POST /tools/execute/<tool_name>` for testing without the LLM agent.
 
-**Decision:** Three distinct tools (`draw_bar_chart`, `draw_pie_chart`, `draw_scatter_chart`) instead of one `draw_chart` with a `type` parameter.
+## Why Separate Tools Instead of One God Tool
+
+**Decision:** Seven distinct tools (`draw_bar_chart`, `draw_pie_chart`, `draw_scatter_chart`, `draw_heatmap`, `draw_histogram`, `draw_line_chart`, `draw_box_plot`) instead of one `draw_chart` with a `type` parameter.
 
 **Why:**
 
@@ -16,12 +18,12 @@ Three new tools for agents to display interactive charts in chat: bar chart, pie
 
 3. **Clear tool descriptions.** The agent sees three distinct tool descriptions in the system prompt, each describing one chart type. When the user says "compare these categories with a bar chart", the model knows exactly which tool to call. No reasoning about enum values needed.
 
-4. **Extensible.** Adding a fourth chart type (line, area, histogram, heatmap) means adding one new tool class. No schema migration on the god tool. No risk of breaking existing parameter handling.
+4. **Extensible.** Adding an eighth chart type means adding one new tool class. No schema migration on the god tool. No risk of breaking existing parameter handling.
 
 **What we did NOT do:**
 
-- **No `draw_line_chart` yet.** The scatter tool with `mode="lines"` covers line charts. A dedicated line tool can be added later when users ask for time series with date axis handling.
-- **No `draw_heatmap` or `draw_histogram` yet.** Those require 2D data grids or binning logic. Wait for user demand before building.
+- No combined "god tool". Every chart type is its own function. The LLM picks reliably.
+- No chart bundling yet. Multiple charts in one rich_content would require a `chart_bundle` type. Callbacks already handle this, so a `ChartBundleTool` is a future option.
 
 ---
 
@@ -33,7 +35,7 @@ User: "Compare Q1-Q4 revenue and costs"
         ↓
 
 PydanticAI agent sees draw_bar_chart tool
-        
+
         ↓
 
 Agent calls: draw_bar_chart(
@@ -146,7 +148,121 @@ Each tool accepts typed data objects, not raw column references or file IDs. The
 
 **Why `series[].points[]` with x,y objects:** Each point is a discrete observation. Optional `label` field lets the agent annotate points (e.g. outlier names). The agent builds these from whatever data it has — no constraints on data source.
 
-**Why trendline as boolean:** Simple linear regression computed in Python. The agent shouldn't need to calculate slopes. The tool does it. When users need polynomial or exponential fits, add a `trendline_type` parameter.
+**Why trendline as boolean:** Simple linear regression computed in Python. The agent shouldn't need to calculate slopes. The tool does it. For polynomial fits, use `fit_degree` parameter.
+
+### Scatter — Polynomial Fit & Residuals
+
+The scatter tool supports two advanced parameters:
+
+- `fit_degree` (int, default 1): Degree of polynomial to fit. 1 = linear, 2 = quadratic, 3 = cubic, up to 5. Uses numpy's `polyfit` and `polyval`. R-squared displayed in hover.
+- `show_residuals` (bool, default false): Shows a residuals subplot below the scatter. Requires `trendline=true`.
+
+```json
+{
+    "title": "Polynomial Fit Example",
+    "series": [
+        {
+            "name": "Data",
+            "points": [
+                {"x": 0, "y": 1},
+                {"x": 1, "y": 3},
+                {"x": 2, "y": 7},
+                {"x": 3, "y": 13},
+                {"x": 4, "y": 21}
+            ]
+        }
+    ],
+    "trendline": true,
+    "fit_degree": 2,
+    "show_residuals": true
+}
+```
+
+**How residuals work:** Uses Plotly `make_subplots(rows=2, cols=1)`. Top row: scatter points + polynomial fit curve. Bottom row: residuals (actual - fitted) as scatter markers with a dashed zero-line at y=0. Height adjusts to 650px.
+
+**Why numpy:** `numpy.polyfit` computes least-squares polynomial coefficients. `numpy.polyval` evaluates them. Both are stable, well-tested. numpy is already a dependency (pandas uses it in excel_tool).
+
+### Heatmap Data Shape
+
+```json
+{
+    "title": "Correlation Matrix",
+    "rows": ["Revenue", "Costs", "Profit"],
+    "cols": ["Q1", "Q2", "Q3", "Q4"],
+    "values": [
+        [100, 200, 150, 300],
+        [80,  160, 130, 220],
+        [20,  40,  20,  80]
+    ],
+    "colorscale": "viridis"
+}
+```
+
+**Parameters:** `title`, `rows`, `cols`, `values` (2D grid), `x_label`, `y_label`, `colorscale` (viridis, rdbu, blues, greens, reds, ylorrd, plasma, grays, and others).
+
+**Plotly:** `go.Heatmap` with hovertemplate showing "row: X, col: Y, value: Z". Height scales with row count.
+
+**Validation:** Row labels, column labels, and values must all match dimensions. Each row must have exactly as many values as there are columns.
+
+### Histogram Data Shape
+
+```json
+{
+    "title": "Income Distribution",
+    "values": [45000, 52000, 61000, 48000, 73000],
+    "num_bins": 20,
+    "show_curve": true
+}
+```
+
+**Parameters:** `title`, `values` (flat list of numbers), `num_bins` (optional; auto-computed via Sturges' rule: `ceil(log2(n) + 1)`, minimum 5), `x_label`, `show_curve` (overlay normal distribution), `opacity` (0.3-1.0).
+
+**Plotly:** `go.Histogram`. When `show_curve=true`, computes mean and std of data, generates normal PDF curve scaled by `count * bin_width`, and overlays as `go.Scatter`.
+
+**Why Sturges' rule:** Simple, parameter-free default that works for most datasets. Agent can override with `num_bins` if needed.
+
+### Line Chart Data Shape
+
+```json
+{
+    "title": "Monthly Revenue",
+    "x_values": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+    "series": [
+        {"name": "Revenue", "y_values": [100, 120, 140, 160, 180, 200]},
+        {"name": "Costs",   "y_values": [80,  85,  95,  100, 110, 120]}
+    ],
+    "fill": false,
+    "x_is_date": false,
+    "markers": true
+}
+```
+
+**Parameters:** `title`, `x_values`, `series` (with `name` + `y_values`), `x_label`, `y_label`, `fill` (fill under line), `x_is_date` (date formatting), `markers` (show dots).
+
+**Plotly:** `go.Scatter(mode="lines+markers")`. `fill="tozeroy"` with translucent rgba when `fill=true`. `markers=false` hides dots for clean line-only view.
+
+**Validation:** x_values length must match each series' y_values length.
+
+### Box Plot Data Shape
+
+```json
+{
+    "title": "Salary by Department",
+    "groups": [
+        {"name": "Engineering", "values": [120, 130, 125, 140, 135, 200]},
+        {"name": "Sales",       "values": [80,  90,  85,  95,  88,  400]},
+        {"name": "HR",          "values": [70,  75,  72,  78,  74]}
+    ],
+    "show_points": true,
+    "horizontal": false
+}
+```
+
+**Parameters:** `title`, `groups` (list of `{name, values[]}`), `y_label`, `show_points` (overlay jittered points), `horizontal` (horizontal boxes).
+
+**Plotly:** `go.Box` with `boxpoints="all"` and `jitter=0.3` when `show_points=true`. Each group gets its own color from the shared palette.
+
+**Validation:** Groups must be non-empty. Each group must have `name` and non-empty `values`.
 
 ---
 
@@ -191,10 +307,38 @@ _CHART_COLORS = [
 
 ### Scatter Chart Layout
 
-- **Default markers:** Size 10, 70% opacity, white border. Visible but not overwhelming. Overlapping points are readable because of partial transparency.
-- **Trendline:** Simple linear regression (least squares). Computed in Python, not Plotly's built-in trendline (which has limits). Dashed line, same color as points, lighter weight (1.5px).
-- **Size by:** When `size_by="x"` or `size_by="y"`, marker size scales with value (capped 5–30px). Useful for bubble-chart-like emphasis. Default is constant size — uniform markers for correlation plots.
-- **Hover labels:** Shows custom `label` field if provided, plus x,y values. If no labels, just x,y.
+- **Default markers:** Size 10, 70% opacity, white border. Overlapping points are readable.
+- **Polynomial fit:** Uses numpy `polyfit` for least-squares polynomial regression (degree 1-5). Linear by default. Quadratic and cubic for curves. R-squared shown in fit curve hover.
+- **Residuals subplot:** 2-row layout when `show_residuals=true`. Top: data + fit. Bottom: residuals (actual - fitted) with zero reference line. Height 650px.
+- **Size by:** When `size_by="x"` or `size_by="y"`, marker size scales with value (capped 5-30px).
+- **Hover labels:** Shows custom `label` if provided, plus x,y. Fit curve shows R-squared and fitted y.
+
+### Heatmap Layout
+
+- **Color scale:** Default "viridis". Supports 15+ named color scales (rdbu, blues, greens, reds, ylorrd, plasma, grays, etc.). Unknown names fall back to viridis.
+- **Height:** Scales with row count (`max(400, len(rows) * 30 + 150)`). Reads well with many rows.
+- **Hover:** Shows "row: X, col: Y, value: Z" in clean format. Thousands separator for readability.
+- **Colorbar:** Inline legend on the right side.
+
+### Histogram Layout
+
+- **Auto-binning:** Sturges' rule (`ceil(log2(n) + 1)`, minimum 5) when `num_bins` not provided. Agent can override with a specific number.
+- **Normal curve overlay:** When `show_curve=true`, computes mean and standard deviation from data. Generates normal PDF scaled by `count * bin_width` to match histogram y-axis scale. Smooth curve overlay in contrasting color.
+- **Opacity:** Default 0.7. Adjustable 0.3-1.0 for visual clarity with overlay.
+
+### Line Chart Layout
+
+- **Mode:** `lines+markers` by default. `markers=false` for clean line-only view.
+- **Fill:** `fill="tozeroy"` with translucent rgba fill when enabled. Hex-to-rgba conversion preserves color identity with 15% opacity fill.
+- **Date support:** `x_is_date=true` sets x-axis type to "date" for proper time-series formatting.
+- **Hover:** `hovermode="x unified"` shows all series values at each x point simultaneously.
+
+### Box Plot Layout
+
+- **Orientation:** Vertical by default. `horizontal=true` swaps axes. Height scales with group count (`max(350, len(groups) * 60 + 150)`).
+- **Points overlay:** `boxpoints="all"` with `jitter=0.3` when `show_points=true`. Individual data points visible alongside summary statistics.
+- **Colors:** Each group gets a distinct color from the shared 12-color palette.
+- **Hover:** Shows group name and value. Clean template with no extra clutter.
 
 ---
 
@@ -204,11 +348,20 @@ _CHART_COLORS = [
 
 | File | Change |
 |------|--------|
-| `tools/interactive_charts.py` | **New.** Three tool classes + figure builders |
-| `tools/__init__.py` | Added exports for BarChartTool, PieChartTool, ScatterChartTool |
-| `chat/agent.py` | Added 3 fields to ChatDeps, 3 `_register_*` functions, 3 `@agent.tool` wrappers |
-| `chat/provider.py` | DeepSeekChat.__init__ accepts 3 new tool args, passes to ChatDeps |
-| `app/core/services.py` | Instantiates 3 chart tool singletons, passes to DeepSeekChat |
+| `tools/charts/bar.py` | Bar chart tool |
+| `tools/charts/pie.py` | Pie chart tool |
+| `tools/charts/scatter.py` | Scatter chart tool with polynomial fit and residuals |
+| `tools/charts/heatmap.py` | **New.** Heatmap tool |
+| `tools/charts/histogram.py` | **New.** Histogram tool |
+| `tools/charts/line.py` | **New.** Line chart tool |
+| `tools/charts/boxplot.py` | **New.** Box plot tool |
+| `tools/charts/_shared.py` | Shared helpers: colors, validation, message builders |
+| `tools/charts/__init__.py` | Exports all 7 chart tools |
+| `tools/__init__.py` | Re-exports all chart tools |
+| `tools/routes.py` | Registers all tools in `POST /tools/execute/<name>` and `GET /tools/list` |
+| `chat/agent.py` | ChatDeps has 7 chart tool fields, 7 `_register_*` functions |
+| `chat/provider.py` | DeepSeekChat accepts 7 chart tool args |
+| `app/core/services.py` | Instantiates 7 chart tool singletons |
 
 ### What Did NOT Change
 
@@ -216,13 +369,13 @@ _CHART_COLORS = [
 - **Callbacks:** `chat/callbacks.py` already processes all `rich_content` with `type: "chart"`. No change.
 - **Routes:** No new routes. Charts flow through the existing `/chat/send` route.
 - **Store:** Charts serialize into `content_json` like weather and excel charts. No schema change.
-- **Architecture test:** Auto-discovers `tools/interactive_charts.py` from the `tools/` folder. No test update needed.
+- **Architecture test:** Auto-discovers new files in `tools/charts/`. No test update needed.
 
-### Why No New Routes
+### Why Routes for Direct Execution
 
-Charts aren't a user-facing endpoint. The user doesn't say "I want to hit `/chart/bar`". The user says "compare these numbers" and the agent decides to call `draw_bar_chart`. The tool executes inside the agent's tool-calling loop during `/chat/send`. Same pattern as weather, news, excel.
+Tools are also accessible via `POST /tools/execute/<tool_name>` for direct testing without the LLM agent. `GET /tools/list` returns all registered tools with descriptions and parameters. This is for debugging, testing, and codepath tracing — every tool invocation appears in structured logs with `caller_module`, `caller_function`, and `cause` fields.
 
-Adding a route would create a public API for chart generation that nothing calls. YAGNI. If a future feature needs chart-as-a-service, add `POST /chat/tools/chart` to `chat/routes.py` then. For now, the agent is the only caller.
+The agent path (`/chat/send` → agent → tool) and the direct route path (`POST /tools/execute/<tool_name>`) are independent. Both hit the same tool instance. Both produce the same rich_content. Both are logged.
 
 ---
 
@@ -259,23 +412,23 @@ Validation errors become `tool_result` messages with `{"error": "..."}`. The LLM
 
 | What | How |
 |------|-----|
-| **Line chart** | New `LineChartTool` with `mode="lines+markers"`. Good for time series. |
 | **Stacked bars** | Add `stacked: bool` parameter to `BarChartTool`. Change `barmode` to `"stack"`. |
-| **Histogram** | New `HistogramChartTool` with `values[]` and `bins` parameter. Plotly's `go.Histogram`. |
-| **Heatmap** | New `HeatmapChartTool` with 2D `grid[][]` and `row_labels[]`/`col_labels[]`. |
-| **Combined charts** | New `ChartBundleTool` that accepts multiple chart specs and returns `type: "chart_bundle"` rich_content. Callbacks already handle `chart_bundle` type (see `_process_rich_content`). |
+| **Stacked area** | Add `stackgroup` parameter to `LineChartTool`. Plotly supports stacked area fills. |
+| **Combined charts** | New `ChartBundleTool` that accepts multiple chart specs and returns `type: "chart_bundle"` rich_content. Callbacks already handle `chart_bundle` type. |
 | **Annotation support** | Add `annotations[]` to any tool — dicts with `{x, y, text}`. Plotly annotations API. |
 | **Axis range** | Add `x_range: [min, max]` and `y_range: [min, max]` to all tools. Useful when agent knows data bounds. |
 | **Download as PNG** | Plotly's `config.toImageButtonOptions`. Already available in chart toolbar. Add to `config` dict in `build_chart_message`. |
 | **Dark mode** | Plotly template parameter. Set `template="plotly_dark"` in layout. Wire to app theme setting. |
+| **Higher-degree fits** | Scatter already supports up to degree 5. For higher degrees (6+) or splines, add scipy dependency later. |
 
 ---
 
 ## Key Decisions Summary
 
-1. **Three tools, not one.** Function name = chart type. LLM picks the right one reliably.
-2. **No new routes.** Charts are tool output, not API endpoints. Flow through existing `/chat/send`.
-3. **No rendering changes.** Existing chart pipeline handles Plotly figures for all types.
+1. **Seven tools, not one.** Function name = chart type. LLM picks the right one reliably.
+2. **Direct routes for testing.** `POST /tools/execute/<tool_name>` and `GET /tools/list` for debugging without the agent loop.
+3. **No rendering changes.** Existing `type: "chart"` pipeline handles all Plotly figures.
 4. **Typed data objects.** Agent constructs data, tool validates and renders. No raw column references.
-5. **Structured errors.** LLM sees specific error messages and retries with corrected arguments.
-6. **No config needed.** Tools are pure data→figure transforms. Zero API keys, zero URLs.
+5. **Polynomial fits with numpy.** Degrees 1-5 via `polyfit`/`polyval`. R-squared in hover. Residual subplot for fit quality.
+6. **Structured errors.** LLM sees specific error messages and retries with corrected arguments.
+7. **No config needed.** All chart tools are pure data→figure transforms. Zero API keys.

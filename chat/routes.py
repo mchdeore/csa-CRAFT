@@ -42,7 +42,20 @@ def _register_send_route(flask_app: Flask) -> None:
             step="call_provider",
             message_count=len(messages),
         )
+        # Set user context on the provider so tools can scope data by role
         chat_provider._user_context = get_user_context()
+        chat_provider._username = username
+        chat_provider._workspace_id = workspace_id
+        # Read role from the authenticated user — default to base_user
+        from flask_login import current_user
+
+        if (
+            current_user
+            and hasattr(current_user, "is_authenticated")
+            and current_user.is_authenticated
+        ):
+            chat_provider._user_role = getattr(current_user, "role", "base_user") or "base_user"
+            chat_provider._user_flags = getattr(current_user, "flags", []) or []
         response = chat_provider.get_response(messages)
         if response.text:
             messages.append({"role": "assistant", "content": response.text})

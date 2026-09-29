@@ -22,9 +22,13 @@ def _register_execute_route(flask_app: Flask) -> None:
     def execute_tool(tool_name: str) -> tuple:
         from app.core.services import (
             bar_chart_tool,
+            boxplot_tool,
             document_search_tool,
             excel_tool,
+            heatmap_tool,
+            histogram_tool,
             historical_weather_tool,
+            line_chart_tool,
             news_tool,
             pie_chart_tool,
             scatter_chart_tool,
@@ -40,6 +44,10 @@ def _register_execute_route(flask_app: Flask) -> None:
             "draw_bar_chart": ("tools.charts.bar", bar_chart_tool),
             "draw_pie_chart": ("tools.charts.pie", pie_chart_tool),
             "draw_scatter_chart": ("tools.charts.scatter", scatter_chart_tool),
+            "draw_heatmap": ("tools.charts.heatmap", heatmap_tool),
+            "draw_histogram": ("tools.charts.histogram", histogram_tool),
+            "draw_line_chart": ("tools.charts.line", line_chart_tool),
+            "draw_box_plot": ("tools.charts.boxplot", boxplot_tool),
             "search_documents": ("tools.documents.search", document_search_tool),
             "read_document": ("tools.documents.reader", text_analysis_tool),
         }
@@ -79,7 +87,6 @@ def _register_execute_route(flask_app: Flask) -> None:
 def _register_list_route(flask_app: Flask) -> None:
     @flask_app.route("/tools/list", methods=["GET"])
     def list_tools() -> tuple:
-
         tools = {
             "get_weather": {
                 "description": "Weather forecast",
@@ -106,8 +113,24 @@ def _register_list_route(flask_app: Flask) -> None:
                 "params": ["title", "slices"],
             },
             "draw_scatter_chart": {
-                "description": "Scatter plot",
-                "params": ["title", "series"],
+                "description": "Scatter plot with polynomial fit and residuals",
+                "params": ["title", "series", "fit_degree", "show_residuals"],
+            },
+            "draw_heatmap": {
+                "description": "Heatmap",
+                "params": ["title", "rows", "cols", "values", "colorscale"],
+            },
+            "draw_histogram": {
+                "description": "Histogram",
+                "params": ["title", "values", "num_bins", "show_curve"],
+            },
+            "draw_line_chart": {
+                "description": "Line chart",
+                "params": ["title", "x_values", "series", "fill", "markers"],
+            },
+            "draw_box_plot": {
+                "description": "Box plot",
+                "params": ["title", "groups", "show_points"],
             },
             "search_documents": {
                 "description": "Document search",

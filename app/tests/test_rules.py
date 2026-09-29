@@ -148,12 +148,15 @@ class TestCodeQuality:
 
     @staticmethod
     def _check_length(fp: Path, node: ast.AST, violations: list[str]) -> None:
-        if not hasattr(node, "end_lineno") or node.end_lineno is None:
+        # pyright doesn't understand that ast.FunctionDef inherits end_lineno/lineno
+        func_node = node  # type: ignore[assignment]
+        if not hasattr(func_node, "end_lineno") or func_node.end_lineno is None:
             return
-        length = node.end_lineno - node.lineno + 1
+        length = func_node.end_lineno - func_node.lineno + 1
         if length > MAX_FUNCTION_LINES:
             violations.append(
-                f"{fp.name}:{node.lineno} {node.name} is {length} lines (max {MAX_FUNCTION_LINES})"
+                f"{fp.name}:{func_node.lineno} {func_node.name} "
+                f"is {length} lines (max {MAX_FUNCTION_LINES})"
             )
 
     def test_imports_in_requirements(self) -> None:
@@ -245,11 +248,13 @@ class TestCodeQuality:
 
     @staticmethod
     def _check_complexity(fp: Path, node: ast.AST, violations: list[str]) -> None:
+        # pyright doesn't know ast.FunctionDef has lineno/name on AST base type
+        func_node = node  # type: ignore[assignment]
         cc = _count_complexity(node)
         if cc > MAX_CYCLOMATIC_COMPLEXITY:
             rel = fp.relative_to(PROJECT_ROOT)
             violations.append(
-                f"{rel}:{node.lineno} {node.name} "
+                f"{rel}:{func_node.lineno} {func_node.name} "  # type: ignore[operator, union-attr]
                 f"has complexity {cc} (max {MAX_CYCLOMATIC_COMPLEXITY})"
             )
 

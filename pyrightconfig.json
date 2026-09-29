@@ -3,7 +3,7 @@
   "venvPath": ".",
   "venv": ".venv",
   "include": ["."],
-  "exclude": ["venv", ".venv", "tests", "workspaces"],
+  "exclude": ["venv", ".venv", "**/tests", "workspaces"],
   "reportMissingTypeStubs": false,
   "reportUnknownParameterType": "warning",
   "reportUnknownVariableType": "warning",

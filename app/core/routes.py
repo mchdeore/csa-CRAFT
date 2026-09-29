@@ -38,7 +38,7 @@ def _register_debug_routes(app: Flask) -> None:
             routes.append(
                 {
                     "path": rule.rule,
-                    "methods": sorted(rule.methods - {"OPTIONS", "HEAD"}),
+                    "methods": sorted((rule.methods or set()) - {"OPTIONS", "HEAD"}),
                     "endpoint": rule.endpoint,
                 }
             )

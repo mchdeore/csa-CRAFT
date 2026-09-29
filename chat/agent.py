@@ -8,7 +8,15 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 from app.core.logging import log_function_call
-from tools.charts import BarChartTool, PieChartTool, ScatterChartTool
+from tools.charts import (
+    BarChartTool,
+    BoxPlotTool,
+    HeatmapTool,
+    HistogramTool,
+    LineChartTool,
+    PieChartTool,
+    ScatterChartTool,
+)
 from tools.documents import DocumentSearchTool, ExcelTool, TextAnalysisTool
 from tools.news import NewsTool
 from tools.weather import HistoricalWeatherTool, WeatherTool
@@ -16,17 +24,31 @@ from tools.weather import HistoricalWeatherTool, WeatherTool
 
 @dataclass
 class ChatDeps:
-    """Dependencies injected into every tool call."""
+    """Dependencies injected into every tool call.
 
-    weather: WeatherTool
-    historical_weather: HistoricalWeatherTool
-    news: NewsTool
-    excel: ExcelTool
-    bar_chart: BarChartTool
-    pie_chart: PieChartTool
-    scatter_chart: ScatterChartTool
-    doc_search: DocumentSearchTool
-    text_analysis: TextAnalysisTool
+    username, workspace_id, user_role are set by the route handler
+    before calling get_response. They flow into tool closures so
+    every tool can scope data and check permissions by role.
+    """
+
+    username: str = ""
+    workspace_id: str = ""
+    user_role: str = "base_user"
+    user_flags: list[str] = field(default_factory=list)
+    weather: WeatherTool | None = None
+    historical_weather: HistoricalWeatherTool | None = None
+    news: NewsTool | None = None
+    excel: ExcelTool | None = None
+    bar_chart: BarChartTool | None = None
+    pie_chart: PieChartTool | None = None
+    scatter_chart: ScatterChartTool | None = None
+    heatmap: HeatmapTool | None = None
+    histogram: HistogramTool | None = None
+    line_chart: LineChartTool | None = None
+    boxplot: BoxPlotTool | None = None
+    doc_search: DocumentSearchTool | None = None
+    text_analysis: TextAnalysisTool | None = None
+    query_tool: Any = None
     rich_contents: list[dict] = field(default_factory=list)
 
 
@@ -67,8 +89,13 @@ def create_agent(
     _register_bar_chart(agent)
     _register_pie_chart(agent)
     _register_scatter_chart(agent)
+    _register_heatmap(agent)
+    _register_histogram(agent)
+    _register_line_chart(agent)
+    _register_boxplot(agent)
     _register_doc_search(agent)
     _register_text_analysis(agent)
+    _register_query_data(agent)
     return agent
 
 
@@ -219,9 +246,14 @@ def _register_scatter_chart(agent: Agent[ChatDeps, str]) -> None:
         x_label: str = "",
         y_label: str = "",
         trendline: bool = False,
+        fit_degree: int = 1,
+        show_residuals: bool = False,
         size_by: str = "none",
     ) -> str:
-        """Draw an interactive scatter plot from x,y point series."""
+        """Draw an interactive scatter plot from x,y point series.
+
+        Supports polynomial fit and residuals.
+        """
         if not series:
             return "Error: series data is required for a scatter chart."
         args = {
@@ -230,11 +262,137 @@ def _register_scatter_chart(agent: Agent[ChatDeps, str]) -> None:
             "x_label": x_label,
             "y_label": y_label,
             "trendline": trendline,
+            "fit_degree": fit_degree,
+            "show_residuals": show_residuals,
             "size_by": size_by,
             "tool_call_id": "",
         }
         tool_msg, rich = ctx.deps.scatter_chart.execute(args)
-        _log_tool("draw_scatter_chart", {"title": title}, rich is not None)
+        _log_tool(
+            "draw_scatter_chart",
+            {"title": title, "fit_degree": fit_degree},
+            rich is not None,
+        )
+        _collect(ctx, rich)
+        return _extract(tool_msg)
+
+
+def _register_heatmap(agent: Agent[ChatDeps, str]) -> None:
+    @agent.tool
+    def draw_heatmap(
+        ctx: RunContext[ChatDeps],
+        title: str = "Chart",
+        rows: list[str] | None = None,
+        cols: list[str] | None = None,
+        values: list[list] | None = None,
+        x_label: str = "",
+        y_label: str = "",
+        colorscale: str = "viridis",
+    ) -> str:
+        """Draw an interactive heatmap from a 2D grid of values."""
+        if not rows or not cols or not values:
+            return "Error: rows, cols, and values are required for a heatmap."
+        args = {
+            "title": title,
+            "rows": rows,
+            "cols": cols,
+            "values": values,
+            "x_label": x_label,
+            "y_label": y_label,
+            "colorscale": colorscale,
+            "tool_call_id": "",
+        }
+        tool_msg, rich = ctx.deps.heatmap.execute(args)
+        _log_tool("draw_heatmap", {"title": title}, rich is not None)
+        _collect(ctx, rich)
+        return _extract(tool_msg)
+
+
+def _register_histogram(agent: Agent[ChatDeps, str]) -> None:
+    @agent.tool
+    def draw_histogram(
+        ctx: RunContext[ChatDeps],
+        title: str = "Chart",
+        values: list[float] | None = None,
+        num_bins: int | None = None,
+        x_label: str = "",
+        show_curve: bool = False,
+        opacity: float = 0.7,
+    ) -> str:
+        """Draw an interactive histogram from a list of numeric values."""
+        if not values:
+            return "Error: values are required for a histogram."
+        args = {
+            "title": title,
+            "values": values,
+            "num_bins": num_bins,
+            "x_label": x_label,
+            "show_curve": show_curve,
+            "opacity": opacity,
+            "tool_call_id": "",
+        }
+        tool_msg, rich = ctx.deps.histogram.execute(args)
+        _log_tool("draw_histogram", {"title": title}, rich is not None)
+        _collect(ctx, rich)
+        return _extract(tool_msg)
+
+
+def _register_line_chart(agent: Agent[ChatDeps, str]) -> None:
+    @agent.tool
+    def draw_line_chart(
+        ctx: RunContext[ChatDeps],
+        title: str = "Chart",
+        x_values: list[str] | None = None,
+        series: list[dict] | None = None,
+        x_label: str = "",
+        y_label: str = "",
+        fill: bool = False,
+        x_is_date: bool = False,
+        markers: bool = True,
+    ) -> str:
+        """Draw an interactive line chart from ordered series data."""
+        if not x_values or not series:
+            return "Error: x_values and series are required for a line chart."
+        args = {
+            "title": title,
+            "x_values": x_values,
+            "series": series,
+            "x_label": x_label,
+            "y_label": y_label,
+            "fill": fill,
+            "x_is_date": x_is_date,
+            "markers": markers,
+            "tool_call_id": "",
+        }
+        tool_msg, rich = ctx.deps.line_chart.execute(args)
+        _log_tool("draw_line_chart", {"title": title}, rich is not None)
+        _collect(ctx, rich)
+        return _extract(tool_msg)
+
+
+def _register_boxplot(agent: Agent[ChatDeps, str]) -> None:
+    @agent.tool
+    def draw_box_plot(
+        ctx: RunContext[ChatDeps],
+        title: str = "Chart",
+        groups: list[dict] | None = None,
+        y_label: str = "",
+        show_points: bool = False,
+        horizontal: bool = False,
+    ) -> str:
+        """Draw an interactive box plot comparing distributions across groups."""
+        if not groups:
+            return "Error: groups are required for a box plot."
+        args = {
+            "title": title,
+            "groups": groups,
+            "y_label": y_label,
+            "show_points": show_points,
+            "horizontal": horizontal,
+            "tool_call_id": "",
+        }
+        tool_msg, rich = ctx.deps.boxplot.execute(args)
+        _log_tool("draw_box_plot", {"title": title}, rich is not None)
         _collect(ctx, rich)
         return _extract(tool_msg)
 
@@ -253,4 +411,47 @@ def _register_text_analysis(agent: Agent[ChatDeps, str]) -> None:
         tool_msg, rich = ctx.deps.text_analysis.execute(args)
         _log_tool("read_document", {"path": path}, rich is not None)
         _collect(ctx, rich)
+        return _extract(tool_msg)
+
+
+def _register_query_data(agent: Agent[ChatDeps, str]) -> None:
+    """Register the unified query_data tool on the agent.
+
+    The tool lets the model query, store, list, or delete data by key.
+    The store scopes everything by user role — base_user sees own workspace
+    data + public datasets, admin sees everything.
+    """
+
+    @agent.tool
+    def query_data(
+        ctx: RunContext[ChatDeps],
+        key: str = "",
+        action: str = "query",
+        value: dict | None = None,
+    ) -> str:
+        """Query, store, list, or delete data by key name.
+
+        Use action='query' to read data, action='store' to save data,
+        action='list' to see available keys, action='delete' to remove data.
+
+        For store action, provide a value dict with the data to save.
+        """
+        qt = ctx.deps.query_tool
+        if qt is None:
+            return "Data tool not available."
+
+        # Set user context from deps so the tool scopes data correctly
+        qt.set_user(
+            username=ctx.deps.username,
+            workspace_id=ctx.deps.workspace_id,
+            user_role=ctx.deps.user_role,
+            user_flags=ctx.deps.user_flags,
+        )
+
+        args: dict[str, Any] = {"action": action, "key": key}
+        if value is not None:
+            args["value"] = value
+
+        tool_msg, _ = qt.execute(args)
+        _log_tool("query_data", {"action": action, "key": key}, False)
         return _extract(tool_msg)

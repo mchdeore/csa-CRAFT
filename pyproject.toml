@@ -34,6 +34,7 @@ ignore = [
 "app/tests/*" = ["ANN"]
 "*/tests/*" = ["ANN"]
 "storage/store.py" = ["SIM105"]
+"tools/charts/scatter.py" = ["SIM108"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15
