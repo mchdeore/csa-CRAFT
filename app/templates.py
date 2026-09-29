@@ -17,5 +17,6 @@ def make_layout() -> html.Div:
                 },
             ),
             html.Div(id="page-content"),
+            html.Div(id="demo-page-content"),
         ]
     )

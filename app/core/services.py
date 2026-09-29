@@ -27,7 +27,7 @@ from tools.charts import (
     PieChartTool,
     ScatterChartTool,
 )
-from tools.documents import DocumentSearchTool, ExcelTool, TextAnalysisTool
+from tools.documents import DocumentSearchTool, ExcelTool, IngestDocumentTool, TextAnalysisTool
 from tools.news import NewsTool
 from tools.weather import HistoricalWeatherTool, WeatherTool
 
@@ -64,6 +64,7 @@ data_sources: dict[str, DataSource] = {
 }
 document_search_tool = DocumentSearchTool(data_sources)
 text_analysis_tool = TextAnalysisTool(data_sources)
+ingest_document_tool = IngestDocumentTool()
 
 # Unified data store + query tool for workspace-scoped and global data
 data_store = SqliteDataStore()
@@ -86,5 +87,6 @@ chat_provider: ChatProvider = DeepSeekChat(
     boxplot=boxplot_tool,
     doc_search=document_search_tool,
     text_analysis=text_analysis_tool,
+    ingest_document=ingest_document_tool,
     query_tool=query_tool,
 )

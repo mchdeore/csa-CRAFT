@@ -17,7 +17,7 @@ from tools.charts import (
     PieChartTool,
     ScatterChartTool,
 )
-from tools.documents import DocumentSearchTool, ExcelTool, TextAnalysisTool
+from tools.documents import DocumentSearchTool, ExcelTool, IngestDocumentTool, TextAnalysisTool
 from tools.news import NewsTool
 from tools.weather import HistoricalWeatherTool, WeatherTool
 
@@ -48,6 +48,7 @@ class ChatDeps:
     boxplot: BoxPlotTool | None = None
     doc_search: DocumentSearchTool | None = None
     text_analysis: TextAnalysisTool | None = None
+    ingest_document: IngestDocumentTool | None = None
     query_tool: Any = None
     rich_contents: list[dict] = field(default_factory=list)
 
@@ -95,6 +96,7 @@ def create_agent(
     _register_boxplot(agent)
     _register_doc_search(agent)
     _register_text_analysis(agent)
+    _register_ingest_document(agent)
     _register_query_data(agent)
     return agent
 
@@ -412,6 +414,37 @@ def _register_text_analysis(agent: Agent[ChatDeps, str]) -> None:
         _log_tool("read_document", {"path": path}, rich is not None)
         _collect(ctx, rich)
         return _extract(tool_msg)
+
+
+def _register_ingest_document(agent: Agent[ChatDeps, str]) -> None:
+    @agent.tool
+    def ingest_document(
+        ctx: RunContext[ChatDeps],
+        contents: str = "",
+        filename: str = "",
+    ) -> str:
+        """Ingest a CADRe Part A document and extract numeric parameters.
+
+        Provide base64-encoded file contents and filename.
+        """
+        if not contents or not filename:
+            return "Error: contents and filename are required."
+        if ctx.deps.ingest_document is None:
+            return "Document ingestion tool not available."
+
+        from tools.documents.ingest import ingest_document as ingest_fn
+
+        result = ingest_fn(contents, filename)
+        if result.get("error"):
+            return f"Error: {result['error']}"
+
+        fields = result.get("fields", {})
+        field_list = ", ".join(
+            f"{k}={v}" for k, v in sorted(fields.items())
+        )
+        return (
+            f"Extracted {len(fields)} fields from {filename}: {field_list}"
+        )
 
 
 def _register_query_data(agent: Agent[ChatDeps, str]) -> None:

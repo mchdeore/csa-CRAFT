@@ -1,0 +1,1 @@
+"""Risk analysis tools package — register parsing and visualization."""

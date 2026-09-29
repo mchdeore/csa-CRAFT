@@ -44,6 +44,7 @@ class DeepSeekChat:
         boxplot: Any,
         doc_search: Any,
         text_analysis: Any,
+        ingest_document: Any = None,
         query_tool: Any = None,
         user_context: dict | None = None,
         username: str = "",
@@ -64,6 +65,7 @@ class DeepSeekChat:
         self._boxplot = boxplot
         self._doc_search = doc_search
         self._text_analysis = text_analysis
+        self._ingest_document = ingest_document
         self._query_tool = query_tool
         self._user_context = user_context
         self._username = username
@@ -145,6 +147,7 @@ class DeepSeekChat:
             boxplot=self._boxplot,
             doc_search=self._doc_search,
             text_analysis=self._text_analysis,
+            ingest_document=self._ingest_document,
             query_tool=self._query_tool,
         )
 

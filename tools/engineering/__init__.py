@@ -1,0 +1,1 @@
+"""Engineering tools package — compliance checks and version diffing."""

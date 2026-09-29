@@ -16,11 +16,13 @@ from app.core.logging import log_function_call
 def register_all(app: Flask) -> None:
     from auth.routes import register_routes as register_auth_routes
     from chat.routes import register_routes as register_chat_routes
+    from demo.routes import register_routes as register_demo_routes
     from storage.routes import register_routes as register_storage_routes
     from tools.routes import register_routes as register_tool_routes
 
     register_auth_routes(app)
     register_chat_routes(app)
+    register_demo_routes(app)
     register_storage_routes(app)
     register_tool_routes(app)
     _register_debug_routes(app)

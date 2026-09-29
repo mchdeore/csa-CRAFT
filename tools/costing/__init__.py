@@ -1,0 +1,1 @@
+"""Costing tools package — parametric comparison engine."""

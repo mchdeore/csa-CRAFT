@@ -1,0 +1,16 @@
+boss needs:
+- table of requirements, how i chose to implement them (code in this codebase is just 
+a scratchpad for now dont mention it as completed just consolidated requirements to 
+dependencies that allow us to implement it and rationalle behind each one, and if
+irrelenvant now or blocked by other requirements we need IT to build first or more data
+to train on mention blockage and how we have abstracted system to accomodate it later)
+- dependency stack and choices behind why we chose them
+- architecture diagram (functional blocks), layered views and architecture of each 
+component (ie file) in the codebase and the flow though it, dont know what standard 
+practice is for different layers of views so help me decide how to go about it 
+- usecases mapped to requirements and dependencies and how usecases can be executed in
+the system with the views and dependencies and rationalle 
+- tracability table of requirements and dependencies and how they are mapped to usecases
+
+help me refine these tasks into a more concrete plan and timeline before we start working 
+on building the deliverable for it 

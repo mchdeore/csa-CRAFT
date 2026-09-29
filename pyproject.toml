@@ -58,3 +58,7 @@ omit = [
 [tool.coverage.report]
 fail_under = 80
 show_missing = true
+
+[project.scripts]
+demo-seed = "storage.database.demo_seed:main"
+demo-run = "demo.runner:main"
