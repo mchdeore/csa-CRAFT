@@ -1,7 +1,5 @@
 # CRAFT — Pitch Package
 
-*Audited retrieval-augmented AI assistant for CSA mission engineering and finance (bilingual EN/FR, cited answers, HITL-gated).*
-
 ## 1. Containers (L2)
 
 <div class="figure">
