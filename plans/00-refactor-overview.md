@@ -13,10 +13,11 @@ Goal of this refactor: align to the pitch, delete the demo garbage, bring the pr
 
 ## Agent-runtime decision (locked)
 
-- **Azure OpenAI SDK direct.** No LangChain, no LangGraph, no `pydantic-ai`, no `environs`, no `pydantic-settings`. Zero pydantic in the install.
-- A ~250-line ReAct loop in `chat/agent.py` on top of `openai.AsyncAzureOpenAI` covers one primary agent + ~10 tools (pitch scope).
-- HITL via a SQLite `approvals` table + resume route (same mechanics the pitch wants from a Postgres queue at end state).
+- **Microsoft Agent Framework (`agent-framework`)** is the primary agent runtime, chosen as the Azure-native blessed path (successor to Semantic Kernel, GA April 2026, `1.12.x` as of July 2026). First-class Azure OpenAI integration via `agent-framework-openai`; Microsoft Foundry integration via `agent-framework-foundry` if that layer is in-scope at execution time (plan 03 marks this TBD).
+- No LangChain, no LangGraph, no `pydantic-ai`, no `environs`, no `pydantic-settings`. **`pydantic` is permitted as a transitive dep** pulled in by Agent Framework's function-tool decorator (which uses `typing.Annotated[..., pydantic.Field(...)]` for parameter descriptions). The rule softens from "zero pydantic in the install" to **"no direct `import pydantic` in our source"** — plan 12 enforces.
+- HITL via Agent Framework's native function-approval primitive (`approval_mode="always_require"` on risky function tools; the agent run returns `user_input_requests` instead of invoking the tool). Persistence + resume stay on our side (SQLite `approvals` table + admin route — plan 13), same mechanics the pitch wants from a Postgres queue at end state.
 - Protocols stay (`⟨I⟩ Tool`, `⟨I⟩ DataSource`, `⟨I⟩ ChatProvider`, `⟨I⟩ WorkspaceStore`, `⟨I⟩ AgentActionLog`) so a different runtime can slot in later without touching routes/audit/data.
+- **Fallback.** The SDK-direct hand roll (`openai.AsyncAzureOpenAI` + ~250-line ReAct loop) is kept as a documented alternate `⟨I⟩ ChatProvider` implementation — see `docs-depo/exploration/azure-openai-sdk-usage.md`. If Agent Framework access is blocked (preview access, licensing, air-gap), one class swap in `app/core/services.py` restores the project without touching routes / audit / data.
 
 ## Env naming conventions
 
@@ -31,7 +32,7 @@ Goal of this refactor: align to the pitch, delete the demo garbage, bring the pr
 |---|---|---|---|
 | 01 | `01-config-stdlib-dotenv.md` | — | typed `settings` object; stdlib + `python-dotenv`; delete every other `os.environ.get` |
 | 02 | `02-app-factory.md` | 01 | `create_app()` factory; thin `app.py` |
-| 03 | `03-agent-azure-sdk.md` | 01, 02 | drop `pydantic-ai`; ~250-line ReAct loop on Azure OpenAI SDK |
+| 03 | `03-agent-azure-sdk.md` | 01, 02 | drop `pydantic-ai`; adopt Microsoft Agent Framework (`agent-framework`) as the primary agent runtime |
 | 04 | `04-audit-hash-chained.md` | 01, 03 | formalise `AgentActionLog`; hash-chained append-only JSONL |
 | 05 | `05-users-seeder.md` | 01 | delete `DEFAULT_USERS`; `scripts/seed.py` writes SQLite |
 | 06 | `06-permissions-declarative.md` | 01 | `permissions.json`; de-dupe role levels |
@@ -52,22 +53,25 @@ Each plan file is standalone — a reader following it does not need to open ano
 
 ## Final dependency list after this refactor
 
-**Runtime:** `dash`, `flask`, `flask-login`, `openai`, `pandas`, `plotly`, `python-dotenv`, `requests`, `werkzeug`, `msal`, `pdfplumber`, `python-docx`
+**Runtime (direct):** `dash`, `flask`, `flask-login`, `openai`, `pandas`, `plotly`, `python-dotenv`, `requests`, `werkzeug`, `msal`, `pdfplumber`, `python-docx`, `agent-framework` (umbrella — includes `agent-framework-core` and `agent-framework-openai`; `agent-framework-foundry` added separately if Foundry is in-scope — TBD per plan 03).
+
+**Runtime (transitive, acknowledged):** Agent Framework pulls `pydantic`, `pydantic-core`, `httpx`, `azure-core`, and may deepen the `openai` sub-tree — roughly 5–10 extra packages in the install footprint. We tolerate the install; `test_imports.py` still forbids direct `import pydantic` in our source (plan 12).
 
 **Dev:** `ruff`, `pyright`, `bandit`, `pip-audit`, `detect-secrets`, `pytest`, `pytest-cov`, `pre-commit`
 
 **Build:** `hatchling`
 
-**Removed:** `pydantic-ai`, `pydantic-ai[openai]`, any transitive pydantic (nothing in the install pulls it anymore).
+**Removed:** `pydantic-ai`, `pydantic-ai[openai]`.
 
 ## Verification across the whole refactor
 
 Once plans 01–14 are shipped:
 
 - `grep -rE "os\.environ|os\.getenv" --include='*.py'` → only `app/core/config.py`.
-- `grep -rE "^import pydantic\|^from pydantic " --include='*.py'` → zero.
+- `grep -rE "^import pydantic\|^from pydantic " --include='*.py'` → zero *in our source* (transitive install via `agent-framework` is allowed).
 - `grep -rn "pydantic_ai\|pydantic-ai\|langchain\|langgraph" --include='*.py'` → zero.
-- `pip list | grep -iE "pydantic|langchain|langgraph"` → zero.
+- `pip list | grep -iE "langchain|langgraph|pydantic_ai"` → zero. (`pydantic` *is* expected here as a transitive of `agent-framework`.)
+- `pip list | grep -iE "^agent-framework"` → non-empty.
 - `grep -rE "DEFAULT_USERS|CHE-DSV4P|cheddar-internal-dev|cheddar-dev-secret-key"` → zero.
 - `grep -rEi "weather|open.?meteo|guardian|cohere|rerank|montreal"` → zero outside `.git/`.
 - `grep -rE '\\bCHEDDAR_[A-Z_]+'` → zero.
@@ -82,6 +86,7 @@ Once plans 01–14 are shipped:
 - "I want the refactor to be true to this" (CRAFT pitch, attached).
 - "ideally llanggraph is our agent harness and runtime as a mature solution but suggest something else if that's senseless when it comes to actually coding it".
 - "if there's an azure solution we should try and use it to reduce dependency surface area and code simplicity".
+- "no lets use azure explicitly ... modify plans as if we already have it or just need to install it" — the Agent Framework pivot. We now adopt Microsoft Agent Framework (`agent-framework`) as the primary runtime from day one and treat the SDK-direct hand roll as the documented fallback.
 - "we also only have local sql and no external data connectors for now but make sure to keep abstractions so it can be added later".
 - "no hardcoding anything though clean that up I think that's going to cause a lot of cleanup issues later".
 - "we are using good developer practices like abstract var names in the env, and proper routes".
@@ -91,8 +96,14 @@ Once plans 01–14 are shipped:
 - "i feel like there is too many data folders... rename docs-depo to dev-docs-depo, delete zzz pitch docs, put all demo, research, plans and things of that nature in dev-doc-depo" (plan 15).
 - "make another plan to review and implement this branches test structure feat/development-rules-and-test-suite" (plan 16).
 
-**Why Azure OpenAI SDK beats LangGraph for this scope:**
-LangChain pulls `pydantic` as a hard transitive dep; at ~1 primary agent + 10 tools the framework is net overhead. The SDK gives us tool-calling, streaming, structured outputs, and a Content Safety hook direct. HITL interrupt and checkpointing fit in ~50 extra lines against our existing SQLite store. Deployment surface is identical.
+**Why Microsoft Agent Framework for this scope:**
+`agent-framework` is Microsoft's enterprise agent SDK, successor to Semantic Kernel, with first-class Azure OpenAI and Azure AI Foundry integration. In an Azure/PBMM end-state the "Microsoft-blessed framework" procurement story outweighs the dep-surface cost. We give up the "zero pydantic installed" rule (Agent Framework pulls it as a transitive dep via its `@tool` decorator), gain built-in HITL (`approval_mode="always_require"` + `user_input_requests`), workflow `RequestPort`, and future paths to multi-agent orchestration without an eventual framework migration.
+
+**Why not LangGraph:**
+Still net overhead at this scope (one primary agent + ~10 tools), and not Microsoft-native. If multi-agent orchestration ever lands we would use Agent Framework's `Workflow` layer, not LangGraph.
+
+**Why keep the SDK-direct path documented (not deleted):**
+If Agent Framework access is blocked (preview access, licensing, air-gap) the hand-rolled ReAct loop on `openai.AsyncAzureOpenAI` is a drop-in alternate `⟨I⟩ ChatProvider` — one class swap in `app/core/services.py`. The fallback reference lives in `docs-depo/exploration/azure-openai-sdk-usage.md`.
 
 **Pitch commitments honoured in this refactor:**
 - `⟨I⟩ Tool`, `⟨I⟩ DataSource`, `⟨I⟩ ChatProvider`, `⟨I⟩ WorkspaceStore`, `⟨I⟩ AgentActionLog` protocols (§4 Design Decisions, Protocol contracts row).
