@@ -14,6 +14,8 @@ from app.core.services import excel_tool, store
 
 # Call the chat route and return the response data
 def _send_chat_message(username: str, workspace_id: str, message: str) -> dict:
+    import os
+
     client = app.server.test_client()
     resp = client.post(
         "/chat/send",
@@ -21,6 +23,11 @@ def _send_chat_message(username: str, workspace_id: str, message: str) -> dict:
             "username": username,
             "workspace_id": workspace_id,
             "message": message,
+        },
+        headers={
+            "X-Internal-Secret": os.environ.get(
+                "INTERNAL_API_SECRET", "cheddar-internal-dev"
+            )
         },
     )
     return resp.get_json() or {}

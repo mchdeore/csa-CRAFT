@@ -5,5 +5,7 @@ __pycache__/
 workspaces/*
 !workspaces/.gitkeep
 *.db
+*.db-shm
+*.db-wal
 logs/
 storage/database/log/

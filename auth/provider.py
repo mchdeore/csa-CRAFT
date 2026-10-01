@@ -13,8 +13,10 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.core.logging import log_function_call
 
-# Default users when no config provided — base_user with no flags
-DEFAULT_USERS: dict[str, str] = {"demo": "demo"}
+# Default users when no config provided — admin so the demo flow works end-to-end
+DEFAULT_USERS: dict[str, str | dict] = {
+    "demo": {"password": "demo", "role": "admin"},
+}
 
 
 # flask-login User model

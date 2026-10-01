@@ -600,7 +600,17 @@ def _register_permission_check(app: Flask) -> None:
     def _check_permission() -> tuple[dict[str, str], int] | None:
         path = request.path
 
+        # Gate 0: server-side callers (Dash callbacks via test_client) present
+        # the internal secret and bypass session-based auth. External callers
+        # can't forge this header without knowing the secret.
+        if request.headers.get("X-Internal-Secret") == _internal_secret:
+            return None
+
         # Gate 1: public routes — no auth needed
+        # Root path serves the Dash shell, which renders login UI when the
+        # session store is empty. Everything beyond must still be gated.
+        if path == "/" or path == "/favicon.ico":
+            return None
         if any(path.startswith(p) for p in _PUBLIC_ROUTE_PREFIXES):
             return None
 
@@ -789,7 +799,19 @@ def log_function_call(module: str, function: str, **extra: Any) -> None:
     because 'module' and 'function' collide with LogRecord built-ins.
     """
     logger_instance = get_structured_logger()
+    # LogRecord reserves a set of attribute names; callers routinely pass
+    # kwargs like `name` or `message` as semantic fields, so rename any
+    # collision rather than crash the request.
+    _reserved = {
+        "name", "msg", "args", "levelname", "levelno", "pathname", "filename",
+        "module", "exc_info", "exc_text", "stack_info", "lineno", "funcName",
+        "created", "msecs", "relativeCreated", "thread", "threadName",
+        "processName", "process", "message", "asctime",
+    }
+    safe_extra = {
+        (f"arg_{k}" if k in _reserved else k): v for k, v in extra.items()
+    }
     logger_instance.info(
         "FUNCTION_CALL",
-        extra={"caller_module": module, "caller_function": function, **extra},
+        extra={"caller_module": module, "caller_function": function, **safe_extra},
     )

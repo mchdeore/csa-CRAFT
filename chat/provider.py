@@ -102,9 +102,11 @@ class DeepSeekChat:
 
         provider, deployment = self._make_provider()
         if provider is None:
+            last = messages[-1]["content"] if messages else ""
+            if isinstance(last, dict):
+                last = str(last)
             return ChatResponse(
-                text="Azure OpenAI not configured. "
-                "Set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_API_KEY in .env"
+                text=f"[echo — Azure OpenAI not configured] {last}"
             )
 
         if not messages:

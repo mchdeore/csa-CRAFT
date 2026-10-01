@@ -1,9 +1,19 @@
 """Workspace management callbacks."""
 
+import os
+
 from dash import ALL, Input, Output, State, ctx, no_update
 
 from app.core.dash_app import app
 from app.core.logging import log_function_call
+
+
+def _internal_headers() -> dict[str, str]:
+    return {
+        "X-Internal-Secret": os.environ.get(
+            "INTERNAL_API_SECRET", "cheddar-internal-dev"
+        )
+    }
 
 
 @app.callback(
@@ -32,6 +42,7 @@ def handle_create_workspace(
     resp = client.post(
         "/storage/create",
         json={"username": session["username"], "name": name.strip()},
+        headers=_internal_headers(),
     )
     data = resp.get_json() or {}
 
@@ -66,6 +77,7 @@ def handle_select_workspace(n_clicks_list: list, session: dict) -> object:
     client = app.server.test_client()
     resp = client.get(
         f"/storage/load/{session['username']}/{triggered['index']}",
+        headers=_internal_headers(),
     )
     data = resp.get_json() or {}
 
