@@ -131,7 +131,20 @@ class TextAnalysisTool:
         return "\n\n".join(paragraphs)
 
     def _chunk_text(self, text: str) -> list[str]:
-        paragraphs = re.split(r"\n\s*\n", text)
+        """Split text into chunks at paragraph boundaries, respecting MAX_CHUNK_SIZE.
+
+        Each chunk is up to 4000 characters. Chunks split on blank-line paragraph
+        boundaries whenever possible. Returns a list with at least one chunk.
+
+        >>> tool = TextAnalysisTool.__new__(TextAnalysisTool)
+        >>> tool._chunk_text("Short text.")
+        ['Short text.']
+        >>> tool._chunk_text("")
+        ['']
+        >>> chunks = tool._chunk_text("A\\n\\nB")
+        >>> len(chunks) >= 1
+        True
+        """
         chunks: list[str] = []
         current = ""
 

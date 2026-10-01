@@ -90,7 +90,20 @@ def _build_pie_figure(
     donut: bool,
     show_percentages: bool,
 ) -> dict[str, Any]:
-    import plotly.graph_objects as go
+    """Build a Plotly pie or donut chart figure dict.
+
+    Returns the figure as a dict via to_dict() for JSON serialization.
+    Uses CHART_COLORS for slice colors. When donut=True, adds a center hole.
+
+    >>> slices = [{"label": "A", "value": 30}, {"label": "B", "value": 70}]
+    >>> fig = _build_pie_figure("Test", slices, donut=False, show_percentages=False)
+    >>> isinstance(fig, dict)
+    True
+    >>> len(fig["data"])
+    1
+    >>> fig["layout"]["title"]["text"]
+    'Test'
+    """
 
     labels = [s["label"] for s in slices]
     values = [s["value"] for s in slices]

@@ -174,7 +174,21 @@ def _build_scatter_figure(
     show_residuals: bool,
     size_by: str,
 ) -> dict[str, Any]:
-    """Build a scatter figure, optionally with polynomial fits and residual subplot."""
+    """Build a Plotly scatter chart figure dict with optional polynomial fit.
+
+    Returns the figure as a dict via to_dict() for JSON serialization.
+
+    >>> series = [{"name": "Group A", "points": [
+    ...     {"x": 1, "y": 10}, {"x": 2, "y": 20}, {"x": 3, "y": 30}
+    ... ]}]
+    >>> fig = _build_scatter_figure("Growth", series, "Time", "Value", False, 1, False, "none")
+    >>> isinstance(fig, dict)
+    True
+    >>> "data" in fig
+    True
+    >>> fig["layout"]["title"]["text"]
+    'Growth'
+    """
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
