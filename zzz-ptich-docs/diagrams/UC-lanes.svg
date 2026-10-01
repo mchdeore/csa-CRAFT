@@ -143,8 +143,8 @@
   <!-- =================== LANE 3 : UC-F4 =================== -->
   <g transform="translate(0,636)">
     <rect x="30" y="0" width="700" height="260" class="lane-bg"/>
-    <text x="42" y="22" class="lane-title">UC-F4 · Vendor Cost · SAP</text>
-    <text x="42" y="38" class="uc-sub">Finance · SAP connector → vendor extract → aggregation</text>
+    <text x="42" y="22" class="lane-title">UC-F4 · Vendor Cost Roll-up · SAP</text>
+    <text x="42" y="38" class="uc-sub">Finance · SAP line items via ⟨I⟩ DataSource → aggregate by vendor → audited response</text>
 
     <line x1="160" y1="48" x2="160" y2="260" class="lane-divider"/>
     <line x1="340" y1="48" x2="340" y2="260" class="lane-divider"/>
@@ -152,7 +152,7 @@
 
     <rect x="48" y="110" width="100" height="36" class="node"/>
     <text x="98" y="128" class="lbl">Analyst</text>
-    <text x="98" y="140" class="lbl-s">vendor query</text>
+    <text x="98" y="140" class="lbl-s">vendor cost query</text>
 
     <polygon points="178,128 196,112 258,112 276,128 258,144 196,144" class="gate"/>
     <text x="227" y="131" class="lbl">Auth gate</text>
@@ -162,17 +162,17 @@
     <text x="310" y="128" class="lbl">Agent</text>
     <text x="310" y="140" class="lbl-s">ReAct</text>
 
-    <rect x="352" y="110" width="100" height="36" class="node-dashed"/>
-    <text x="402" y="128" class="lbl">SAP conn.</text>
-    <text x="402" y="140" class="req">UMR-053…055</text>
+    <rect x="352" y="110" width="110" height="36" class="node-dashed"/>
+    <text x="407" y="128" class="lbl">SAP DataSource</text>
+    <text x="407" y="140" class="req">UMR-053…055</text>
 
     <rect x="470" y="110" width="110" height="36" class="node"/>
-    <text x="525" y="128" class="lbl">Vendor extract</text>
-    <text x="525" y="140" class="lbl-s">parse · join</text>
+    <text x="525" y="128" class="lbl">Line items</text>
+    <text x="525" y="140" class="lbl-s">PO · invoice rows</text>
 
-    <rect x="352" y="170" width="110" height="36" class="node"/>
-    <text x="407" y="188" class="lbl">Aggregate</text>
-    <text x="407" y="200" class="lbl-s">cost rollup</text>
+    <rect x="411" y="170" width="110" height="36" class="node"/>
+    <text x="466" y="188" class="lbl">Group by vendor</text>
+    <text x="466" y="200" class="lbl-s">sum · period</text>
 
     <circle cx="650" cy="128" r="14" class="terminal"/>
     <text x="650" y="131" class="lbl" fill="#fff">●</text>
@@ -181,9 +181,9 @@
     <line x1="148" y1="128" x2="176" y2="128" class="edge" marker-end="url(#arrUC)"/>
     <line x1="276" y1="128" x2="284" y2="128" class="edge" marker-end="url(#arrUC)"/>
     <line x1="334" y1="128" x2="350" y2="128" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="452" y1="128" x2="468" y2="128" class="edge-dashed" marker-end="url(#arrUC)"/>
-    <path d="M 525 146 L 525 170 L 462 170 L 462 188" class="edge"/>
-    <path d="M 462 206 L 580 206 L 580 128 L 634 128" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="462" y1="128" x2="468" y2="128" class="edge-dashed" marker-end="url(#arrUC)"/>
+    <path d="M 525 146 L 525 170 L 521 170 L 521 188" class="edge"/>
+    <path d="M 521 206 L 580 206 L 580 128 L 634 128" class="edge" marker-end="url(#arrUC)"/>
   </g>
 
   <!-- Legend -->

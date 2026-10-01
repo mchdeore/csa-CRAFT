@@ -7,7 +7,6 @@
     <style><![CDATA[
       .box { fill: #fff; stroke: #000; stroke-width: 1; }
       .box-dashed { fill: #fff; stroke: #000; stroke-width: 1; stroke-dasharray: 4 2; }
-      .boundary { fill: none; stroke: #000; stroke-width: 1.25; }
       .lbl { font-size: 11px; fill: #000; }
       .lbl-c { font-size: 11px; fill: #000; text-anchor: middle; }
       .lbl-i { font-size: 10px; fill: #000; font-style: italic; }
@@ -19,7 +18,6 @@
       .edge-aud { stroke: #000; stroke-width: 1; fill: none; stroke-dasharray: 2 2; }
       .title { font-size: 16px; font-weight: bold; font-variant: small-caps; letter-spacing: 1.5px; fill: #000; text-anchor: middle; }
       .mono { font-family: "Courier New", Courier, monospace; font-size: 10.5px; fill: #000; }
-      .mono-c { font-family: "Courier New", Courier, monospace; font-size: 10.5px; fill: #000; text-anchor: middle; }
     ]]></style>
   </defs>
 
@@ -28,34 +26,29 @@
   <!-- ============== ACTORS as a listed example ============== -->
   <g transform="translate(20,50)">
     <rect x="0" y="0" width="720" height="60" class="box"/>
-    <text x="12" y="20" class="head-l">ACTORS</text>
-    <text x="12" y="40" class="lbl">• Mission Engineer   • Systems Engineer   • Program Admin   • HITL Reviewer</text>
-    <text x="12" y="54" class="lbl-i">example roster — each reaches CRAFT through the public routes below</text>
+    <text x="12" y="20" class="head-l">ACTORS (EXAMPLE ROSTER)</text>
+    <text x="12" y="40" class="lbl">Mission Engineer   ·   Systems Engineer   ·   Program Admin   ·   HITL Reviewer   ·   external agent / trigger</text>
+    <text x="12" y="54" class="lbl-i">any principal with an Entra token and the required role reaches CRAFT through the public routes below</text>
   </g>
 
-  <!-- ============== RBAC (pseudocode route + 3 role examples) ============== -->
+  <!-- ============== RBAC — flat text block, no nested boxes ============== -->
   <g transform="translate(20,130)">
-    <rect x="0" y="0" width="720" height="150" class="boundary"/>
+    <rect x="0" y="0" width="720" height="150" class="box"/>
     <text x="360" y="20" class="head">ROUTE-GATED RBAC   —   ⟨I⟩ AuthProvider</text>
 
-    <!-- pseudocode route -->
-    <rect x="20" y="36" width="360" height="100" class="box"/>
-    <text x="200" y="54" class="head">ROUTE (PSEUDOCODE)</text>
-    <text x="34" y="74" class="mono">@route("/path/*", role=&lt;required&gt;)</text>
-    <text x="34" y="90" class="mono">def handler(req):</text>
-    <text x="34" y="106" class="mono">    before_request()  # auth · ctx</text>
-    <text x="34" y="122" class="mono">    after_request()   # audit emit</text>
+    <text x="20" y="46" class="mono">@route("/path/*", role=&lt;required&gt;)   def handler(req): before_request(); after_request()</text>
+    <text x="20" y="68" class="lbl-i">before_request → auth · role check · workspace · trace_id   ·   after_request → audit emit (AgentAction)</text>
 
-    <!-- role examples -->
-    <rect x="400" y="36" width="300" height="100" class="box"/>
-    <text x="550" y="54" class="head">EXAMPLE ROLES</text>
-    <text x="414" y="74"  class="mono">base   (1)  — read · chat</text>
-    <text x="414" y="90"  class="mono">power  (2)  — + upload · tools</text>
-    <text x="414" y="106" class="mono">admin  (3)  — + /admin/*</text>
-    <text x="414" y="124" class="lbl-i">base &lt; power &lt; admin   —   _ROLE_LEVEL</text>
+    <text x="20" y="94"  class="mono">base   (1)   read · chat</text>
+    <text x="20" y="110" class="mono">power  (2)   + upload · tools</text>
+    <text x="20" y="126" class="mono">admin  (3)   + /admin/*</text>
+
+    <text x="360" y="94"  class="lbl-i">role &lt; required → 403</text>
+    <text x="360" y="110" class="lbl-i">unregistered route → 404 (before auth)</text>
+    <text x="360" y="126" class="lbl-i">routes callable by any external principal with the matching role</text>
   </g>
 
-  <!-- ============== PRIMARY AGENT (entry point) ============== -->
+  <!-- ============== PRIMARY AGENT ============== -->
   <g transform="translate(20,300)">
     <rect x="0" y="0" width="720" height="70" class="box"/>
     <text x="360" y="20" class="head">PRIMARY AGENT — ENTRY POINT</text>
@@ -63,27 +56,27 @@
     <text x="360" y="58" class="iface">⟨I⟩ ChatProvider   ⟨I⟩ AgentActionLog   ⟨I⟩ Tool</text>
   </g>
 
-  <!-- ============== TOOL REGISTRY + DATASOURCE REGISTRY (independent blocks) ============== -->
+  <!-- ============== TOOL REGISTRY + DATASOURCE REGISTRY ============== -->
   <g transform="translate(20,390)">
     <rect x="0" y="0" width="350" height="160" class="box"/>
     <text x="175" y="20" class="head">TOOL REGISTRY   ⟨I⟩ Tool</text>
-    <text x="14" y="44" class="lbl">• weather          — forecast · observation</text>
-    <text x="14" y="60" class="lbl">• documents        — ingest · search · cite</text>
-    <text x="14" y="76" class="lbl">• charts           — overlaid bar · radar</text>
-    <text x="14" y="92" class="lbl">• query_data       — SQL · RBAC-scoped</text>
-    <text x="14" y="108" class="lbl">• code_exec        — sandbox (dev flag)</text>
-    <text x="14" y="124" class="lbl">• report / costing — distance · compliance</text>
-    <text x="14" y="146" class="lbl-i">POST /tools/execute/&lt;name&gt;   validated · audited</text>
+    <text x="14" y="44" class="lbl">example tools:</text>
+    <text x="14" y="60" class="lbl">• documents  — ingest · search · cite</text>
+    <text x="14" y="76" class="lbl">• query_data — SQL · RBAC-scoped</text>
+    <text x="14" y="98" class="mono">POST /tools/execute/&lt;name&gt;</text>
+    <text x="14" y="114" class="lbl-i">validated against ⟨I⟩ Tool · audited</text>
+    <text x="14" y="130" class="lbl-i">new tool = new class, no agent change</text>
+    <text x="14" y="146" class="lbl-i">registry populated at startup</text>
 
     <rect x="370" y="0" width="350" height="160" class="box"/>
     <text x="545" y="20" class="head">DATASOURCE REGISTRY   ⟨I⟩ DataSource</text>
-    <text x="384" y="44"  class="lbl">• LocalFile      — filesystem · live</text>
-    <text x="384" y="60"  class="lbl">• SharePoint     — Graph API · MSAL · dev flag</text>
-    <text x="384" y="76"  class="lbl">• SAP            — REST · OData · dev flag</text>
-    <text x="384" y="92"  class="lbl">• STK / MATLAB   — adapter · license · dev flag</text>
-    <text x="384" y="108" class="lbl">• Vector index   — Azure AI Search · dev flag</text>
-    <text x="384" y="124" class="lbl">• Auth           — MSAL · OAuth · svc acct</text>
-    <text x="384" y="146" class="lbl-i">registered per request · RBAC-scoped</text>
+    <text x="384" y="44" class="lbl">backends:</text>
+    <text x="384" y="60"  class="lbl">• LocalFile    — filesystem · live</text>
+    <text x="384" y="76"  class="lbl">• SharePoint   — Graph API · MSAL · dev flag</text>
+    <text x="384" y="92"  class="lbl">• SAP          — REST · OData · dev flag</text>
+    <text x="384" y="108" class="lbl">• STK / MATLAB — adapter · license · dev flag</text>
+    <text x="384" y="124" class="lbl">• Vector index — Azure AI Search · dev flag</text>
+    <text x="384" y="146" class="lbl-i">per-request · RBAC-scoped · MSAL / OAuth</text>
   </g>
 
   <!-- ============== STORAGE ============== -->
@@ -93,7 +86,7 @@
     <line x1="240" y1="26" x2="240" y2="86" stroke="#000" stroke-width="0.5" stroke-dasharray="2 2"/>
     <line x1="480" y1="26" x2="480" y2="86" stroke="#000" stroke-width="0.5" stroke-dasharray="2 2"/>
     <text x="120" y="44" class="lbl-c" font-weight="bold">Workspace Store</text>
-    <text x="120" y="60" class="lbl-i-c">session · scratch</text>
+    <text x="120" y="60" class="lbl-i-c">session · scratch · uploads</text>
     <text x="120" y="76" class="iface">SqliteStore + ScratchStore</text>
     <text x="360" y="44" class="lbl-c" font-weight="bold">Data Store (RBAC)</text>
     <text x="360" y="60" class="lbl-i-c">per-user query scope</text>
@@ -103,19 +96,19 @@
     <text x="600" y="76" class="iface">→ Log Analytics (dev flag)</text>
   </g>
 
-  <!-- ============== EXTERNAL SYSTEMS (list) ============== -->
+  <!-- ============== EXTERNAL SYSTEMS ============== -->
   <g transform="translate(20,680)">
     <rect x="0" y="0" width="720" height="90" class="box"/>
     <text x="360" y="18" class="head">EXTERNAL SYSTEMS</text>
-    <text x="14" y="40" class="lbl">• Azure OpenAI  (gpt-4o)      — LLM inference</text>
-    <text x="14" y="56" class="lbl">• Azure AI Search  (dev flag)  — hybrid retrieval + citations</text>
-    <text x="14" y="72" class="lbl">• Entra ID  (dev flag)         — identity · MSAL</text>
-    <text x="374" y="40" class="lbl">• Content Safety  (dev flag)   — guardrails</text>
-    <text x="374" y="56" class="lbl">• APIM · App Gateway (dev flag) — edge · WAF · rate limit</text>
-    <text x="374" y="72" class="lbl">• Log Analytics  (dev flag)    — immutable audit sink</text>
+    <text x="14" y="40" class="lbl">• Azure OpenAI                  — LLM inference</text>
+    <text x="14" y="56" class="lbl">• Azure AI Search  (dev flag)   — hybrid retrieval + citations</text>
+    <text x="14" y="72" class="lbl">• Entra ID  (dev flag)          — identity · MSAL</text>
+    <text x="374" y="40" class="lbl">• Content Safety  (dev flag)    — guardrails</text>
+    <text x="374" y="56" class="lbl">• APIM · App Gateway  (dev flag)— edge · WAF · rate limit</text>
+    <text x="374" y="72" class="lbl">• Log Analytics  (dev flag)     — immutable audit sink</text>
   </g>
 
-  <!-- ============== TEST SURFACE (one line) ============== -->
+  <!-- ============== TEST SURFACE ============== -->
   <g transform="translate(20,790)">
     <rect x="0" y="0" width="720" height="56" class="box"/>
     <text x="360" y="20" class="head">TEST SURFACE</text>
@@ -123,17 +116,12 @@
   </g>
 
   <!-- ============== EDGES ============== -->
-  <!-- Actors -> RBAC -->
   <line x1="380" y1="110" x2="380" y2="128" class="edge" marker-end="url(#arrL2)"/>
-  <!-- RBAC -> Primary Agent -->
   <line x1="380" y1="280" x2="380" y2="298" class="edge" marker-end="url(#arrL2)"/>
-  <!-- Primary Agent -> Tool + DataSource -->
   <line x1="380" y1="370" x2="175" y2="388" class="edge" marker-end="url(#arrL2)"/>
   <line x1="380" y1="370" x2="545" y2="388" class="edge" marker-end="url(#arrL2)"/>
-  <!-- registries -> storage -->
   <line x1="175" y1="550" x2="200" y2="568" class="edge" marker-end="url(#arrL2)"/>
   <line x1="545" y1="550" x2="520" y2="568" class="edge" marker-end="url(#arrL2)"/>
-  <!-- storage audit -> external log analytics -->
   <path d="M 660 660 L 660 678" class="edge-aud" marker-end="url(#arrL2)"/>
 
   <!-- Legend -->
@@ -142,6 +130,6 @@
     <text x="24" y="0" class="lbl">solid · live</text>
     <rect x="130" y="-10" width="18" height="12" class="box-dashed"/>
     <text x="154" y="0" class="lbl">dashed · dev flag (external dependency)</text>
-    <text x="430" y="0" class="lbl">⟨I⟩ · Python protocol seam</text>
+    <text x="430" y="0" class="lbl">⟨I⟩ · Python protocol abstraction point</text>
   </g>
 </svg>

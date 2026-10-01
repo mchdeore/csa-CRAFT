@@ -82,17 +82,18 @@
   <g transform="translate(20,340)">
     <rect x="0" y="0" width="350" height="220" class="boundary"/>
     <text x="175" y="20" class="head">B · TOOL REGISTRY   ⟨I⟩ Tool</text>
-    <text x="14" y="46" class="lbl">• weather          — forecast · observation</text>
-    <text x="14" y="62" class="lbl">• documents        — ingest · search · cite</text>
-    <text x="14" y="78" class="lbl">• charts           — overlaid bar · radar</text>
-    <text x="14" y="94" class="lbl">• query_data       — SQL · RBAC-scoped</text>
-    <text x="14" y="110" class="lbl">• code_exec        — sandbox (dev flag)</text>
-    <text x="14" y="126" class="lbl">• report / costing — distance · compliance</text>
+    <text x="14" y="46" class="lbl">example tools:</text>
+    <text x="14" y="64" class="lbl">• documents  — ingest · search · cite</text>
+    <text x="14" y="80" class="lbl">• query_data — SQL · RBAC-scoped</text>
 
-    <text x="14" y="156" class="lbl-i">tools are registered once at startup and invoked by the</text>
-    <text x="14" y="170" class="lbl-i">agent through POST /tools/execute/&lt;name&gt;. Each call is</text>
-    <text x="14" y="184" class="lbl-i">validated against ⟨I⟩ Tool, audited, and RBAC-scoped.</text>
-    <text x="14" y="206" class="lbl-i">The HITL gate above wraps high-risk tools only.</text>
+    <text x="14" y="108" class="mono">POST /tools/execute/&lt;name&gt;</text>
+    <text x="14" y="124" class="mono">body: { "args": {...}, "trace_id": ... }</text>
+
+    <text x="14" y="152" class="lbl-i">each call is validated against ⟨I⟩ Tool,</text>
+    <text x="14" y="166" class="lbl-i">audited, and RBAC-scoped. New tool =</text>
+    <text x="14" y="180" class="lbl-i">a class satisfying the protocol; the agent</text>
+    <text x="14" y="194" class="lbl-i">code is unchanged. HITL wraps high-risk</text>
+    <text x="14" y="208" class="lbl-i">tools from the agent's trace (above).</text>
   </g>
 
   <!-- =============== CLUSTER C : DATASOURCE REGISTRY (independent) =============== -->

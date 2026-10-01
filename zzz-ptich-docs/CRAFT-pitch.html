@@ -142,31 +142,156 @@ blockquote {
 }
 </style></head><body><h1>CRAFT — Pitch Package</h1>
 <p><em>Audited retrieval-augmented AI assistant for CSA mission engineering and finance.</em></p>
-<h2>1. Containers &amp; Context (L2)</h2>
+<h2>1. Design &amp; Architecture (L2)</h2>
 <div class="figure">
 <object type="image/svg+xml" data="diagrams/L2-container.svg"></object>
-<div class="caption">Figure 1 · Actors, external systems, routes, containers, and the audit + RBAC perimeters.</div>
+<div class="caption">Figure 1 · Actors, routes, containers, data, external systems, and the audit perimeter.</div>
 </div>
 
+<p>The system is a Flask + Dash application fronted by a route-gated RBAC layer. The design decision driving everything else: <strong>every entry point is a REST route, every route is role-checked, and every step emits an audit record</strong>. That shape lets the Primary Agent, the Tool Registry, and the DataSource Registry stay loosely coupled behind Python protocols — the agent calls <code>/tools/execute/&lt;name&gt;</code> and never knows which concrete tool runs; a tool queries through <code>⟨I⟩ DataSource</code> and never knows whether it's reading a local file or SharePoint. The audit log sits across all three so trace reconstruction stays complete regardless of which backend serves a given call.</p>
+<p>Choosing Flask over a heavier framework was deliberate: it keeps the public surface a plain HTTP API that any external agent, scheduler, or CI runner can hit directly, so the whole product is deployable anywhere a container runs and callable from anywhere a trigger lives — a Teams bot, a cron job, an upstream orchestrator agent. Dash is used only for the HITL reviewer UI, which lives inside the same auth perimeter and talks to the same routes.</p>
 <h2>2. Internals (L3)</h2>
 <div class="figure">
 <object type="image/svg+xml" data="diagrams/L3-cluster.svg"></object>
-<div class="caption">Figure 2 · Primary agent loop, tool registry, data-source registry, and auth cluster.</div>
+<div class="caption">Figure 2 · Agent loop with HITL branch, tool registry, data-source registry, and auth cluster.</div>
 </div>
 
-<h2>3. Use Cases (One-Sheet)</h2>
+<p>The Primary Agent is a LangGraph ReAct graph with <code>recursion_limit = 25</code> and a HITL <code>interrupt</code> branch off the <code>tool_node</code>. Routes gate who may enter; the HITL gate decides what may complete. Both are first-class graph edges, not middleware tricks, so the invariants are reachable from pytest. The Tool and DataSource registries are not inheritance hierarchies — they are Python protocols registered at startup; a new tool is a class that satisfies <code>⟨I⟩ Tool</code>, dropped in a module, and the registry picks it up with no changes to the agent.</p>
+<h2>3. Use Cases</h2>
 <div class="figure">
 <object type="image/svg+xml" data="diagrams/UC-lanes.svg"></object>
-<div class="caption">Figure 3 · Three use-case lanes laid out left-to-right with UC IDs and swim-lane dividers.</div>
+<div class="caption">Figure 3 · Three use-case lanes left-to-right with UC IDs.</div>
 </div>
 
-<h2>4. Requirements → Design</h2>
+<p>Three lanes exercise the full spine: <strong>UC-E2</strong> (Engineering risk ID + HITL) runs the full retrieval → classify → human-gate → register path. <strong>UC-F1</strong> (parametric cost + HITL) runs the historical-lookup → aggregate → human-gate → commit path. <strong>UC-F4</strong> (vendor cost via SAP) runs the connector-based retrieval → aggregate path, with the SAP backend behind the same <code>⟨I⟩ DataSource</code> as <code>LocalFile</code> so the lane shape is identical whichever backend is live. Every other mission flow (budget scenarios, anomaly triage, bilingual reports, cross-mission compare) attaches as a new <code>Tool</code> + optional <code>DataSource</code> along the same lanes.</p>
+<h2>4. Design Decisions &amp; Component Rationale</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Role</th>
+<th>Why this choice</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Flask</strong></td>
+<td>Public HTTP surface</td>
+<td>Mature, standards-based WSGI; routes are the integration contract — any external agent or scheduler can trigger CRAFT with no SDK.</td>
+</tr>
+<tr>
+<td><strong>LangGraph</strong></td>
+<td>Primary agent runtime</td>
+<td>First-class <code>interrupt</code> for HITL, bounded recursion, graph-level test anchors. Actively maintained by LangChain Inc.; standard ReAct pattern.</td>
+</tr>
+<tr>
+<td><strong>Dash</strong></td>
+<td>HITL reviewer UI</td>
+<td>Shares the Flask process and auth, so the reviewer surface inherits RBAC without a second deployment.</td>
+</tr>
+<tr>
+<td><strong>Azure OpenAI</strong></td>
+<td>LLM inference</td>
+<td>Canadian-region deployment satisfies PBMM data-residency; enterprise SLA; swappable behind <code>⟨I⟩ ChatProvider</code>.</td>
+</tr>
+<tr>
+<td><strong>Azure AI Search</strong></td>
+<td>Hybrid retrieval</td>
+<td>Vector + BM25 in one service; managed; swappable behind <code>⟨I⟩ DataSource</code>.</td>
+</tr>
+<tr>
+<td><strong>Azure Content Safety</strong></td>
+<td>Guardrails</td>
+<td>Microsoft-maintained moderation; invoked through a tool wrapper so the control plane stays swappable.</td>
+</tr>
+<tr>
+<td><strong>Azure Container Apps</strong></td>
+<td>Code-exec sandbox</td>
+<td>Isolated per-request containers; standard scale-to-zero; satisfies UMR-093.</td>
+</tr>
+<tr>
+<td><strong>Azure App Service (PBMM)</strong></td>
+<td>Runtime</td>
+<td>PBMM Canadian region, managed TLS, blue-green deploy, zero-trust networking into APIM.</td>
+</tr>
+<tr>
+<td><strong>APIM + App Gateway</strong></td>
+<td>Edge</td>
+<td>WAF + rate limit at the perimeter; terminates mTLS; makes CRAFT addressable without exposing App Service directly.</td>
+</tr>
+<tr>
+<td><strong>Entra ID + MSAL</strong></td>
+<td>Identity</td>
+<td>CSA-standard identity; MSAL is Microsoft-maintained; token flow identical for human and agent callers.</td>
+</tr>
+<tr>
+<td><strong>Log Analytics</strong></td>
+<td>Audit sink</td>
+<td>Immutable retention policy satisfies UMR-027 audit grade; KQL-queryable.</td>
+</tr>
+<tr>
+<td><strong>Postgres</strong></td>
+<td>HITL approval queue</td>
+<td>Durable queue state across restarts; mature; backs the Dash reviewer UI.</td>
+</tr>
+<tr>
+<td><strong>SQLite</strong></td>
+<td>WorkspaceStore / DataStore</td>
+<td>File-local, zero-ops for scratch + per-user scoped data; swappable behind <code>⟨I⟩ WorkspaceStore</code> when a managed DB is in place.</td>
+</tr>
+<tr>
+<td><strong>Python protocols</strong></td>
+<td>Extension boundary</td>
+<td>Structural typing — a new tool or data source is a class satisfying the protocol, no base class, no registry edit, no agent change.</td>
+</tr>
+<tr>
+<td><strong>pytest + pyright + ruff</strong></td>
+<td>Architecture invariants</td>
+<td>Industry-standard, actively maintained; invariants ship as tests (route × role matrix, protocol contracts, audit envelope present).</td>
+</tr>
+</tbody>
+</table>
+<h2>5. Abstraction for the Future</h2>
+<p>Four protocol boundaries carry the extensibility story. Each one is a single Python file; adding a backend behind one of them is additive and leaves the agent untouched.</p>
+<table>
+<thead>
+<tr>
+<th>Protocol</th>
+<th>What it abstracts</th>
+<th>How future growth lands</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>⟨I⟩ Tool</code></td>
+<td>Any callable capability the agent can invoke</td>
+<td>New capability = new class satisfying the protocol. Agent code unchanged. Validated by <code>test_tool_contract</code>.</td>
+</tr>
+<tr>
+<td><code>⟨I⟩ DataSource</code></td>
+<td>Any corpus or system of record</td>
+<td>SharePoint, SAP, STK, a future vector index — each is a class; the agent calls them identically.</td>
+</tr>
+<tr>
+<td><code>⟨I⟩ ChatProvider</code></td>
+<td>The LLM runtime</td>
+<td>Lets us swap inference backends behind one interface; sub-agents become new graph nodes under the same provider.</td>
+</tr>
+<tr>
+<td><code>⟨I⟩ WorkspaceStore</code> / <code>⟨I⟩ AgentActionLog</code></td>
+<td>Session state and audit sink</td>
+<td>SQLite today, managed DB tomorrow; JSONL today, Log Analytics tomorrow — same call site.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>External accessibility.</strong> Routes are the integration contract. <code>POST /chat/send</code>, <code>POST /chat/upload</code>, <code>POST /tools/execute/&lt;name&gt;</code> and <code>GET /admin/*</code> are reachable by any external principal that holds an Entra token with the required role — a human in the Dash UI, a scheduled job, a Teams bot, or an upstream orchestrator agent. That means CRAFT can be <em>triggered</em> (cron, webhook, agent) and <em>embedded</em> (as a tool for a larger agent) without new code. Deployment is a container image; the APIM policy decides which callers can reach which routes.</p>
+<h2>6. Requirements → Design</h2>
 <table>
 <thead>
 <tr>
 <th>Capability</th>
 <th>Requirements</th>
-<th>Design seam</th>
+<th>Abstraction point</th>
 <th>Use cases</th>
 </tr>
 </thead>
@@ -174,19 +299,19 @@ blockquote {
 <tr>
 <td>Primary agent</td>
 <td>UMR-001/011/013/016/018/019/094/095, AAR-001/003/006, ASG-005</td>
-<td>LangGraph ReAct · <code>ChatProvider</code> · <code>recursion_limit=25</code></td>
+<td>LangGraph ReAct · <code>⟨I⟩ ChatProvider</code> · <code>recursion_limit=25</code></td>
 <td>E2, F1, F4</td>
 </tr>
 <tr>
 <td>Retrieval + RAG</td>
 <td>UMR-002/003/004/005/006/009/010/060/067, ARR-002–007</td>
-<td>Azure AI Search (hybrid vector + BM25) · <code>DataSource</code> + <code>Tool</code></td>
+<td>Azure AI Search (hybrid vector + BM25) · <code>⟨I⟩ DataSource</code> + <code>⟨I⟩ Tool</code></td>
 <td>E2, F1</td>
 </tr>
 <tr>
 <td>Audit + traceability</td>
 <td>UMR-015/027/045/061/062/093, AAR-005, ASG-003</td>
-<td><code>AgentAction</code> envelope · <code>AgentActionLog</code> · JSONL → Log Analytics</td>
+<td><code>AgentAction</code> envelope · <code>⟨I⟩ AgentActionLog</code> · JSONL → Log Analytics</td>
 <td>E2, F1, F4</td>
 </tr>
 <tr>
@@ -204,7 +329,7 @@ blockquote {
 <tr>
 <td>Session + workspace</td>
 <td>UMR-014/092/095</td>
-<td><code>WorkspaceStore</code> → <code>SqliteStore</code> + <code>SessionScratchStore</code></td>
+<td><code>⟨I⟩ WorkspaceStore</code> → <code>SqliteStore</code> + <code>SessionScratchStore</code></td>
 <td>all</td>
 </tr>
 <tr>
@@ -216,13 +341,13 @@ blockquote {
 <tr>
 <td>Connectors + external</td>
 <td>UMR-051–055</td>
-<td><code>DataSource</code> + MSAL · Flask REST · SAP / STK / MATLAB adapters</td>
+<td><code>⟨I⟩ DataSource</code> + MSAL · Flask REST · SAP / STK / MATLAB adapters</td>
 <td>F4</td>
 </tr>
 <tr>
 <td>Domain capabilities</td>
 <td>UMR-007/008/031–034/036–038/040–043/046–048/050/075, ARR-001</td>
-<td>New <code>Tool</code> instances over existing seams</td>
+<td>New <code>⟨I⟩ Tool</code> instances over existing abstraction points</td>
 <td>E2, F1</td>
 </tr>
 <tr>
@@ -233,7 +358,7 @@ blockquote {
 </tr>
 </tbody>
 </table>
-<h2>5. Development Flags &amp; System-Health Tooling</h2>
+<h2>7. Development Flags &amp; System-Health Tooling</h2>
 <table>
 <thead>
 <tr>
@@ -248,25 +373,25 @@ blockquote {
 <td>Azure AI Search</td>
 <td>Dev flag</td>
 <td>IT</td>
-<td>Hybrid retrieval + citations. Seam: <code>DataSource</code> + <code>HybridRetrievalTool</code>.</td>
+<td>Hybrid retrieval + citations. Abstraction: <code>⟨I⟩ DataSource</code>.</td>
 </tr>
 <tr>
 <td>Log Analytics + immutability</td>
 <td>Dev flag</td>
 <td>IT</td>
-<td>Tamper-proof audit sink. Seam: <code>AgentActionLog</code>.</td>
+<td>Tamper-proof audit sink. Abstraction: <code>⟨I⟩ AgentActionLog</code>.</td>
 </tr>
 <tr>
 <td>Content Safety + Container Apps</td>
 <td>Dev flag</td>
 <td>Procurement</td>
-<td>Guardrails + sandboxed code exec. Seam: <code>CodeExecTool</code>.</td>
+<td>Guardrails + sandboxed code exec. Abstraction: <code>CodeExecTool</code>.</td>
 </tr>
 <tr>
 <td>Entra ID + SharePoint / SAP</td>
 <td>Dev flag</td>
 <td>IT + Finance</td>
-<td>CSA corpus + cost data. Seam: <code>DataSource</code>.</td>
+<td>CSA corpus + cost data. Abstraction: <code>⟨I⟩ DataSource</code>.</td>
 </tr>
 <tr>
 <td>CSA risk taxonomy</td>
