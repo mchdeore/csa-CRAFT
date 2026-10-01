@@ -9,7 +9,7 @@
 <div class="caption">Figure 1 · Actors, routes, containers, data, external systems, audit perimeter.</div>
 </div>
 
-Flask + Dash. Every route is role-checked; every step emits an `AGENT_ACTION` record (UMR-015/027). A LangGraph ReAct agent dispatches to the Tool and DataSource registries; responses carry citations (UMR-002/006) and a confidence score (UMR-007/010).
+Flask + Dash. Routes are role-checked; every step emits `AGENT_ACTION` (UMR-015/027). LangGraph ReAct dispatches to the Tool and DataSource registries; responses carry citations (UMR-002/006) and confidence (UMR-007/010).
 
 ## 2. Internals (L3)
 
