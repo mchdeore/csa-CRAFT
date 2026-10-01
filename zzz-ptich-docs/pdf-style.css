@@ -1,0 +1,131 @@
+@page {
+  size: Letter portrait;
+  margin: 0.65in 0.6in 0.65in 0.6in;
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font-family: "Times New Roman", Times, serif;
+    font-size: 8pt;
+    color: #000;
+  }
+  @bottom-left {
+    content: "CRAFT — Pitch Package";
+    font-family: "Times New Roman", Times, serif;
+    font-size: 8pt;
+    color: #000;
+  }
+}
+
+html, body {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 9.5pt;
+  line-height: 1.28;
+  color: #000;
+  background: #fff;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  font-size: 16pt;
+  font-weight: bold;
+  margin: 0 0 2pt 0;
+  letter-spacing: 0.3pt;
+}
+h1 + .subtitle {
+  font-size: 9.5pt;
+  font-style: italic;
+  margin: 0 0 10pt 0;
+  color: #000;
+}
+
+h2 {
+  font-size: 11.5pt;
+  font-weight: bold;
+  margin: 12pt 0 4pt 0;
+  padding-bottom: 1pt;
+  border-bottom: 0.75pt solid #000;
+  page-break-after: avoid;
+}
+
+h3 {
+  font-size: 10pt;
+  font-weight: bold;
+  font-style: italic;
+  margin: 6pt 0 2pt 0;
+  page-break-after: avoid;
+}
+
+p { margin: 2pt 0; text-align: justify; }
+
+ul, ol { margin: 2pt 0 4pt 0; padding-left: 18pt; }
+li { margin: 1pt 0; font-size: 9.5pt; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 8.5pt;
+  margin: 4pt 0 6pt 0;
+  page-break-inside: avoid;
+}
+th, td {
+  border: 0.5pt solid #000;
+  padding: 2.5pt 4pt;
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.2;
+}
+th {
+  background: #000;
+  color: #fff;
+  font-weight: bold;
+  font-variant: small-caps;
+  letter-spacing: 0.3pt;
+}
+tr:nth-child(even) td { background: #f2f2f2; }
+
+code, kbd, pre {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 8.5pt;
+  background: transparent;
+}
+
+.figure {
+  page-break-inside: avoid;
+  text-align: center;
+  margin: 6pt 0 4pt 0;
+}
+.figure img, .figure svg, .figure object {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+.figure .caption {
+  font-size: 8.5pt;
+  font-style: italic;
+  margin-top: 3pt;
+  text-align: center;
+}
+
+.page-break { page-break-after: always; }
+
+a { color: #000; text-decoration: none; }
+
+blockquote {
+  margin: 4pt 10pt;
+  padding-left: 8pt;
+  border-left: 1.5pt solid #000;
+  font-style: italic;
+}
+
+.legend {
+  font-size: 8.5pt;
+  font-style: italic;
+  margin: 2pt 0 6pt 0;
+}
+
+.uc-id {
+  font-variant: small-caps;
+  letter-spacing: 0.4pt;
+  font-weight: bold;
+}

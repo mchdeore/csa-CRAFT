@@ -1,0 +1,326 @@
+<!doctype html><html><head><meta charset='utf-8'><title>CRAFT — Pitch Package</title><style>@page {
+  size: Letter portrait;
+  margin: 0.65in 0.6in 0.65in 0.6in;
+  @bottom-right {
+    content: counter(page) " / " counter(pages);
+    font-family: "Times New Roman", Times, serif;
+    font-size: 8pt;
+    color: #000;
+  }
+  @bottom-left {
+    content: "CRAFT — Pitch Package";
+    font-family: "Times New Roman", Times, serif;
+    font-size: 8pt;
+    color: #000;
+  }
+}
+
+html, body {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 9.5pt;
+  line-height: 1.28;
+  color: #000;
+  background: #fff;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  font-size: 16pt;
+  font-weight: bold;
+  margin: 0 0 2pt 0;
+  letter-spacing: 0.3pt;
+}
+h1 + .subtitle {
+  font-size: 9.5pt;
+  font-style: italic;
+  margin: 0 0 10pt 0;
+  color: #000;
+}
+
+h2 {
+  font-size: 11.5pt;
+  font-weight: bold;
+  margin: 12pt 0 4pt 0;
+  padding-bottom: 1pt;
+  border-bottom: 0.75pt solid #000;
+  page-break-after: avoid;
+}
+
+h3 {
+  font-size: 10pt;
+  font-weight: bold;
+  font-style: italic;
+  margin: 6pt 0 2pt 0;
+  page-break-after: avoid;
+}
+
+p { margin: 2pt 0; text-align: justify; }
+
+ul, ol { margin: 2pt 0 4pt 0; padding-left: 18pt; }
+li { margin: 1pt 0; font-size: 9.5pt; }
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 8.5pt;
+  margin: 4pt 0 6pt 0;
+  page-break-inside: avoid;
+}
+th, td {
+  border: 0.5pt solid #000;
+  padding: 2.5pt 4pt;
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.2;
+}
+th {
+  background: #000;
+  color: #fff;
+  font-weight: bold;
+  font-variant: small-caps;
+  letter-spacing: 0.3pt;
+}
+tr:nth-child(even) td { background: #f2f2f2; }
+
+code, kbd, pre {
+  font-family: "Courier New", Courier, monospace;
+  font-size: 8.5pt;
+  background: transparent;
+}
+
+.figure {
+  page-break-inside: avoid;
+  text-align: center;
+  margin: 6pt 0 4pt 0;
+}
+.figure img, .figure svg, .figure object {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+.figure .caption {
+  font-size: 8.5pt;
+  font-style: italic;
+  margin-top: 3pt;
+  text-align: center;
+}
+
+.page-break { page-break-after: always; }
+
+a { color: #000; text-decoration: none; }
+
+blockquote {
+  margin: 4pt 10pt;
+  padding-left: 8pt;
+  border-left: 1.5pt solid #000;
+  font-style: italic;
+}
+
+.legend {
+  font-size: 8.5pt;
+  font-style: italic;
+  margin: 2pt 0 6pt 0;
+}
+
+.uc-id {
+  font-variant: small-caps;
+  letter-spacing: 0.4pt;
+  font-weight: bold;
+}
+</style></head><body><h1>CRAFT — Pitch Package</h1>
+<p><em>Audited retrieval-augmented AI assistant for CSA mission engineering and finance.</em></p>
+<h2>1. System Context (L1)</h2>
+<div class="figure">
+<object type="image/svg+xml" data="diagrams/L1-context.svg"></object>
+<div class="caption">Figure 1 · Actors, external systems, and the CRAFT boundary.</div>
+</div>
+
+<p>Four actor roles reach CRAFT through a single Flask + Dash edge. Inbound traffic is role-gated at <code>/chat/send</code>, <code>/uploads</code>, and <code>/admin/*</code>. Outbound traffic fans to four control planes: LLM &amp; AI (Azure OpenAI, Azure AI Search, Content Safety), Data Sources (local FS, SharePoint, SAP, STK/MATLAB), Identity &amp; Edge (Entra ID, APIM, App Gateway), and Operations &amp; Audit (Log Analytics, App Service PBMM, LaunchPad, Container Apps). Dashed outlines in the diagram mark services staged behind IT or procurement gates — the integration seams are production, the backing services arrive on IT's cadence.</p>
+<h2>2. Containers (L2)</h2>
+<div class="figure">
+<object type="image/svg+xml" data="diagrams/L2-container.svg"></object>
+<div class="caption">Figure 2 · Internal containers, interfaces, and the RBAC + audit perimeters.</div>
+</div>
+
+<p>Requests enter the route-gated RBAC layer and are dispatched to the Primary Agent, which drives a Tool Registry over the <code>Tool</code> protocol and reads/writes through <code>WorkspaceStore</code>, <code>DataStore</code>, and <code>AuditLog</code>. Every tool and LLM turn emits an <code>AgentAction</code> envelope to the Audit Sink and from there to Log Analytics. Perimeter Connectors (LocalFile, SharePoint, SAP, STK/MATLAB) sit outside the audit boundary and are reached only through <code>DataSource</code> adapters. The test surface validates architectural invariants (route rules, role levels, protocol contracts) on every commit.</p>
+<h2>3. Internals (L3)</h2>
+<div class="figure">
+<object type="image/svg+xml" data="diagrams/L3-cluster.svg"></object>
+<div class="caption">Figure 3 · Primary agent loop, tool/connector cluster, and auth cluster.</div>
+</div>
+
+<p><strong>Agent cluster.</strong> The LangGraph chatbot node calls the tool node, loops on <code>_should_continue</code> with <code>recursion_limit=25</code>, and funnels <code>llm_inference</code> and <code>tool_call</code> into the audit sink via <code>AgentActionLog</code>. <strong>Tools + connectors cluster.</strong> The <code>Tool</code> protocol groups weather, document, chart, query, and code-exec tools; the <code>DataSource</code> protocol groups LocalFile, SharePoint, SAP, and STK adapters; a HITL gate interrupts high-risk calls before they reach <code>/tools/exec/&lt;name&gt;</code>. <strong>Auth cluster.</strong> Every public route runs through <code>before_request</code> (auth, role, workspace, trace id), the handler, then <code>after_request</code> (audit emit). <code>_ROUTE_RULES</code> maps <code>/send→base</code>, <code>/uploads→power</code>, <code>/admin→admin</code>; <code>_ROLE_LEVEL</code> enforces <code>base(1) &lt; power(2) &lt; admin(3)</code>. Architecture invariants are checked by the audit-green test surface.</p>
+<h2>4. Use Cases (One-Sheet)</h2>
+<div class="figure">
+<object type="image/svg+xml" data="diagrams/UC-lanes.svg"></object>
+<div class="caption">Figure 4 · Three use-case lanes laid out left-to-right with UC IDs and swim-lane dividers.</div>
+</div>
+
+<p>Each lane runs User → Agent → Services → Terminal left to right. Dashed nodes mark steps whose backing service is still an IT or data-governance dependency — the control flow and audit envelope through the lane are identical whether the step runs against the production service or its scratch adapter.</p>
+<ul>
+<li><strong>UC-E2 · Risk ID + HITL (Engineering).</strong> Engineer uploads CADRe Part A → auth gate → hybrid retrieval over corpus <code>[UMR-002…006]</code> → risk classifier <code>[UMR-036…040]</code> → HITL gate <code>[HITL-001]</code> → risk register write → audit → terminal.</li>
+<li><strong>UC-F1 · Parametric Cost + HITL (Finance).</strong> Admin requests estimate → auth gate → historical retrieval <code>[UMR-031]</code> → cost aggregator <code>[UMR-032…034]</code> → HITL gate <code>[UMR-035]</code> → commitment write → audit → terminal.</li>
+<li><strong>UC-F4 · Vendor Cost via SAP (Finance).</strong> Analyst queries vendor cost → auth gate → SAP connector <code>[UMR-053…055]</code> → vendor extract → aggregate → audit → terminal.</li>
+</ul>
+<p>Other mission flows (budget scenarios, anomaly triage, bilingual reports, cross-mission comparison) attach as new <code>Tool</code> + <code>DataSource</code> pairs along the same lanes.</p>
+<h2>5. Requirements → Design</h2>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Requirements</th>
+<th>Design seam</th>
+<th>Use cases</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primary agent</td>
+<td>UMR-001/011/013/016/018/019/094/095, AAR-001/003/006, ASG-005</td>
+<td>LangGraph ReAct · <code>ChatProvider</code> · <code>recursion_limit=25</code></td>
+<td>E2, F1, F4</td>
+</tr>
+<tr>
+<td>Retrieval + RAG</td>
+<td>UMR-002/003/004/005/006/009/010/060/067, ARR-002–007</td>
+<td>Azure AI Search (hybrid vector + BM25) · <code>DataSource</code> + <code>Tool</code></td>
+<td>E2, F1</td>
+</tr>
+<tr>
+<td>Audit + traceability</td>
+<td>UMR-015/027/045/061/062/093, AAR-005, ASG-003</td>
+<td><code>AgentAction</code> envelope · <code>AgentActionLog</code> · JSONL → Log Analytics</td>
+<td>E2, F1, F4</td>
+</tr>
+<tr>
+<td>HITL approvals</td>
+<td>UMR-021–026/035/039/044/049, HITL-001–007, ASG-002</td>
+<td>LangGraph <code>interrupt</code> · Postgres queue · Dash review UI</td>
+<td>E2, F1</td>
+</tr>
+<tr>
+<td>RBAC + data scoping</td>
+<td>UMR-012/017/058/065/066, AAR-002/007</td>
+<td><code>_ROUTE_RULES</code> + <code>_ROLE_LEVEL</code> · <code>SqliteDataStore</code> · <code>QueryTool.set_user</code></td>
+<td>E2, F1, F4</td>
+</tr>
+<tr>
+<td>Session + workspace</td>
+<td>UMR-014/092/095</td>
+<td><code>WorkspaceStore</code> → <code>SqliteStore</code> + <code>SessionScratchStore</code></td>
+<td>all</td>
+</tr>
+<tr>
+<td>Guardrails + containment</td>
+<td>UMR-020/029/030, ASG-001/004/011</td>
+<td>Azure Content Safety · APIM rate limit · Container Apps sandbox</td>
+<td>all</td>
+</tr>
+<tr>
+<td>Connectors + external</td>
+<td>UMR-051–055</td>
+<td><code>DataSource</code> + MSAL · Flask REST · SAP / STK / MATLAB adapters</td>
+<td>F4</td>
+</tr>
+<tr>
+<td>Domain capabilities</td>
+<td>UMR-007/008/031–034/036–038/040–043/046–048/050/075, ARR-001</td>
+<td>New <code>Tool</code> instances over existing seams</td>
+<td>E2, F1</td>
+</tr>
+<tr>
+<td>Deployment, SLA</td>
+<td>UMR-028/056/057/059/064/069/070/074/085, ASG-006</td>
+<td>Azure App Service PBMM · APIM + WAF · SSC LaunchPad HA · git config</td>
+<td>all</td>
+</tr>
+</tbody>
+</table>
+<h2>6. Development Flags &amp; System-Health Tooling</h2>
+<p>Development flags surface the external dependencies still in flight; health tooling is run on every commit and in CI.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Kind</th>
+<th>Owner / tool</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Azure AI Search</td>
+<td>Dev flag</td>
+<td>IT</td>
+<td>Hybrid retrieval + citations. Seam: <code>DataSource</code> + <code>HybridRetrievalTool</code>.</td>
+</tr>
+<tr>
+<td>Log Analytics + immutability</td>
+<td>Dev flag</td>
+<td>IT</td>
+<td>Tamper-proof audit sink. Seam: <code>AgentActionLog</code>.</td>
+</tr>
+<tr>
+<td>Content Safety + Container Apps</td>
+<td>Dev flag</td>
+<td>Procurement</td>
+<td>Guardrails + sandboxed code exec. Seam: <code>CodeExecTool</code>.</td>
+</tr>
+<tr>
+<td>Entra ID + SharePoint / SAP</td>
+<td>Dev flag</td>
+<td>IT + Finance</td>
+<td>CSA corpus + cost data. Seam: <code>DataSource</code>.</td>
+</tr>
+<tr>
+<td>CSA risk taxonomy</td>
+<td>Dev flag</td>
+<td>Domain</td>
+<td>Risk ID + HITL classification.</td>
+</tr>
+<tr>
+<td>Historical mission DB</td>
+<td>Dev flag</td>
+<td>Finance</td>
+<td>Parametric cost estimation.</td>
+</tr>
+<tr>
+<td>ruff</td>
+<td>Health</td>
+<td>pre-commit + CI</td>
+<td>Lint (flake8 + isort + pyupgrade).</td>
+</tr>
+<tr>
+<td>pyright</td>
+<td>Health</td>
+<td>pre-commit + CI</td>
+<td>Strict type checking.</td>
+</tr>
+<tr>
+<td>pytest + coverage</td>
+<td>Health</td>
+<td>pre-commit + CI</td>
+<td>156 tests, 91% coverage.</td>
+</tr>
+<tr>
+<td>bandit</td>
+<td>Health</td>
+<td>pre-commit</td>
+<td>Security scan.</td>
+</tr>
+<tr>
+<td>pip-audit</td>
+<td>Health</td>
+<td>pre-commit</td>
+<td>Dependency CVE audit.</td>
+</tr>
+<tr>
+<td>detect-secrets</td>
+<td>Health</td>
+<td>pre-commit</td>
+<td>No credentials in git.</td>
+</tr>
+</tbody>
+</table></body></html>
