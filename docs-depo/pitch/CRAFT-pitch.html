@@ -135,41 +135,340 @@ UC-F1 Cost+HITL (Fin):     Req→◇Auth→Retrieval(hist)[031]→CostAgg[032-03
 UC-F4 SAP Conn (blocked):  Req→◇Auth→SAPConn(d)[053-055]→VendorExt→Agg→Audit→●(blocker:SAP)
 </code></pre>
 <p>●=Terminal. ◇=Gate. (d)=planned. Swim lanes: User→Agent→Services→Terminal.</p>
-<h2>3. Requirements → Design</h2>
-<p><strong>Primary agent</strong> — UMR-001/011/013/016/018/019/094/095, AAR-001/003/006, ASG-005. Microsoft Agent Framework · <code>ChatAgent</code> + <code>AzureOpenAIChatClient</code> · <code>⟨I⟩ ChatProvider</code> · bounded iteration cap · HITL via <code>@tool(approval_mode="always_require")</code>. No blocker. Seam: <code>ChatProvider</code>. UC: E2, F1, F4.</p>
-<p><strong>Retrieval + RAG</strong> — UMR-002/003/004/005/006/009/010/060/067, ARR-002–007. Azure AI Search (hybrid vector+BM25) · <code>⟨I⟩ DataSource</code> + <code>⟨I⟩ Tool</code>. Blocker: IT AI Search deploy. Seam: <code>HybridRetrievalTool</code>. UC: E2, F1.</p>
-<p><strong>Audit + traceability</strong> — UMR-015/027/045/061/062/093, AAR-005, ASG-003. <code>AgentAction</code> envelope · <code>⟨I⟩ AgentActionLog</code> · hash-chained JSONL → Azure Log Analytics. Blocker: IT Log Analytics + immutability. Seam: <code>AgentActionLog</code> sink. UC: E2, F1, F4.</p>
-<p><strong>HITL approvals</strong> — UMR-021–026/035/039/044/049, HITL-001–007, ASG-002. Agent Framework <code>approval_mode</code> on risky tools · SQLite <code>ApprovalQueue</code> + <code>/admin/approvals/&lt;trace_id&gt;/&lt;decision&gt;</code> resume routes · Dash reviewer UI (reserved) · Postgres at end state. Blocker: CSA risk taxonomy. Seam: <code>⟨I⟩ ApprovalQueue</code>. UC: E2, F1.</p>
-<p><strong>RBAC + data scoping</strong> — UMR-012/017/058/065/066, AAR-002/007. Declarative <code>permissions.json</code> (role levels + route rules + public/internal prefixes) · <code>SqliteDataStore</code> · <code>QueryTool.set_user</code>. Blocker: per-tool RBAC pending. Seam: rule list appends. UC: E2, F1, F4.</p>
-<p><strong>Session + workspace</strong> — UMR-014/092/095. <code>⟨I⟩ WorkspaceStore</code> → <code>SqliteStore</code> + <code>SessionScratchStore</code>. Blocker: session lifecycle design. Seam: <code>WorkspaceStore</code> protocol. UC: dream.</p>
-<p><strong>Guardrails + containment</strong> — UMR-020/029/030, ASG-001/004/011. Azure Content Safety · APIM rate limit · Azure Container Apps sandbox. Blocker: procurement. Seam: <code>GUARDRAIL_HOOK</code> in tool wrapper + <code>CodeExecTool</code> (reserved). UC: dream.</p>
-<p><strong>Connectors + external</strong> — UMR-051–055. <code>⟨I⟩ DataSource</code> kind registry (JSON-driven) + MSAL · Flask REST · SAP/STK/MATLAB planned. Blocker: SAP procurement; STK/MATLAB licenses. Seam: <code>DataSource</code> classes. UC: F4.</p>
-<p><strong>Domain capabilities</strong> — UMR-007/008/031–034/036–038/040–043/046–048/050/075, ARR-001. New <code>⟨I⟩ Tool</code> over existing seams. Reserved stubs today: <code>ClassifierTool</code>, <code>HistoricalMissionTool</code>, <code>CostAggregatorTool</code>, <code>VendorAggregatorTool</code>, <code>CodeExecTool</code>. Blocker: taxonomy + mission DB + Translator. Seam: uniform pattern. UC: E2, F1.</p>
-<p><strong>Deployment, SLA</strong> — UMR-028/056/057/059/064/069/070/074/085, ASG-006. Azure App Service PBMM · APIM+WAF · SSC LaunchPad HA · stdlib + <code>python-dotenv</code> config. Blocker: IT landing zone; LaunchPad. Seam: env-var + SQL migrations. UC: dream.</p>
-<h2>4. Use Cases</h2>
-<p><strong>UC-E2 · Risk ID + HITL.</strong> Engineer uploads CADRe Part A → retrieval → classifier tool scores severity → HITL gate (framework <code>approval_mode</code>) → approve/reject → register write (planned).</p>
-<p><strong>UC-F1 · Parametric cost + HITL.</strong> Admin requests estimate → 5 similar missions → weighted distance aggregator → HITL gate before commitment.</p>
-<p><strong>UC-F4 · Vendor cost + SAP.</strong> Analyst queries vendor costs → SAP <code>DataSource</code> (planned) → extract + aggregate → audit. Blocked: SAP.</p>
-<p>Other flows: budget scenarios, anomaly triage, bilingual reports, cross-mission compare — each = new <code>⟨I⟩ Tool</code> + (new <code>⟨I⟩ DataSource</code>). Core unchanged. No new architecture. Gated by §5.</p>
-<h2>5. Blocked Items</h2>
-<ul>
-<li><strong>Azure AI Search</strong> (IT) — retrieval + citations. Seam: <code>⟨I⟩ DataSource</code> + <code>HybridRetrievalTool</code>.</li>
-<li><strong>Azure Log Analytics + immutability</strong> (IT) — tamper-proof audit forwarding; hash-chained JSONL already on disk. Seam: <code>⟨I⟩ AgentActionLog</code>.</li>
-<li><strong>Azure Content Safety + Azure Container Apps</strong> (procurement) — guardrails + code-exec sandbox. Seam: <code>GUARDRAIL_HOOK</code> + <code>CodeExecTool</code>.</li>
-<li><strong>Entra ID + SharePoint/SAP</strong> (IT + finance) — CSA corpus + cost data. Seam: <code>⟨I⟩ DataSource</code> + MSAL in <code>⟨I⟩ AuthProvider</code>.</li>
-<li><strong>Microsoft Agent Framework access</strong> (if restricted) — SDK installation on PBMM environment. Fallback documented: hand-rolled ReAct loop on <code>openai.AsyncAzureOpenAI</code> behind the same <code>⟨I⟩ ChatProvider</code>.</li>
-<li><strong>CSA risk taxonomy</strong> (domain) — risk ID + HITL.</li>
-<li><strong>Historical mission DB</strong> (finance) — cost estimation.</li>
-</ul>
-<h2>6. System-Health Tooling</h2>
-<ul>
-<li><strong>ruff</strong> — Lint (flake8 + isort + pyupgrade) · pre-commit + CI</li>
-<li><strong>pyright (strict)</strong> — Type check · protocol conformance · pre-commit + CI</li>
-<li><strong>pytest + coverage</strong> — Route × role matrix · protocol contracts · audit-envelope invariants · pre-commit + CI</li>
-<li><strong>doctest</strong> — Every public pure function carries an executable example · <code>pytest --doctest-modules</code></li>
-<li><strong>architecture tests</strong> — AST-walkers in <code>app/tests/test_architecture.py</code>: public-function doctest coverage, stateful-module test coverage, forbidden-import guard</li>
-<li><strong>bandit</strong> — Security scan · pre-commit</li>
-<li><strong>pip-audit</strong> — CVE audit · pre-commit + CI</li>
-<li><strong>detect-secrets</strong> — No credentials in git · pre-commit</li>
-</ul>
-<p>Architecture tests enforce protocol boundaries + required files per feature. Code quality: logging coverage, function length, import completeness. Suite: <code>.pre-commit-config.yaml</code> + <code>.github/workflows/ci.yml</code>. New invariant = new test. No extra infra.</p></body></html>
+<h2>3. Use Cases</h2>
+<p><strong>UC-E2 · Risk ID + HITL (Engineering).</strong> Engineer uploads a CADRe part; retrieval pulls risk sections from the corpus; a classifier tool scores severity; HITL approves (framework <code>@tool(approval_mode="always_require")</code> → SQLite <code>ApprovalQueue</code> → resume route); a <code>DataSource</code> write lands the entry in the risk register. Tools: <code>DocumentSearchTool</code>, <code>ClassifierTool</code>. Requirements: UMR-002/006, UMR-036–040, HITL-001.</p>
+<p><strong>UC-F1 · Parametric Cost + HITL (Finance).</strong> Admin asks for a mission cost estimate; retrieval returns similar historical missions; an aggregator tool computes weighted distance; HITL approves; the commitment is written. Tools: <code>HistoricalMissionTool</code>, <code>CostAggregatorTool</code>. Requirements: UMR-031–035.</p>
+<p><strong>UC-F4 · Vendor Cost Roll-up (Finance).</strong> Analyst asks "how much did we spend with vendor X across missions?"; a <code>DataSource</code> (SAP connector at end state, CSV fixtures today) returns line items; a <code>VendorAggregatorTool</code> sums by vendor; a report is returned. Requirements: UMR-053–055.</p>
+<p><strong>UC · Bilingual Chat / RAG (All).</strong> User asks in English or French; retrieval + <code>DocumentSearchTool</code> return cited passages; the agent responds with citations and a confidence score. Requirements: UMR-001/002/003/007/010.</p>
+<p>New mission flows (budget scenarios, anomaly triage, cross-mission compare) land as new <code>⟨I⟩ Tool</code> + optional <code>⟨I⟩ DataSource</code> behind the same lane.</p>
+<h2>4. Design Decisions</h2>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>End-state choice</th>
+<th>Current alternative</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HTTP surface</td>
+<td><strong>Flask + Dash</strong> reviewer UI</td>
+<td>— (live)</td>
+<td>Routes are the integration contract — any token-bearing caller (user, cron, agent) can hit CRAFT; Dash shares the auth and audit perimeter.</td>
+</tr>
+<tr>
+<td>Agent runtime</td>
+<td><strong>Microsoft Agent Framework</strong> (<code>agent-framework</code>, GA April 2026 — Microsoft's enterprise successor to Semantic Kernel) · <code>ChatAgent</code> + <code>AzureOpenAIChatClient</code> · <code>@tool</code> with <code>approval_mode</code> · bounded iteration cap</td>
+<td>— (live)</td>
+<td>Microsoft-blessed, Azure-native, long-term support. First-class HITL (function-level approval + workflow-level <code>RequestPort</code>), bounded iteration, OpenTelemetry built in. <code>⟨I⟩ ChatProvider</code> keeps the swap seam honest.</td>
+</tr>
+<tr>
+<td>LLM inference</td>
+<td><strong>Azure AI Foundry</strong> (model routing + rate limits + Content Safety)</td>
+<td><strong>Azure OpenAI direct</strong> (Canadian PBMM region) via <code>AzureOpenAIChatClient</code></td>
+<td>Foundry collapses model, rate-limit and guardrail procurement into one line while PBMM residency stays. SDK stays <code>agent_framework.openai.AzureOpenAIChatClient</code>; the endpoint URL changes.</td>
+</tr>
+<tr>
+<td>Retrieval</td>
+<td><strong>Azure AI Search</strong> hybrid (vector + BM25) via <code>azure-search-documents</code></td>
+<td><strong><code>LocalFileSource</code></strong> via <code>⟨I⟩ DataSource</code> with filename / path search</td>
+<td>Same <code>⟨I⟩ DataSource</code> call site; cutover is config. Satisfies UMR-004/005/006.</td>
+</tr>
+<tr>
+<td>Guardrails + sandbox</td>
+<td><strong>Azure Content Safety</strong> on the deployment + <strong>Azure Container Apps</strong> sandbox</td>
+<td>Guardrail hook disabled (<code>GUARDRAIL_HOOK=""</code>); <code>CodeExecTool</code> slot reserved</td>
+<td>End-state wires into the tool wrapper CRAFT already runs. UMR-020 / UMR-093.</td>
+</tr>
+<tr>
+<td>Identity</td>
+<td><strong>Entra ID + MSAL</strong></td>
+<td>Local <code>AuthProvider</code> stub; SQLite users seeded by <code>scripts/seed.py</code></td>
+<td>Same token flow for humans and external agents; CSA-standard.</td>
+</tr>
+<tr>
+<td>Audit sink</td>
+<td><strong>Azure Log Analytics</strong> (immutable retention)</td>
+<td><strong>Hash-chained JSONL</strong> on disk via <code>HashChainedJsonlLog</code>; <code>python -m app.core.audit verify</code></td>
+<td>KQL at end state; grep today; UMR-027 / ASG-003. Same envelope, same chain property — forwarder at deploy time.</td>
+</tr>
+<tr>
+<td>HITL queue + memory</td>
+<td><strong>Postgres</strong> (approval queue + 3-tier memory) via <code>psycopg[binary]</code></td>
+<td><strong>SQLite <code>ApprovalQueue</code></strong> + <code>/admin/approvals/*</code> resume routes; reviewer UI reserved</td>
+<td>Durable across restarts; UMR-025 TTL, UMR-014 memory. Swap behind <code>⟨I⟩ ApprovalQueue</code>.</td>
+</tr>
+<tr>
+<td>Session + per-user data</td>
+<td><strong>Managed DB</strong> behind <code>⟨I⟩ WorkspaceStore</code></td>
+<td>SQLite file-local (<code>SqliteStore</code> + <code>SqliteDataStore</code>)</td>
+<td>Swap target already named behind the protocol.</td>
+</tr>
+<tr>
+<td>Edge</td>
+<td><strong>APIM + App Gateway</strong> (WAF)</td>
+<td>Direct App Service</td>
+<td>WAF + rate limit at perimeter; UMR-030.</td>
+</tr>
+<tr>
+<td>Deployment</td>
+<td><strong>App Service PBMM</strong> + <strong>SSC LaunchPad</strong> HA</td>
+<td>Single-region App Service</td>
+<td>HA + landing zone come with LaunchPad; UMR-057.</td>
+</tr>
+<tr>
+<td>Protocol contracts</td>
+<td><code>⟨I⟩ Tool</code>, <code>⟨I⟩ DataSource</code>, <code>⟨I⟩ ChatProvider</code>, <code>⟨I⟩ WorkspaceStore</code>, <code>⟨I⟩ AgentActionLog</code>, <code>⟨I⟩ ApprovalQueue</code></td>
+<td>— (live)</td>
+<td>New capability or backend = one class satisfying a protocol; agent unchanged. Pyright-strict verified.</td>
+</tr>
+<tr>
+<td>Invariants</td>
+<td>pytest + pyright (strict) + ruff + bandit + pip-audit + detect-secrets + doctest coverage + stateful-module coverage</td>
+<td>— (live)</td>
+<td>Route × role matrix, protocol contracts, audit-envelope present, every public function has an executable example, every stateful module has a test file. Industry-standard, maintained.</td>
+</tr>
+</tbody>
+</table>
+<h2>5. Solving the Problems — Today and at End State</h2>
+<table>
+<thead>
+<tr>
+<th>Problem (requirement)</th>
+<th>How the architecture solves it today</th>
+<th>How it solves it at end state (Azure-consolidated)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Cited retrieval (UMR-002/005/006, ARR-002/003)</td>
+<td><code>DocumentSearchTool</code> + <code>TextAnalysisTool</code> over <code>LocalFileSource</code>; retrieval response schema carries document / page / section provenance.</td>
+<td>Replace <code>LocalFileSource</code> with <code>AzureAISearchSource</code> (hybrid semantic + BM25); same <code>⟨I⟩ DataSource</code> call site, same citation schema.</td>
+</tr>
+<tr>
+<td>Grounding + confidence (UMR-007/008/010)</td>
+<td>Grounding node sits between retrieve and respond; emits confidence into <code>AGENT_ACTION</code>; escalates below 0.6.</td>
+<td>Foundry evaluation + RAGAS-style scoring plug into the same node; threshold remains code-side.</td>
+</tr>
+<tr>
+<td>HITL approvals (UMR-021–026, HITL-001–007)</td>
+<td>Agent Framework <code>@tool(approval_mode="always_require")</code> → <code>user_input_requests</code> → SQLite <code>ApprovalQueue</code> → <code>/admin/approvals/&lt;trace_id&gt;/&lt;decision&gt;</code> resume route, same auth as routes; decisions logged immutably with reasoning chain, confidence, sources.</td>
+<td>Postgres approval queue, Dash reviewer UI, Content Safety + Foundry rate limits layer in front; <code>⟨I⟩ ApprovalQueue</code> + <code>⟨I⟩ ChatProvider</code> unchanged.</td>
+</tr>
+<tr>
+<td>RBAC + data scope (UMR-012/017/058, AAR-002/007)</td>
+<td>Route-gated declarative <code>permissions.json</code> (role levels + public prefixes + internal prefixes + route rules); <code>SqliteDataStore</code> scoped by <code>QueryTool.set_user</code>; per-tool RBAC column staged.</td>
+<td>Entra ID issues tokens; same role check in <code>before_request</code>; classification tags enforced at the data store.</td>
+</tr>
+<tr>
+<td>Immutable audit (UMR-015/027/045, ASG-003)</td>
+<td><code>HashChainedJsonlLog</code> writes append-only JSONL with SHA-256 hash chain; daily rotation; covers every tool call and LLM turn; <code>python -m app.core.audit verify</code> validates the chain.</td>
+<td>Forward the same envelope to Log Analytics (immutability policy); KQL replaces grep.</td>
+</tr>
+<tr>
+<td>Guardrails + sandbox (UMR-020/029/030/093, ASG-001/004/011)</td>
+<td><code>GUARDRAIL_HOOK</code> hook point in tool wrapper (<code>""</code> today, no-op); <code>CodeExecTool</code> reserved stub; rate limit at APIM-like proxy.</td>
+<td>Content Safety on the hook (<code>content_filter_results</code> read directly from the SDK response); Azure Container Apps for code-exec; Foundry rate controls.</td>
+</tr>
+<tr>
+<td>External data (UMR-051–054)</td>
+<td><code>LocalFileSource</code> reads mirrors / CSV fixtures of the CSA corpus and SAP line items; UC-E2 / F1 / F4 lanes run end-to-end.</td>
+<td>SharePoint, SAP, STK, MATLAB each land as a <code>⟨I⟩ DataSource</code> class with MSAL / OAuth; one JSON row in <code>data_sources.json</code>.</td>
+</tr>
+<tr>
+<td>Multi-agent + memory (UMR-011/014/018/095, AAR-001/004)</td>
+<td>Primary agent (Agent Framework <code>ChatAgent</code>) + tool registry + session workspace; <code>agent_id</code> in <code>AGENT_ACTION</code> already carries sub-task identity.</td>
+<td>Add orchestrator + specialist agents via the framework's multi-agent primitives + workflow-level <code>RequestPort</code>; Postgres holds the three memory tiers; per-session agent factory.</td>
+</tr>
+<tr>
+<td>Bilingual reports (UMR-001/046/048)</td>
+<td>Agent accepts EN/FR free text; report generator attaches citations and runs through HITL.</td>
+<td>Azure Translator + Foundry NLG for narrative sections; same template + evidence pipeline.</td>
+</tr>
+<tr>
+<td>Interoperability (UMR-055)</td>
+<td>REST surface is the contract today; schema documented; external agents can trigger CRAFT with a token.</td>
+<td>Same routes behind APIM + App Gateway (WAF, rate limit); GraphQL layer optional on top.</td>
+</tr>
+<tr>
+<td>SLA + scale (UMR-056/057/059)</td>
+<td>Single-instance App Service with health checks; load-test harness in place.</td>
+<td>HA App Service + Azure Front Door; autoscale; SSC LaunchPad for the landing zone.</td>
+</tr>
+</tbody>
+</table>
+<h2>6. Requirements Traceability</h2>
+<table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Requirements</th>
+<th>Design</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Primary agent</td>
+<td>UMR-001/011/013/016/018/019/094/095, AAR-001/003/006, ASG-005</td>
+<td><strong>Microsoft Agent Framework · <code>ChatAgent</code> + <code>AzureOpenAIChatClient</code> · <code>⟨I⟩ ChatProvider</code> · bounded iteration cap</strong></td>
+</tr>
+<tr>
+<td>Retrieval + RAG</td>
+<td>UMR-002/003/004/005/006/009/010/060/067, ARR-002–007</td>
+<td>Hybrid search tool · <code>⟨I⟩ DataSource</code> registry (declarative JSON) · citation + grounding schema</td>
+</tr>
+<tr>
+<td>Audit + traceability</td>
+<td>UMR-015/027/045/061/062/093, AAR-005, ASG-003</td>
+<td><code>AgentAction</code> envelope · <code>⟨I⟩ AgentActionLog</code> · hash-chained JSONL → Azure Log Analytics</td>
+</tr>
+<tr>
+<td>HITL approvals</td>
+<td>UMR-021–026/035/039/044/049, HITL-001–007, ASG-002</td>
+<td>Agent Framework <code>@tool(approval_mode)</code> · <code>⟨I⟩ ApprovalQueue</code> (SQLite today) · Dash reviewer UI reserved · Postgres end state</td>
+</tr>
+<tr>
+<td>RBAC + data scope</td>
+<td>UMR-012/017/058/065/066, AAR-002/007</td>
+<td>Declarative <code>permissions.json</code> (role levels + rules + prefixes) · <code>SqliteDataStore</code> · <code>QueryTool.set_user</code></td>
+</tr>
+<tr>
+<td>Session + workspace</td>
+<td>UMR-014/092/095</td>
+<td><code>⟨I⟩ WorkspaceStore</code> → <code>SqliteStore</code> + <code>SessionScratchStore</code> (end state); per-session agent factory</td>
+</tr>
+<tr>
+<td>Guardrails + containment</td>
+<td>UMR-020/029/030, ASG-001/004/011</td>
+<td><code>GUARDRAIL_HOOK</code> hook point · APIM rate limit · Azure Container Apps sandbox</td>
+</tr>
+<tr>
+<td>Connectors + external</td>
+<td>UMR-051–055</td>
+<td><code>⟨I⟩ DataSource</code> kind registry (JSON-driven) + MSAL · Flask REST · SAP / STK / MATLAB classes</td>
+</tr>
+<tr>
+<td>Domain capabilities</td>
+<td>UMR-007/008/031–050/075, ARR-001</td>
+<td>New <code>⟨I⟩ Tool</code> classes over existing registries (reserved stubs today)</td>
+</tr>
+<tr>
+<td>Deployment + SLA</td>
+<td>UMR-028/056/057/059/064/069/070/074/085, ASG-006</td>
+<td>Azure App Service PBMM · APIM + WAF · SSC LaunchPad HA · stdlib + <code>python-dotenv</code> config loader</td>
+</tr>
+</tbody>
+</table>
+<h2>7. Blockages (End State / Current Alternative)</h2>
+<table>
+<thead>
+<tr>
+<th>End-state component</th>
+<th>Current alternative</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Azure AI Search (hybrid retrieval)</td>
+<td><code>LocalFileSource</code> + file-name / path search</td>
+</tr>
+<tr>
+<td>Azure Log Analytics + immutability</td>
+<td>Hash-chained append-only JSONL on disk + <code>audit verify</code> CLI</td>
+</tr>
+<tr>
+<td>Azure Content Safety</td>
+<td>Guardrail hook off (<code>GUARDRAIL_HOOK=""</code>)</td>
+</tr>
+<tr>
+<td>Azure Container Apps sandbox</td>
+<td><code>CodeExecTool</code> registration slot reserved</td>
+</tr>
+<tr>
+<td>Entra ID (app registration + MSAL)</td>
+<td>Local <code>AuthProvider</code> stub, mocked tokens, SQLite-backed user table</td>
+</tr>
+<tr>
+<td>SharePoint <code>DataSource</code></td>
+<td><code>LocalFileSource</code> reads a corpus mirror</td>
+</tr>
+<tr>
+<td>SAP <code>DataSource</code></td>
+<td>CSV fixtures via <code>LocalFileSource</code> (UC-F4 runs)</td>
+</tr>
+<tr>
+<td>STK / MATLAB adapters</td>
+<td><code>⟨I⟩ Tool</code> slot reserved</td>
+</tr>
+<tr>
+<td>Azure AI Foundry (model routing / rate limits)</td>
+<td>Azure OpenAI direct (Canadian region)</td>
+</tr>
+<tr>
+<td>SSC LaunchPad HA</td>
+<td>Single-region App Service</td>
+</tr>
+<tr>
+<td>CSA risk taxonomy</td>
+<td>Stub taxonomy drives the classifier for tests</td>
+</tr>
+<tr>
+<td>Historical mission DB</td>
+<td>CSV fixtures through <code>LocalFileSource</code> (UC-F1 runs)</td>
+</tr>
+<tr>
+<td>Microsoft Agent Framework (if access restricted)</td>
+<td>Hand-rolled ReAct loop on <code>openai.AsyncAzureOpenAI</code> behind same <code>⟨I⟩ ChatProvider</code></td>
+</tr>
+<tr>
+<td>Postgres (HITL queue + 3-tier memory)</td>
+<td>SQLite <code>approvals</code> table + resume routes</td>
+</tr>
+</tbody>
+</table>
+<h2>8. System-Health Tooling</h2>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ruff</td>
+<td>Lint (flake8 + isort + pyupgrade) · pre-commit + CI</td>
+</tr>
+<tr>
+<td>pyright (strict)</td>
+<td>Type checking · protocol conformance · pre-commit + CI</td>
+</tr>
+<tr>
+<td>pytest + coverage</td>
+<td>Route × role matrix · protocol contracts · audit-envelope invariants · pre-commit + CI</td>
+</tr>
+<tr>
+<td>doctest</td>
+<td>Every public pure function carries an executable example · <code>pytest --doctest-modules</code></td>
+</tr>
+<tr>
+<td>architecture tests</td>
+<td>AST-walkers in <code>app/tests/test_architecture.py</code>: doctest coverage, stateful-module test coverage, forbidden-import guard (no direct <code>pydantic</code> / <code>pydantic_ai</code> / <code>langchain</code> / <code>langgraph</code> in our source)</td>
+</tr>
+<tr>
+<td>bandit</td>
+<td>Security scan · pre-commit</td>
+</tr>
+<tr>
+<td>pip-audit</td>
+<td>Dependency CVE audit · pre-commit + CI</td>
+</tr>
+<tr>
+<td>detect-secrets</td>
+<td>No credentials in git · pre-commit</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Dependency surface:</strong> <code>agent-framework</code> (umbrella; or narrower <code>agent-framework-core</code> + <code>agent-framework-openai</code> + <code>agent-framework-foundry</code>), <code>openai</code> (via framework), <code>dash</code>, <code>flask</code>, <code>flask-login</code>, <code>pandas</code>, <code>plotly</code>, <code>python-dotenv</code>, <code>requests</code>, <code>werkzeug</code>, <code>msal</code>, <code>pdfplumber</code>, <code>python-docx</code>. Agent Framework pulls <code>pydantic</code> and related Microsoft/Azure packages transitively. Each end-state row above adds <strong>one targeted dep</strong> behind an existing protocol — not a tree.</p></body></html>
