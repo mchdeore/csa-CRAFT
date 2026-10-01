@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 640" font-family="Times New Roman, Times, serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 720" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif">
   <defs>
     <marker id="arrUC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/>
@@ -8,18 +8,18 @@
       .lane { fill: #fff; stroke: #000; stroke-width: 0.9; }
       .div  { stroke: #000; stroke-width: 0.4; stroke-dasharray: 2 2; }
       .box  { fill: #fff; stroke: #000; stroke-width: 0.9; }
-      .box-d{ fill: #fff; stroke: #000; stroke-width: 0.9; stroke-dasharray: 4 2; }
       .gate { fill: #fff; stroke: #000; stroke-width: 1; }
       .term { fill: #000; stroke: #000; stroke-width: 1; }
       .lbl  { font-size: 10px; fill: #000; text-anchor: middle; }
+      .lbl-b { font-size: 10px; fill: #000; text-anchor: middle; font-style: italic; text-decoration: underline; }
       .lbl-s{ font-size: 8.5px; fill: #000; text-anchor: middle; font-style: italic; }
       .req  { font-size: 8px; fill: #000; text-anchor: middle; font-style: italic; }
-      .h    { font-size: 11px; font-weight: bold; fill: #000; }
+      .h    { font-size: 11px; font-weight: 600; fill: #000; }
       .sub  { font-size: 9.5px; fill: #000; font-style: italic; }
+      .foot { font-size: 10px; fill: #000; text-anchor: middle; font-style: italic; }
       .edge { stroke: #000; stroke-width: 0.9; fill: none; }
-      .edge-d { stroke: #000; stroke-width: 0.9; fill: none; stroke-dasharray: 4 2; }
-      .swim { font-size: 9px; font-weight: bold; fill: #000; text-anchor: middle; }
-      .title { font-size: 13px; font-weight: bold; fill: #000; text-anchor: middle; }
+      .swim { font-size: 9px; font-weight: 600; fill: #000; text-anchor: middle; }
+      .title { font-size: 13px; font-weight: 600; fill: #000; text-anchor: middle; }
     ]]></style>
   </defs>
 
@@ -34,15 +34,15 @@
     <line x1="30" y1="14" x2="730" y2="14" class="div"/>
   </g>
 
-  <!-- =================== LANE 1 : UC-E2 =================== -->
+  <!-- ===== LANE 1 : UC-E2 ===== -->
   <g transform="translate(0,54)">
-    <rect x="30" y="0" width="700" height="180" class="lane"/>
+    <rect x="30" y="0" width="700" height="200" class="lane"/>
     <text x="40" y="18" class="h">UC-E2 · Risk ID + HITL</text>
     <text x="40" y="32" class="sub">Engineering · upload CADRe → retrieve → classify → HITL</text>
 
-    <line x1="160" y1="40" x2="160" y2="180" class="div"/>
-    <line x1="340" y1="40" x2="340" y2="180" class="div"/>
-    <line x1="590" y1="40" x2="590" y2="180" class="div"/>
+    <line x1="160" y1="40" x2="160" y2="200" class="div"/>
+    <line x1="340" y1="40" x2="340" y2="200" class="div"/>
+    <line x1="590" y1="40" x2="590" y2="200" class="div"/>
 
     <rect x="48" y="90" width="100" height="32" class="box"/>
     <text x="98" y="107" class="lbl">Engineer</text>
@@ -56,20 +56,20 @@
     <text x="310" y="107" class="lbl">Agent</text>
     <text x="310" y="118" class="lbl-s">ReAct</text>
 
-    <rect x="352" y="82" width="100" height="32" class="box-d"/>
-    <text x="402" y="99" class="lbl">Hybrid retr.</text>
+    <rect x="352" y="82" width="100" height="32" class="box"/>
+    <text x="402" y="99" class="lbl-b">Hybrid retr.</text>
     <text x="402" y="110" class="req">UMR-002…006</text>
 
-    <rect x="470" y="82" width="100" height="32" class="box-d"/>
-    <text x="520" y="99" class="lbl">Classifier</text>
+    <rect x="470" y="82" width="100" height="32" class="box"/>
+    <text x="520" y="99" class="lbl-b">Classifier</text>
     <text x="520" y="110" class="req">UMR-036…040</text>
 
     <polygon points="400,136 420,122 500,122 520,136 500,150 420,150" class="gate"/>
     <text x="460" y="138" class="lbl">HITL</text>
     <text x="460" y="148" class="req">HITL-001</text>
 
-    <rect x="420" y="162" width="100" height="18" class="box-d"/>
-    <text x="470" y="175" class="lbl">Risk register</text>
+    <rect x="420" y="162" width="100" height="24" class="box"/>
+    <text x="470" y="178" class="lbl-b">Risk register</text>
 
     <circle cx="650" cy="106" r="12" class="term"/>
     <text x="650" y="110" class="lbl" fill="#fff">●</text>
@@ -77,22 +77,22 @@
 
     <line x1="148" y1="106" x2="176" y2="106" class="edge" marker-end="url(#arrUC)"/>
     <line x1="276" y1="106" x2="284" y2="106" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="334" y1="106" x2="350" y2="98" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="452" y1="98" x2="468" y2="98" class="edge-d" marker-end="url(#arrUC)"/>
-    <path d="M 520 114 L 520 122" class="edge-d" marker-end="url(#arrUC)"/>
-    <path d="M 460 150 L 460 162" class="edge-d" marker-end="url(#arrUC)"/>
+    <line x1="334" y1="106" x2="350" y2="98"  class="edge" marker-end="url(#arrUC)"/>
+    <line x1="452" y1="98"  x2="468" y2="98"  class="edge" marker-end="url(#arrUC)"/>
+    <path d="M 520 114 L 520 122" class="edge" marker-end="url(#arrUC)"/>
+    <path d="M 460 150 L 460 162" class="edge" marker-end="url(#arrUC)"/>
     <path d="M 520 136 L 580 136 L 580 106 L 636 106" class="edge" marker-end="url(#arrUC)"/>
   </g>
 
-  <!-- =================== LANE 2 : UC-F1 =================== -->
-  <g transform="translate(0,244)">
-    <rect x="30" y="0" width="700" height="180" class="lane"/>
+  <!-- ===== LANE 2 : UC-F1 ===== -->
+  <g transform="translate(0,264)">
+    <rect x="30" y="0" width="700" height="200" class="lane"/>
     <text x="40" y="18" class="h">UC-F1 · Parametric Cost + HITL</text>
     <text x="40" y="32" class="sub">Finance · historical lookup → aggregate → HITL commit</text>
 
-    <line x1="160" y1="40" x2="160" y2="180" class="div"/>
-    <line x1="340" y1="40" x2="340" y2="180" class="div"/>
-    <line x1="590" y1="40" x2="590" y2="180" class="div"/>
+    <line x1="160" y1="40" x2="160" y2="200" class="div"/>
+    <line x1="340" y1="40" x2="340" y2="200" class="div"/>
+    <line x1="590" y1="40" x2="590" y2="200" class="div"/>
 
     <rect x="48" y="90" width="100" height="32" class="box"/>
     <text x="98" y="107" class="lbl">Admin</text>
@@ -106,8 +106,8 @@
     <text x="310" y="107" class="lbl">Agent</text>
     <text x="310" y="118" class="lbl-s">ReAct</text>
 
-    <rect x="352" y="82" width="100" height="32" class="box-d"/>
-    <text x="402" y="99" class="lbl">Hist. retr.</text>
+    <rect x="352" y="82" width="100" height="32" class="box"/>
+    <text x="402" y="99" class="lbl-b">Hist. retr.</text>
     <text x="402" y="110" class="req">UMR-031</text>
 
     <rect x="470" y="82" width="100" height="32" class="box"/>
@@ -118,8 +118,8 @@
     <text x="460" y="138" class="lbl">HITL</text>
     <text x="460" y="148" class="req">UMR-035</text>
 
-    <rect x="420" y="162" width="100" height="18" class="box-d"/>
-    <text x="470" y="175" class="lbl">Commitment</text>
+    <rect x="420" y="162" width="100" height="24" class="box"/>
+    <text x="470" y="178" class="lbl-b">Commitment</text>
 
     <circle cx="650" cy="106" r="12" class="term"/>
     <text x="650" y="110" class="lbl" fill="#fff">●</text>
@@ -127,15 +127,15 @@
 
     <line x1="148" y1="106" x2="176" y2="106" class="edge" marker-end="url(#arrUC)"/>
     <line x1="276" y1="106" x2="284" y2="106" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="334" y1="106" x2="350" y2="98" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="452" y1="98" x2="468" y2="98" class="edge-d" marker-end="url(#arrUC)"/>
+    <line x1="334" y1="106" x2="350" y2="98"  class="edge" marker-end="url(#arrUC)"/>
+    <line x1="452" y1="98"  x2="468" y2="98"  class="edge" marker-end="url(#arrUC)"/>
     <path d="M 520 114 L 520 122" class="edge" marker-end="url(#arrUC)"/>
-    <path d="M 460 150 L 460 162" class="edge-d" marker-end="url(#arrUC)"/>
+    <path d="M 460 150 L 460 162" class="edge" marker-end="url(#arrUC)"/>
     <path d="M 520 136 L 580 136 L 580 106 L 636 106" class="edge" marker-end="url(#arrUC)"/>
   </g>
 
-  <!-- =================== LANE 3 : UC-F4 (clear single-line flow) =================== -->
-  <g transform="translate(0,434)">
+  <!-- ===== LANE 3 : UC-F4 ===== -->
+  <g transform="translate(0,474)">
     <rect x="30" y="0" width="700" height="180" class="lane"/>
     <text x="40" y="18" class="h">UC-F4 · Vendor Cost Roll-up (SAP)</text>
     <text x="40" y="32" class="sub">Finance · "How much did we spend with vendor X across missions?" — SAP DataSource → aggregate by vendor → report</text>
@@ -156,8 +156,8 @@
     <text x="310" y="112" class="lbl">Agent</text>
     <text x="310" y="124" class="lbl-s">ReAct</text>
 
-    <rect x="352" y="94" width="110" height="36" class="box-d"/>
-    <text x="407" y="112" class="lbl">SAP DataSource</text>
+    <rect x="352" y="94" width="110" height="36" class="box"/>
+    <text x="407" y="112" class="lbl-b">SAP DataSource</text>
     <text x="407" y="124" class="req">UMR-053…055</text>
 
     <rect x="478" y="94" width="100" height="36" class="box"/>
@@ -171,7 +171,10 @@
     <line x1="148" y1="112" x2="176" y2="112" class="edge" marker-end="url(#arrUC)"/>
     <line x1="276" y1="112" x2="284" y2="112" class="edge" marker-end="url(#arrUC)"/>
     <line x1="334" y1="112" x2="350" y2="112" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="462" y1="112" x2="476" y2="112" class="edge-d" marker-end="url(#arrUC)"/>
+    <line x1="462" y1="112" x2="476" y2="112" class="edge" marker-end="url(#arrUC)"/>
     <line x1="578" y1="112" x2="636" y2="112" class="edge" marker-end="url(#arrUC)"/>
   </g>
+
+  <text x="380" y="680" class="foot">Lanes are illustrative — the same ***⟨I⟩ Tool*** and ***⟨I⟩ DataSource*** carry any refactor; swap a block, keep the audit. &#x1D408;talic + underlined = pending backend.</text>
+  <text x="380" y="696" class="foot">role-check · AgentAction audit · HITL interrupt stay fixed across use cases, so new flows land safely.</text>
 </svg>

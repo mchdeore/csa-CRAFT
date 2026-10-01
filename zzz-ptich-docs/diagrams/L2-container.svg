@@ -1,128 +1,115 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 620" font-family="Times New Roman, Times, serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 580" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif">
   <defs>
-    <marker id="arrL2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/>
-    </marker>
     <style><![CDATA[
       .box { fill: #fff; stroke: #000; stroke-width: 0.9; }
-      .box-d { fill: #fff; stroke: #000; stroke-width: 0.9; stroke-dasharray: 4 2; }
       .lbl { font-size: 10.5px; fill: #000; }
       .lbl-c { font-size: 10.5px; fill: #000; text-anchor: middle; }
+      .lbl-b { font-size: 10.5px; fill: #000; font-style: italic; text-decoration: underline; }
       .lbl-i { font-size: 9.5px; fill: #000; font-style: italic; }
-      .h  { font-size: 10.5px; font-weight: bold; fill: #000; }
-      .hc { font-size: 10.5px; font-weight: bold; fill: #000; text-anchor: middle; }
-      .mono { font-family: "Courier New", Courier, monospace; font-size: 10px; fill: #000; }
-      .edge { stroke: #000; stroke-width: 0.9; fill: none; }
-      .edge-d { stroke: #000; stroke-width: 0.9; fill: none; stroke-dasharray: 2 2; }
-      .title { font-size: 13px; font-weight: bold; fill: #000; text-anchor: middle; }
+      .h  { font-size: 10.5px; font-weight: 600; fill: #000; }
+      .hc { font-size: 10.5px; font-weight: 600; fill: #000; text-anchor: middle; }
+      .mono { font-family: "SF Mono", Menlo, Consolas, "Courier New", monospace; font-size: 10px; fill: #000; }
+      .title { font-size: 13px; font-weight: 600; fill: #000; text-anchor: middle; }
+      .num { font-size: 13px; font-weight: 700; fill: #fff; text-anchor: middle; dominant-baseline: central; }
+      .numcirc { fill: #000; }
+      .proto { font-weight: 700; }
     ]]></style>
   </defs>
 
   <text x="380" y="18" class="title">Figure 1 · L2 — Containers, Actors, External Systems</text>
 
-  <!-- ACTORS -->
+  <!-- 1 ACTORS -->
   <g transform="translate(20,36)">
     <rect x="0" y="0" width="720" height="42" class="box"/>
-    <text x="8" y="16" class="h">Actors</text>
-    <text x="8" y="32" class="lbl">Mission Engineer · Systems Engineer · Program Admin · HITL Reviewer · external agent / trigger</text>
+    <circle cx="18" cy="21" r="11" class="numcirc"/><text x="18" y="21" class="num">1</text>
+    <text x="36" y="18" class="h">Actors</text>
+    <text x="36" y="34" class="lbl">Mission Engineer · Systems Engineer · Program Admin · HITL Reviewer · external agent / trigger</text>
   </g>
 
-  <!-- RBAC -->
+  <!-- 2 RBAC -->
   <g transform="translate(20,88)">
     <rect x="0" y="0" width="720" height="106" class="box"/>
-    <text x="8" y="16" class="h">Route-gated RBAC   ⟨I⟩ AuthProvider</text>
-    <text x="8" y="34" class="mono">@route("/path/*", role=&lt;required&gt;)  def handler(req): before_request(); after_request()</text>
-    <text x="8" y="50" class="lbl-i">before_request → auth · role · trace_id   ·   after_request → audit emit (AgentAction)</text>
-    <text x="8" y="72" class="mono">base   (1)   read · chat</text>
-    <text x="8" y="88" class="mono">power  (2)   + upload · tools</text>
-    <text x="8" y="102" class="mono">admin  (3)   + /admin/*</text>
-    <text x="360" y="72" class="lbl-i">role &lt; required → 403</text>
-    <text x="360" y="88" class="lbl-i">unregistered route → 404 (before auth)</text>
-    <text x="360" y="102" class="lbl-i">any external principal with the right role can call</text>
+    <circle cx="18" cy="21" r="11" class="numcirc"/><text x="18" y="21" class="num">2</text>
+    <text x="36" y="18" class="h">Route-gated RBAC   <tspan class="proto">⟨I⟩ AuthProvider</tspan></text>
+    <text x="36" y="34" class="mono">@route("/path/*", role=&lt;required&gt;)  def handler(req): before_request(); after_request()</text>
+    <text x="36" y="50" class="lbl-i">before_request → auth · role · trace_id   ·   after_request → audit emit (AgentAction)</text>
+    <text x="36" y="72" class="mono">base   (1)   read · chat</text>
+    <text x="36" y="88" class="mono">power  (2)   + upload · tools</text>
+    <text x="36" y="102" class="mono">admin  (3)   + /admin/*</text>
+    <text x="380" y="72" class="lbl-i">role &lt; required → 403</text>
+    <text x="380" y="88" class="lbl-i">unregistered route → 404 (before auth)</text>
+    <text x="380" y="102" class="lbl-i">any external principal with the right role can call</text>
   </g>
 
-  <!-- PRIMARY AGENT -->
+  <!-- 3 PRIMARY AGENT -->
   <g transform="translate(20,204)">
     <rect x="0" y="0" width="720" height="46" class="box"/>
-    <text x="8" y="16" class="h">Primary Agent (entry point)</text>
-    <text x="8" y="32" class="lbl">LangGraph ReAct · bounded recursion · HITL interrupt</text>
-    <text x="8" y="42" class="lbl-i">⟨I⟩ ChatProvider   ⟨I⟩ AgentActionLog   ⟨I⟩ Tool</text>
+    <circle cx="18" cy="21" r="11" class="numcirc"/><text x="18" y="21" class="num">3</text>
+    <text x="36" y="18" class="h">Primary Agent (entry point)</text>
+    <text x="36" y="32" class="lbl">LangGraph ReAct · bounded recursion · HITL interrupt</text>
+    <text x="36" y="42" class="lbl-i"><tspan class="proto">⟨I⟩ ChatProvider</tspan>   <tspan class="proto">⟨I⟩ AgentActionLog</tspan>   <tspan class="proto">⟨I⟩ Tool</tspan></text>
   </g>
 
-  <!-- TOOL + DATASOURCE REGISTRIES -->
+  <!-- 4 REGISTRIES -->
   <g transform="translate(20,260)">
     <rect x="0" y="0" width="350" height="118" class="box"/>
-    <text x="8" y="16" class="h">Tool Registry   ⟨I⟩ Tool</text>
-    <text x="8" y="34" class="lbl">documents — ingest · search · cite</text>
-    <text x="8" y="50" class="lbl">query_data — SQL · RBAC-scoped</text>
-    <text x="8" y="72" class="mono">POST /tools/execute/&lt;name&gt;</text>
-    <text x="8" y="88" class="lbl-i">validated against ⟨I⟩ Tool · audited</text>
-    <text x="8" y="104" class="lbl-i">new tool = new class, agent unchanged</text>
+    <circle cx="18" cy="21" r="11" class="numcirc"/><text x="18" y="21" class="num">4</text>
+    <text x="36" y="18" class="h">Tool Registry   <tspan class="proto">⟨I⟩ Tool</tspan></text>
+    <text x="8" y="40" class="lbl">documents — ingest · search · cite</text>
+    <text x="8" y="54" class="lbl">query_data — SQL · RBAC-scoped</text>
+    <text x="8" y="76" class="mono">POST /tools/execute/&lt;name&gt;</text>
+    <text x="8" y="92" class="lbl-i">validated against <tspan class="proto">⟨I⟩ Tool</tspan> · audited</text>
+    <text x="8" y="106" class="lbl-i">new tool = new class, agent unchanged</text>
 
     <rect x="370" y="0" width="350" height="118" class="box"/>
-    <text x="378" y="16" class="h">DataSource Registry   ⟨I⟩ DataSource</text>
-    <text x="378" y="32" class="lbl">LocalFile — filesystem (live)</text>
-    <text x="378" y="46" class="lbl">SharePoint — Graph API [blocked · LocalFile mirror]</text>
-    <text x="378" y="60" class="lbl">SAP — REST / OData [blocked · CSV fixtures]</text>
-    <text x="378" y="74" class="lbl">STK / MATLAB — adapter [blocked · reserved]</text>
-    <text x="378" y="88" class="lbl">Vector index — AI Search [blocked · LocalFile hybrid]</text>
-    <text x="378" y="108" class="lbl-i">per-request · RBAC-scoped · MSAL / OAuth</text>
+    <circle cx="388" cy="21" r="11" class="numcirc"/><text x="388" y="21" class="num">4</text>
+    <text x="406" y="18" class="h">DataSource Registry   <tspan class="proto">⟨I⟩ DataSource</tspan></text>
+    <text x="378" y="40" class="lbl">LocalFile — filesystem (live)</text>
+    <text x="378" y="54" class="lbl-b">SharePoint — Graph API [LocalFile mirror]</text>
+    <text x="378" y="68" class="lbl-b">SAP — REST / OData [CSV fixtures]</text>
+    <text x="378" y="82" class="lbl-b">STK / MATLAB — adapter [reserved]</text>
+    <text x="378" y="96" class="lbl-b">Vector index — AI Search [LocalFile hybrid]</text>
+    <text x="378" y="112" class="lbl-i">per-request · RBAC-scoped · MSAL / OAuth</text>
   </g>
 
-  <!-- STORAGE -->
+  <!-- 5 STORAGE -->
   <g transform="translate(20,388)">
     <rect x="0" y="0" width="720" height="66" class="box"/>
-    <text x="8" y="16" class="h">Storage   ⟨I⟩ WorkspaceStore</text>
-    <line x1="240" y1="22" x2="240" y2="64" stroke="#000" stroke-width="0.4" stroke-dasharray="2 2"/>
-    <line x1="480" y1="22" x2="480" y2="64" stroke="#000" stroke-width="0.4" stroke-dasharray="2 2"/>
-    <text x="120" y="36" class="hc">Workspace Store</text>
-    <text x="120" y="50" class="lbl-c">SqliteStore + ScratchStore</text>
+    <circle cx="18" cy="21" r="11" class="numcirc"/><text x="18" y="21" class="num">5</text>
+    <text x="36" y="18" class="h">Storage   <tspan class="proto">⟨I⟩ WorkspaceStore</tspan></text>
+    <line x1="240" y1="26" x2="240" y2="64" stroke="#000" stroke-width="0.4" stroke-dasharray="2 2"/>
+    <line x1="480" y1="26" x2="480" y2="64" stroke="#000" stroke-width="0.4" stroke-dasharray="2 2"/>
+    <text x="120" y="38" class="hc">Workspace Store</text>
+    <text x="120" y="52" class="lbl-c">SqliteStore + ScratchStore</text>
     <text x="120" y="62" class="lbl-c" font-style="italic">session · scratch</text>
-    <text x="360" y="36" class="hc">Data Store (RBAC)</text>
-    <text x="360" y="50" class="lbl-c">SqliteDataStore</text>
+    <text x="360" y="38" class="hc">Data Store (RBAC)</text>
+    <text x="360" y="52" class="lbl-c">SqliteDataStore</text>
     <text x="360" y="62" class="lbl-c" font-style="italic">per-user query scope</text>
-    <text x="600" y="36" class="hc">Audit Log</text>
-    <text x="600" y="50" class="lbl-c">JSONL append-only</text>
-    <text x="600" y="62" class="lbl-c" font-style="italic">→ Log Analytics [blocked]</text>
+    <text x="600" y="38" class="hc">Audit Log</text>
+    <text x="600" y="52" class="lbl-c">JSONL append-only</text>
+    <text x="600" y="62" class="lbl-c" font-style="italic">→ Log Analytics (end state)</text>
   </g>
 
-  <!-- EXTERNAL -->
+  <!-- 6 EXTERNAL -->
   <g transform="translate(20,464)">
     <rect x="0" y="0" width="720" height="80" class="box"/>
-    <text x="8" y="16" class="h">External systems — end state: Azure-consolidated (Foundry · IQ)</text>
-    <text x="8" y="32" class="lbl">Azure OpenAI — LLM inference (live)</text>
-    <text x="8" y="46" class="lbl">Azure AI Search — hybrid retrieval  [blocked · LocalFileSource]</text>
-    <text x="8" y="60" class="lbl">Entra ID — identity · MSAL  [blocked · local AuthProvider stub]</text>
-    <text x="8" y="74" class="lbl">Content Safety — guardrails  [blocked · wrapper off]</text>
-    <text x="378" y="32" class="lbl">APIM · App Gateway — edge · WAF  [blocked · direct App Service]</text>
-    <text x="378" y="46" class="lbl">Log Analytics — immutable audit  [blocked · JSONL on disk]</text>
-    <text x="378" y="60" class="lbl">Azure Container Apps — code-exec sandbox  [blocked · reserved]</text>
-    <text x="378" y="74" class="lbl">Postgres — HITL queue · 3-tier memory  [staged]</text>
+    <circle cx="18" cy="21" r="11" class="numcirc"/><text x="18" y="21" class="num">6</text>
+    <text x="36" y="18" class="h">External systems — end state: Azure-consolidated (Foundry · IQ)</text>
+    <text x="8" y="38" class="lbl">Azure OpenAI — LLM inference (live)</text>
+    <text x="8" y="52" class="lbl-b">Azure AI Search — hybrid retrieval  [LocalFileSource today]</text>
+    <text x="8" y="66" class="lbl-b">Entra ID — identity · MSAL  [local stub today]</text>
+    <text x="8" y="80" class="lbl-b">Content Safety — guardrails  [wrapper off today]</text>
+    <text x="378" y="38" class="lbl-b">APIM · App Gateway — edge · WAF  [direct App Service today]</text>
+    <text x="378" y="52" class="lbl-b">Log Analytics — immutable audit  [JSONL on disk today]</text>
+    <text x="378" y="66" class="lbl-b">Azure Container Apps — code-exec sandbox  [reserved]</text>
+    <text x="378" y="80" class="lbl">Postgres — HITL queue · 3-tier memory  (staged)</text>
   </g>
 
-  <!-- TEST -->
+  <!-- 7 TEST -->
   <g transform="translate(20,554)">
-    <rect x="0" y="0" width="720" height="34" class="box"/>
-    <text x="8" y="16" class="h">Test surface</text>
-    <text x="8" y="30" class="lbl">ruff · pyright · pytest · bandit · pip-audit · detect-secrets — pre-commit + CI</text>
-  </g>
-
-  <!-- edges -->
-  <line x1="380" y1="78"  x2="380" y2="86"  class="edge" marker-end="url(#arrL2)"/>
-  <line x1="380" y1="194" x2="380" y2="202" class="edge" marker-end="url(#arrL2)"/>
-  <line x1="380" y1="250" x2="175" y2="258" class="edge" marker-end="url(#arrL2)"/>
-  <line x1="380" y1="250" x2="545" y2="258" class="edge" marker-end="url(#arrL2)"/>
-  <line x1="175" y1="378" x2="200" y2="386" class="edge" marker-end="url(#arrL2)"/>
-  <line x1="545" y1="378" x2="520" y2="386" class="edge" marker-end="url(#arrL2)"/>
-  <line x1="600" y1="454" x2="600" y2="462" class="edge-d" marker-end="url(#arrL2)"/>
-
-  <!-- Legend -->
-  <g transform="translate(20,600)">
-    <rect x="0" y="-10" width="16" height="10" class="box"/>
-    <text x="22" y="0" class="lbl">solid · live</text>
-    <rect x="120" y="-10" width="16" height="10" class="box-d"/>
-    <text x="142" y="0" class="lbl">dashed · end-state via current alternative</text>
-    <text x="430" y="0" class="lbl">⟨I⟩ · Python protocol</text>
+    <rect x="0" y="0" width="720" height="22" class="box"/>
+    <circle cx="18" cy="11" r="11" class="numcirc"/><text x="18" y="11" class="num">7</text>
+    <text x="36" y="14" class="lbl">Test surface — ruff · pyright · pytest · bandit · pip-audit · detect-secrets   (pre-commit + CI)</text>
   </g>
 </svg>
