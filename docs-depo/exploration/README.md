@@ -1,8 +1,13 @@
 # Exploration
 
-Research on dependencies, open-source tools, and patterns worth tracking for
-possible future integration into CRAFT. Each entry is a markdown file following
-the template below. Nothing here is consumed by code — it's reference material.
+Research notes on anything that could inform a build decision for CRAFT:
+third-party OSS tools, dependencies, vendor services, architecture studies,
+patterns worth lifting. Scouting that may never land AND research that already
+drove a decision both live here — mark the latter as superseded or decided
+rather than deleting the entry, so the trail stays visible.
+
+Each entry is a markdown file following the template below. Nothing here is
+consumed by code — it's reference material.
 
 ## Entry template
 
