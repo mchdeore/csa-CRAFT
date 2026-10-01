@@ -25,11 +25,15 @@
 
   <text x="380" y="18" class="title">Figure 2 · L3 — Internal Clusters</text>
 
-  <!-- ============== A · Primary Agent (no enclosing frame) ============== -->
-  <g transform="translate(0,36)">
-    <text x="20" y="4" class="h">A · Primary Agent — what happens inside one turn</text>
+  <!-- ============== A · Primary Agent ============== -->
+  <text x="20" y="42" class="h">A · Primary Agent — what happens inside one turn</text>
 
-    <!-- row 1: ingress → agent → decision → yes → run tool -->
+  <g transform="translate(0,50)">
+    <!-- loop corridor over the top of row 1 -->
+    <path d="M 595 24 L 595 8 L 245 8 L 245 24" class="edge" marker-end="url(#arrL3)"/>
+    <text x="420" y="4" class="lbl-i-c">tool_call → agent reasons again   (bounded loop, max N steps)</text>
+
+    <!-- row 1: User → Agent → Decision → yes → Run tool -->
     <rect x="20"  y="24" width="130" height="40" class="box"/>
     <text x="85"  y="42" class="lbl-c">User message in</text>
     <text x="85"  y="56" class="lbl-i-c">via a role-checked route</text>
@@ -51,57 +55,53 @@
     <line x1="500" y1="44" x2="528" y2="44" class="edge" marker-end="url(#arrL3)"/>
     <text x="513" y="38" class="lbl-i">yes</text>
 
-    <!-- loop: run tool → bus below row 1 → back into Agent reasons bottom -->
-    <path d="M 595 64 L 595 90 L 245 90 L 245 64" class="edge" marker-end="url(#arrL3)"/>
-    <text x="420" y="86" class="lbl-i-c">tool_call → agent reasons again   (bounded loop, max N steps)</text>
+    <!-- HITL column (stacked on the right) -->
+    <polygon points="530,110 560,86 660,86 690,110 660,134 560,134" class="gate"/>
+    <text x="610" y="108" class="lbl-c">Risky?</text>
+    <text x="610" y="122" class="lbl-i-c">HITL interrupt</text>
 
-    <!-- row 2: HITL branch — Risky? and Reviewer approves on their own row -->
-    <polygon points="530,138 560,114 660,114 690,138 660,162 560,162" class="gate"/>
-    <text x="610" y="136" class="lbl-c">Risky?</text>
-    <text x="610" y="150" class="lbl-i-c">HITL interrupt</text>
+    <rect x="530" y="150" width="160" height="46" class="box"/>
+    <text x="610" y="168" class="lbl-c">Reviewer approves</text>
+    <text x="610" y="184" class="lbl-i-c">queue · Dash UI · logged</text>
 
-    <rect x="340" y="112" width="160" height="50" class="box"/>
-    <text x="420" y="132" class="lbl-c">Reviewer approves</text>
-    <text x="420" y="148" class="lbl-i-c">queue · Dash UI · logged</text>
+    <!-- tap from Run tool down to Risky -->
+    <path d="M 595 64 L 595 86" class="edge" marker-end="url(#arrL3)"/>
+    <text x="600" y="80" class="lbl-i">tap</text>
 
-    <!-- tap from Run tool down to Risky? -->
-    <path d="M 595 64 L 595 114" class="edge" marker-end="url(#arrL3)"/>
-    <text x="600" y="106" class="lbl-i">tap</text>
+    <!-- Risky yes → down to Reviewer -->
+    <path d="M 610 134 L 610 150" class="edge" marker-end="url(#arrL3)"/>
+    <text x="616" y="146" class="lbl-i">yes</text>
 
-    <!-- Risky yes → Reviewer approves (right-to-left) -->
-    <line x1="530" y1="138" x2="502" y2="138" class="edge" marker-end="url(#arrL3)"/>
-    <text x="516" y="132" class="lbl-i">yes</text>
+    <!-- row 3: outputs -->
+    <rect x="20"  y="236" width="150" height="40" class="box"/>
+    <text x="95"  y="256" class="lbl-c">Response + citations</text>
+    <text x="95"  y="270" class="lbl-i-c">UMR-002 / 006</text>
 
-    <!-- row 3: respond and record -->
-    <rect x="20"  y="220" width="150" height="40" class="box"/>
-    <text x="95"  y="240" class="lbl-c">Response + citations</text>
-    <text x="95"  y="254" class="lbl-i-c">UMR-002 / 006</text>
+    <rect x="200" y="236" width="170" height="40" class="box"/>
+    <text x="285" y="256" class="lbl-c">AgentAction recorded</text>
+    <text x="285" y="270" class="lbl-i-c">UMR-015 / 027</text>
 
-    <rect x="200" y="220" width="170" height="40" class="box"/>
-    <text x="285" y="240" class="lbl-c">AgentAction recorded</text>
-    <text x="285" y="254" class="lbl-i-c">UMR-015 / 027</text>
+    <circle cx="420" cy="256" r="14" class="term"/>
+    <text x="420" y="260" class="lbl-c" fill="#fff">END</text>
 
-    <circle cx="420" cy="240" r="14" class="term"/>
-    <text x="420" y="244" class="lbl-c" fill="#fff">END</text>
+    <line x1="170" y1="256" x2="198" y2="256" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="370" y1="256" x2="406" y2="256" class="edge" marker-end="url(#arrL3)"/>
 
-    <line x1="170" y1="240" x2="198" y2="240" class="edge" marker-end="url(#arrL3)"/>
-    <line x1="370" y1="240" x2="406" y2="240" class="edge" marker-end="url(#arrL3)"/>
-
-    <!-- "no" from decision bottom to Response -->
-    <path d="M 420 68 L 420 196 L 95 196 L 95 220" class="edge" marker-end="url(#arrL3)"/>
+    <!-- "no" from decision: straight down (clear of HITL column), left on y=216 bus to Response -->
+    <path d="M 420 68 L 420 216 L 95 216 L 95 236" class="edge" marker-end="url(#arrL3)"/>
     <text x="428" y="100" class="lbl-i">no</text>
 
-    <!-- Risky "no" straight down to AgentAction -->
-    <path d="M 610 162 L 610 196 L 285 196 L 285 220" class="edge" marker-end="url(#arrL3)"/>
-    <text x="618" y="178" class="lbl-i">no</text>
+    <!-- Risky "no": exit right vertex, go right, down, left on y=226 bus to AgentAction -->
+    <path d="M 690 110 L 710 110 L 710 226 L 285 226 L 285 236" class="edge" marker-end="url(#arrL3)"/>
+    <text x="697" y="104" class="lbl-i">no</text>
 
-    <!-- Reviewer approve down to AgentAction -->
-    <path d="M 420 162 L 420 196" class="edge"/>
-    <text x="427" y="178" class="lbl-i">approve</text>
+    <!-- Reviewer approve: down to the y=226 bus -->
+    <path d="M 610 196 L 610 226" class="edge"/>
+    <text x="618" y="214" class="lbl-i">approve</text>
   </g>
 
-  <!-- ============== CLUSTER B : TOOL REGISTRY ============== -->
-  <g transform="translate(20,308)">
+  <!-- ============== B · TOOL REGISTRY ============== -->
+  <g transform="translate(20,338)">
     <rect x="0" y="0" width="350" height="140" class="box"/>
     <text x="8" y="16" class="h">B · Tool Registry   <tspan class="proto">⟨I⟩ Tool</tspan></text>
     <text x="8" y="34" class="lbl">examples:</text>
@@ -112,8 +112,8 @@
     <text x="8" y="124" class="lbl-i">validated against <tspan class="proto">⟨I⟩ Tool</tspan> · audited · new tool = new class</text>
   </g>
 
-  <!-- ============== CLUSTER C : DATASOURCE ============== -->
-  <g transform="translate(390,308)">
+  <!-- ============== C · DATASOURCE ============== -->
+  <g transform="translate(390,338)">
     <rect x="0" y="0" width="350" height="140" class="box"/>
     <text x="8" y="16" class="h">C · DataSource Registry   <tspan class="proto">⟨I⟩ DataSource</tspan></text>
     <text x="8" y="34" class="lbl">LocalFile — filesystem (live)</text>
@@ -125,13 +125,13 @@
     <text x="8" y="126" class="lbl-i">response carries doc / page / section + confidence</text>
   </g>
 
-  <!-- ============== CLUSTER D : AUTH text flow ============== -->
-  <g transform="translate(20,462)">
-    <rect x="0" y="0" width="720" height="52" class="box"/>
-    <text x="8" y="16" class="h">D · Auth + RBAC + Trace</text>
-    <text x="360" y="34" class="flow">
+  <!-- ============== D · AUTH ============== -->
+  <g transform="translate(20,492)">
+    <rect x="0" y="0" width="720" height="42" class="box"/>
+    <text x="8" y="14" class="h">D · Auth + RBAC + Trace</text>
+    <text x="360" y="28" class="flow">
       <tspan class="flow-k">route</tspan>  →  <tspan class="flow-k">before_request</tspan> (auth · role · trace_id)  →  <tspan class="flow-k">handler</tspan>  →  <tspan class="flow-k">after_request</tspan> (audit emit)  →  <tspan class="flow-k">response</tspan>
     </text>
-    <text x="360" y="48" class="lbl-i-c">base(1) &lt; power(2) &lt; admin(3)   ·   role &lt; required → 403   ·   unregistered route → 404 before auth</text>
+    <text x="360" y="40" class="lbl-i-c">base(1) &lt; power(2) &lt; admin(3)   ·   role &lt; required → 403   ·   unregistered route → 404 before auth</text>
   </g>
 </svg>
