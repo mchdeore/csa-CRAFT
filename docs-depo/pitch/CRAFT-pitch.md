@@ -39,37 +39,55 @@ In: `/chat/send [base]` `/admin/* [admin]`. Out: thin italic. **Internal data** 
 
 ## 2b. L2 Container
 
+Two caller shapes reach the same route surface. The primary agent calls routes from inside the process; external services (cron jobs, pipelines, upstream workflows) call the same routes with user-scoped tokens. One RBAC gate, one audit envelope, both paths. Storage lives behind `⟨I⟩` protocols — the agent and external callers see the same contracts.
+
 ```text
-┌────────────────────────────────────────────────────────────┐
-│         Route-Gated RBAC Layer (auth-blue)                 │
-│  /chat/send [base] · /uploads [power] · /admin/* [admin]  │
-└───────────────────────┬────────────────────────────────────┘
-        ┌───────────────┼──────────────────┐
-        ▼               ▼                  ▼
-┌──────────────┐┌──────────────┐┌─────────────────────────┐
-│Primary Agent ││Tool Registry ││Storage ⟨I⟩WsStore       │
-│Microsoft     ││⟨I⟩ Tool      ││▦WStore ▦Data(RBAC)      │
-│Agent         ││              ││▦AuditLog JSONL(hash)    │
-│Framework     ││              ││                          │
-│⟨I⟩ChatProv   ││              ││                          │
-│  AGNT_ACT ───┼┼── AGNT_ACT ──┼┼──▶                       │
-└──────┬───────┘└──────┬───────┘└─────────────────────────┘
-       │               │
-       ▼               ▼
-┌──────────────┐┌──────────────────────────────────┐
-│Audit Sink    ││Connectors (perimeter):            │
-│⟨I⟩ActLog     ││INTERNAL: LocalFile · SQLite       │
-│  │           ││EXTERNAL: ShPt · SAP · STK/MATLAB  │
-│  ▼           ││          AzureAISearch            │
-│AzureLA       │└──────────────────────────────────┘
-└──────────────┘
+┌──────────────────────────┐          ┌─────────────────────────────┐
+│  Internal caller         │          │  External caller            │
+│   Primary Agent          │          │   Service · Cron · Pipeline │
+│   Agent Framework        │          │   User-scoped token         │
+│   ⟨I⟩ ChatProvider       │          │   (base / power / admin)    │
+└────────────┬─────────────┘          └──────────────┬──────────────┘
+             │                                       │
+             └───────────────────┬───────────────────┘
+                                 ▼
+┌────────────────────────────────────────────────────────────────────┐
+│                 Route-Gated RBAC Layer (auth-blue)                 │
+│   /chat/send         [base]     ·   /uploads            [power]    │
+│   /tools/execute/*   [base+]    ·   /storage/*          [base+]    │
+│   /admin/approvals/* [admin]                                       │
+│   before_request → auth · role · trace_id   ·   after_request → audit│
+└────┬──────────────────┬──────────────────┬──────────────────┬──────┘
+     ▼                  ▼                  ▼                  ▼
+┌──────────┐  ┌───────────────────┐  ┌──────────────────┐  ┌─────────┐
+│  Tool    │  │  Storage          │  │  Data Sources    │  │  Audit  │
+│Registry  │  │  ⟨I⟩ WsStore      │  │  ⟨I⟩ DataSource  │  │  Sink   │
+│⟨I⟩ Tool  │  │  ⟨I⟩ Approval-    │  │                  │  │⟨I⟩ActLog│
+│          │  │     Queue         │  │  INTERNAL        │  │   │     │
+│documents │  │                   │  │  (in-process,    │  │   ▼     │
+│charts    │  │  ▦ SqliteStore    │  │   connector-     │  │  Hash-  │
+│query_data│  │   workspaces +    │  │   backed)        │  │  chained│
+│classifier│  │   scratch         │  │  · LocalFile-    │  │  JSONL  │
+│hist_mis'n│  │                   │  │    Source        │  │   │     │
+│cost_agg  │  │  ▦ SqliteData-    │  │  · SqliteData-   │  │   ▼     │
+│vendor_agg│  │   Store (per-user │  │    Store         │  │  Azure  │
+│code_exec │  │   RBAC-scoped)    │  │                  │  │   Log   │
+│          │  │                   │  │  EXTERNAL        │  │Analytics│
+│          │  │  ▦ ApprovalQueue  │  │  (perimeter,     │  └─────────┘
+│          │  │   (Postgres,      │  │   MSAL / OAuth)  │
+│          │  │   HITL)           │  │  · SharePoint    │
+│          │  │                   │  │  · SAP           │
+│          │  │                   │  │  · STK / MATLAB  │
+│          │  │                   │  │  · AzureAISearch │
+└──────────┘  └───────────────────┘  └──────────────────┘
 
 ┌──────────────┐
 │Test Surface  │──▶ pre-commit · GitHub Actions
 │(audit-green) │
 └──────────────┘
 ```
-AGENT_ACTION (green). Connectors ◆. Test surface dotted. Audit JSONL is hash-chained and forwarded to Azure Log Analytics.
+
+**How to read it.** Both callers hit the top layer; the gate stamps `trace_id` + `role` on the request and the audit record. Routes dispatch to the four domain registries beneath. `⟨I⟩ DataSource` is the single point of connection for *any* data in or out — internal (filesystem + SQLite) and external (SharePoint, SAP, STK/MATLAB, Azure AI Search) look identical to callers; only the connector implementation differs.
 
 ## 2c. L3 Internals
 
@@ -98,41 +116,31 @@ ChatAgent (Agent Framework)
  ⟨I⟩ ChatProvider · ⟨I⟩ AgentActionLog
 ```
 
-### Panel B · Tools, Storage & Route-Gated Access
+### Panel B · Tool & Data-Source Registries
 
-Every tool and storage/data-source operation sits behind the same `⟨I⟩` protocol **and** the same HTTP route. The agent calls routes probabilistically; an external caller with a scoped token calls the same routes deterministically. One RBAC gate, one audit envelope, both paths.
+The registries behind the route surface shown in 2b. Each `⟨I⟩` protocol has a kind registry; adding a new tool or connector is one class + one JSON row.
 
 ```text
-┌──── Tool Registry  ⟨I⟩ Tool ─────────────────┐    ┌──── Data Sources  ⟨I⟩ DataSource ────┐
-│  documents · charts · query_data             │    │  INTERNAL (connector-backed):        │
-│  classifier · hist_mission · cost_agg        │    │    LocalFileSource · SqliteDataStore │
-│  vendor_agg · code_exec                      │    │  EXTERNAL (perimeter, MSAL/OAuth):   │
-│                                              │    │    SharePoint · SAP · STK/MATLAB     │
-│                                              │    │    AzureAISearchSource               │
-└──────────────────────────────────────────────┘    └──────────────────────────────────────┘
+Tool Registry  ⟨I⟩ Tool
+├─ documents       (search · reader · excel)
+├─ charts          (bar · pie · scatter · line · heatmap · histogram · boxplot)
+├─ query_data      (per-user RBAC-scoped SQL over SqliteDataStore)
+├─ classifier      (UC-E2 risk severity)
+├─ hist_mission    (UC-F1 historical cost retrieval)
+├─ cost_agg        (UC-F1 weighted-distance aggregation)
+├─ vendor_agg      (UC-F4 vendor roll-up)
+└─ code_exec       (sandboxed in Azure Container Apps)
 
-┌──── Workspace & Audit  ⟨I⟩ WorkspaceStore / ⟨I⟩ AgentActionLog / ⟨I⟩ ApprovalQueue ────┐
-│  SqliteStore (workspaces + scratch)   HashChainedJsonlLog (audit → Azure Log Analytics) │
-│  SqliteDataStore (per-user scoped)    ApprovalQueue (Postgres, HITL)                    │
-└─────────────────────────────────────────────────────────────────────────────────────────┘
-
-                  ▲ internal call                      ▲ internal call
-                  │                                    │
-┌─────────────────┴────────────────────────────────────┴───────────────────────────────┐
-│                        Route-Gated RBAC Layer                                        │
-│   POST /tools/execute/<name>    /storage/*    /chat/send    /admin/approvals/*       │
-│   before_request: auth · role · trace_id   →   handler   →   after_request: audit    │
-│   permissions.json  ·  base(1) < power(2) < admin(3)   ·   role < required → 403     │
-└────────────────────┬───────────────────────────────────────────────┬─────────────────┘
-                     │                                               │
-         ┌───────────┴────────────┐                     ┌────────────┴────────────┐
-         │ Caller: Primary Agent  │                     │ Caller: External client │
-         │  (Agent Framework)     │                     │  (user-scoped token)    │
-         │  probabilistic use     │                     │  deterministic use      │
-         └────────────────────────┘                     └─────────────────────────┘
+Data-Source Registry  ⟨I⟩ DataSource    (kind → class, via data_sources.json)
+├─ INTERNAL  (in-process · connector-backed)
+│  ├─ LocalFileSource     (filesystem under CONNECTORS_ROOT · reads mission corpus)
+│  └─ SqliteDataStore     (per-user data · RBAC-scoped)
+└─ EXTERNAL  (perimeter · MSAL / OAuth · one JSON row per source)
+   ├─ SharePoint          (Graph API · corpus mirror)
+   ├─ SAP                 (OData / REST · line items)
+   ├─ STK / MATLAB        (vendor adapter)
+   └─ AzureAISearchSource (hybrid vector + BM25 · retrieval)
 ```
-
-Why this matters: granting a token with the right role lets an external service drive CRAFT's tools and storage without going through the agent — a cron job can read documents, a reporting pipeline can hit `query_data`, an upstream workflow can post an approval decision. Audit and RBAC behave identically whichever caller it is.
 
 ### Panel C · Auth
 
@@ -152,11 +160,18 @@ RBAC             : base(1) < power(2) < admin(3)
 ## 2d. UC State Models
 
 ```text
-UC-E2 Risk ID+HITL (Eng):  Req→◇Auth→Retrieval[002-006]→Classifier[036-040]→◇HITL[HITL-001]
-                            Approve→RiskReg→Audit→●  Reject→●
-UC-F1 Cost+HITL (Fin):     Req→◇Auth→Retrieval(hist)[031]→CostAgg[032-034]→◇HITL[035]
-                            Approve→Commit→Audit→●  Reject→●
-UC-F4 SAP Conn:            Req→◇Auth→SAPConn[053-055]→VendorExt→Agg→Audit→●
+UC-E2 · Risk ID + HITL (Engineering)
+  Req → ◇ Auth → Retrieval [002-006] → Classifier [036-040] → ◇ HITL [HITL-001]
+      Approve → RiskReg → Audit → ●
+      Reject  → Audit   → ●
+
+UC-F1 · Parametric Cost + HITL (Finance)
+  Req → ◇ Auth → Retrieval (hist) [031] → CostAgg [032-034] → ◇ HITL [035]
+      Approve → Commit → Audit → ●
+      Reject  → Audit  → ●
+
+UC-F4 · Vendor Cost (SAP)
+  Req → ◇ Auth → SAPConn [053-055] → VendorExt → Agg → Audit → ●
 ```
 ●=Terminal. ◇=Gate. Swim lanes: User→Agent→Services→Terminal.
 
