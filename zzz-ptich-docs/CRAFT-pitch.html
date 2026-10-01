@@ -389,69 +389,56 @@ blockquote {
 <thead>
 <tr>
 <th>End-state component</th>
-<th>Owner</th>
 <th>Current alternative</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>Azure AI Search (hybrid retrieval)</td>
-<td>IT</td>
 <td><code>LocalFileSource</code> + file-name/path search</td>
 </tr>
 <tr>
 <td>Azure Log Analytics + immutability</td>
-<td>IT</td>
 <td>Hash-chained append-only JSONL on disk</td>
 </tr>
 <tr>
 <td>Azure Content Safety</td>
-<td>Procurement</td>
 <td>Guardrail hook off (config flag)</td>
 </tr>
 <tr>
 <td>Azure Container Apps sandbox</td>
-<td>Procurement</td>
 <td><code>CodeExecTool</code> registration slot reserved</td>
 </tr>
 <tr>
 <td>Entra ID (app registration + MSAL)</td>
-<td>IT</td>
 <td>Local <code>AuthProvider</code> stub, mocked tokens</td>
 </tr>
 <tr>
 <td>SharePoint <code>DataSource</code></td>
-<td>IT + CSA</td>
 <td><code>LocalFileSource</code> reads a corpus mirror</td>
 </tr>
 <tr>
 <td>SAP <code>DataSource</code></td>
-<td>Finance + Procurement</td>
 <td>CSV fixtures via <code>LocalFileSource</code> (UC-F4 runs)</td>
 </tr>
 <tr>
 <td>STK / MATLAB adapters</td>
-<td>Procurement (licenses)</td>
 <td><code>Tool</code> slot reserved</td>
 </tr>
 <tr>
 <td>Azure AI Foundry (model routing / rate limits)</td>
-<td>IT</td>
 <td>Azure OpenAI direct (Canadian region)</td>
 </tr>
 <tr>
 <td>SSC LaunchPad HA</td>
-<td>SSC</td>
 <td>Single-region App Service</td>
 </tr>
 <tr>
 <td>CSA risk taxonomy</td>
-<td>CSA Domain</td>
 <td>Stub taxonomy drives the classifier for tests</td>
 </tr>
 <tr>
 <td>Historical mission DB</td>
-<td>CSA Finance</td>
 <td>CSV fixtures through <code>LocalFileSource</code> (UC-F1 runs)</td>
 </tr>
 </tbody>

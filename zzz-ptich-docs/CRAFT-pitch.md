@@ -82,20 +82,20 @@ The system is already running against stubs or local alternatives wired through 
 
 Each row is an Azure-consolidated end-state component wired through the registry the current alternative already runs against.
 
-| End-state component | Owner | Current alternative |
-|---|---|---|
-| Azure AI Search (hybrid retrieval) | IT | `LocalFileSource` + file-name/path search |
-| Azure Log Analytics + immutability | IT | Hash-chained append-only JSONL on disk |
-| Azure Content Safety | Procurement | Guardrail hook off (config flag) |
-| Azure Container Apps sandbox | Procurement | `CodeExecTool` registration slot reserved |
-| Entra ID (app registration + MSAL) | IT | Local `AuthProvider` stub, mocked tokens |
-| SharePoint `DataSource` | IT + CSA | `LocalFileSource` reads a corpus mirror |
-| SAP `DataSource` | Finance + Procurement | CSV fixtures via `LocalFileSource` (UC-F4 runs) |
-| STK / MATLAB adapters | Procurement (licenses) | `Tool` slot reserved |
-| Azure AI Foundry (model routing / rate limits) | IT | Azure OpenAI direct (Canadian region) |
-| SSC LaunchPad HA | SSC | Single-region App Service |
-| CSA risk taxonomy | CSA Domain | Stub taxonomy drives the classifier for tests |
-| Historical mission DB | CSA Finance | CSV fixtures through `LocalFileSource` (UC-F1 runs) |
+| End-state component | Current alternative |
+|---|---|
+| Azure AI Search (hybrid retrieval) | `LocalFileSource` + file-name/path search |
+| Azure Log Analytics + immutability | Hash-chained append-only JSONL on disk |
+| Azure Content Safety | Guardrail hook off (config flag) |
+| Azure Container Apps sandbox | `CodeExecTool` registration slot reserved |
+| Entra ID (app registration + MSAL) | Local `AuthProvider` stub, mocked tokens |
+| SharePoint `DataSource` | `LocalFileSource` reads a corpus mirror |
+| SAP `DataSource` | CSV fixtures via `LocalFileSource` (UC-F4 runs) |
+| STK / MATLAB adapters | `Tool` slot reserved |
+| Azure AI Foundry (model routing / rate limits) | Azure OpenAI direct (Canadian region) |
+| SSC LaunchPad HA | Single-region App Service |
+| CSA risk taxonomy | Stub taxonomy drives the classifier for tests |
+| Historical mission DB | CSV fixtures through `LocalFileSource` (UC-F1 runs) |
 
 ## 8. System-Health Tooling
 
