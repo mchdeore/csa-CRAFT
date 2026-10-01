@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 540" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 560" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif">
   <defs>
     <marker id="arrL3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/>
+    </marker>
+    <marker id="arrL3s" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 10 0 L 0 5 L 10 10 z" fill="#000"/>
     </marker>
     <style><![CDATA[
       .box { fill: #fff; stroke: #000; stroke-width: 0.9; }
@@ -29,104 +32,114 @@
   <text x="20" y="42" class="h">A · Primary Agent — what happens inside one turn</text>
 
   <g transform="translate(0,50)">
-    <!-- loop corridor over the top of row 1 -->
+    <!-- loop corridor over the top -->
     <path d="M 595 24 L 595 8 L 245 8 L 245 24" class="edge" marker-end="url(#arrL3)"/>
     <text x="420" y="4" class="lbl-i-c">tool_call → agent reasons again   (bounded loop, max N steps)</text>
 
-    <!-- row 1: User → Agent → Decision → yes → Run tool -->
+    <!-- Row 1: ingress → agent → decision → yes → action -->
     <rect x="20"  y="24" width="130" height="40" class="box"/>
     <text x="85"  y="42" class="lbl-c">User message in</text>
-    <text x="85"  y="56" class="lbl-i-c">via a role-checked route</text>
+    <text x="85"  y="56" class="lbl-i-c">role-checked route</text>
 
     <rect x="180" y="24" width="130" height="40" class="box"/>
     <text x="245" y="42" class="lbl-c">Agent reasons</text>
     <text x="245" y="56" class="lbl-i-c">LLM step · chatbot node</text>
 
     <polygon points="340,44 370,20 470,20 500,44 470,68 370,68" class="gate"/>
-    <text x="420" y="42" class="lbl-c">Needs a tool?</text>
+    <text x="420" y="42" class="lbl-c">Next action?</text>
     <text x="420" y="56" class="lbl-i-c">should_continue?</text>
 
     <rect x="530" y="24" width="130" height="40" class="box"/>
-    <text x="595" y="42" class="lbl-c">Run tool</text>
-    <text x="595" y="56" class="lbl-i-c">tool_node</text>
+    <text x="595" y="42" class="lbl-c">Call Tool</text>
+    <text x="595" y="56" class="lbl-i-c">⟨I⟩ Tool</text>
 
     <line x1="150" y1="44" x2="178" y2="44" class="edge" marker-end="url(#arrL3)"/>
     <line x1="310" y1="44" x2="338" y2="44" class="edge" marker-end="url(#arrL3)"/>
     <line x1="500" y1="44" x2="528" y2="44" class="edge" marker-end="url(#arrL3)"/>
-    <text x="513" y="38" class="lbl-i">yes</text>
+    <text x="513" y="38" class="lbl-i">tool</text>
 
-    <!-- HITL column (stacked on the right) -->
-    <polygon points="530,110 560,86 660,86 690,110 660,134 560,134" class="gate"/>
-    <text x="610" y="108" class="lbl-c">Risky?</text>
-    <text x="610" y="122" class="lbl-i-c">HITL interrupt</text>
-
-    <rect x="530" y="150" width="160" height="46" class="box"/>
-    <text x="610" y="168" class="lbl-c">Reviewer approves</text>
-    <text x="610" y="184" class="lbl-i-c">queue · Dash UI · logged</text>
-
-    <!-- tap from Run tool down to Risky -->
+    <!-- DataSource used by tool -->
+    <rect x="530" y="86" width="130" height="40" class="box"/>
+    <text x="595" y="104" class="lbl-c">Data via ⟨I⟩ DataSource</text>
+    <text x="595" y="118" class="lbl-i-c">read / write (any backend)</text>
     <path d="M 595 64 L 595 86" class="edge" marker-end="url(#arrL3)"/>
-    <text x="600" y="80" class="lbl-i">tap</text>
+    <path d="M 605 86 L 605 64" class="edge" marker-end="url(#arrL3)"/>
 
-    <!-- Risky yes → down to Reviewer -->
-    <path d="M 610 134 L 610 150" class="edge" marker-end="url(#arrL3)"/>
-    <text x="616" y="146" class="lbl-i">yes</text>
+    <!-- Workspace Storage directly from Agent (session read/write) -->
+    <rect x="180" y="86" width="130" height="40" class="box"/>
+    <text x="245" y="104" class="lbl-c">Workspace Storage</text>
+    <text x="245" y="118" class="lbl-i-c">⟨I⟩ WorkspaceStore</text>
+    <path d="M 245 64 L 245 86" class="edge" marker-end="url(#arrL3)"/>
+    <path d="M 255 86 L 255 64" class="edge" marker-end="url(#arrL3)"/>
+    <text x="195" y="78" class="lbl-i">r/w</text>
 
-    <!-- row 3: outputs -->
-    <rect x="20"  y="236" width="150" height="40" class="box"/>
-    <text x="95"  y="256" class="lbl-c">Response + citations</text>
-    <text x="95"  y="270" class="lbl-i-c">UMR-002 / 006</text>
+    <!-- HITL branch — right side, after Call Tool -->
+    <polygon points="530,152 560,128 660,128 690,152 660,176 560,176" class="gate"/>
+    <text x="610" y="150" class="lbl-c">Risky?</text>
+    <text x="610" y="164" class="lbl-i-c">HITL interrupt</text>
 
-    <rect x="200" y="236" width="170" height="40" class="box"/>
-    <text x="285" y="256" class="lbl-c">AgentAction recorded</text>
-    <text x="285" y="270" class="lbl-i-c">UMR-015 / 027</text>
+    <rect x="530" y="192" width="160" height="46" class="box"/>
+    <text x="610" y="210" class="lbl-c">Reviewer approves</text>
+    <text x="610" y="226" class="lbl-i-c">queue · Dash UI · logged</text>
 
-    <circle cx="420" cy="256" r="14" class="term"/>
-    <text x="420" y="260" class="lbl-c" fill="#fff">END</text>
+    <path d="M 595 126 L 595 128" class="edge" marker-end="url(#arrL3)"/>
+    <text x="572" y="138" class="lbl-i">tap</text>
 
-    <line x1="170" y1="256" x2="198" y2="256" class="edge" marker-end="url(#arrL3)"/>
-    <line x1="370" y1="256" x2="406" y2="256" class="edge" marker-end="url(#arrL3)"/>
+    <path d="M 610 176 L 610 192" class="edge" marker-end="url(#arrL3)"/>
+    <text x="616" y="188" class="lbl-i">yes</text>
 
-    <!-- "no" from decision: straight down (clear of HITL column), left on y=216 bus to Response -->
-    <path d="M 420 68 L 420 216 L 95 216 L 95 236" class="edge" marker-end="url(#arrL3)"/>
-    <text x="428" y="100" class="lbl-i">no</text>
+    <!-- Row 3: outputs -->
+    <rect x="20"  y="278" width="150" height="40" class="box"/>
+    <text x="95"  y="298" class="lbl-c">Response + citations</text>
+    <text x="95"  y="312" class="lbl-i-c">UMR-002 / 006</text>
 
-    <!-- Risky "no": exit right vertex, go right, down, left on y=226 bus to AgentAction -->
-    <path d="M 690 110 L 710 110 L 710 226 L 285 226 L 285 236" class="edge" marker-end="url(#arrL3)"/>
-    <text x="697" y="104" class="lbl-i">no</text>
+    <rect x="200" y="278" width="170" height="40" class="box"/>
+    <text x="285" y="298" class="lbl-c">AgentAction recorded</text>
+    <text x="285" y="312" class="lbl-i-c">UMR-015 / 027</text>
 
-    <!-- Reviewer approve: down to the y=226 bus -->
-    <path d="M 610 196 L 610 226" class="edge"/>
-    <text x="618" y="214" class="lbl-i">approve</text>
+    <circle cx="420" cy="298" r="14" class="term"/>
+    <text x="420" y="302" class="lbl-c" fill="#fff">END</text>
+
+    <line x1="170" y1="298" x2="198" y2="298" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="370" y1="298" x2="406" y2="298" class="edge" marker-end="url(#arrL3)"/>
+
+    <!-- "no" from decision: straight down to Response bus -->
+    <path d="M 420 68 L 420 258 L 95 258 L 95 278" class="edge" marker-end="url(#arrL3)"/>
+    <text x="428" y="100" class="lbl-i">respond</text>
+
+    <!-- Risky "no": exit right vertex -> right -> down -> left to AgentAction -->
+    <path d="M 690 152 L 710 152 L 710 268 L 285 268 L 285 278" class="edge" marker-end="url(#arrL3)"/>
+    <text x="697" y="146" class="lbl-i">no</text>
+
+    <!-- Reviewer approve: down to the lower bus -->
+    <path d="M 610 238 L 610 268" class="edge"/>
+    <text x="618" y="256" class="lbl-i">approve</text>
   </g>
 
   <!-- ============== B · TOOL REGISTRY ============== -->
-  <g transform="translate(20,338)">
-    <rect x="0" y="0" width="350" height="140" class="box"/>
+  <g transform="translate(20,374)">
+    <rect x="0" y="0" width="350" height="110" class="box"/>
     <text x="8" y="16" class="h">B · Tool Registry   <tspan class="proto">⟨I⟩ Tool</tspan></text>
-    <text x="8" y="34" class="lbl">examples:</text>
-    <text x="8" y="50" class="lbl">documents  — ingest · search · cite</text>
-    <text x="8" y="64" class="lbl">query_data — SQL · RBAC-scoped</text>
-    <text x="8" y="88" class="mono">POST /tools/execute/&lt;name&gt;</text>
-    <text x="8" y="102" class="mono">body: { "args": {...}, "trace_id": ... }</text>
-    <text x="8" y="124" class="lbl-i">validated against <tspan class="proto">⟨I⟩ Tool</tspan> · audited · new tool = new class</text>
+    <text x="8" y="34" class="lbl">examples:  documents · query_data</text>
+    <text x="8" y="56" class="mono">POST /tools/execute/&lt;name&gt;</text>
+    <text x="8" y="70" class="mono">body: { "args": {...}, "trace_id": ... }</text>
+    <text x="8" y="92" class="lbl-i">validated against <tspan class="proto">⟨I⟩ Tool</tspan> · audited</text>
+    <text x="8" y="104" class="lbl-i">new tool = new class · agent unchanged</text>
   </g>
 
   <!-- ============== C · DATASOURCE ============== -->
-  <g transform="translate(390,338)">
-    <rect x="0" y="0" width="350" height="140" class="box"/>
+  <g transform="translate(390,374)">
+    <rect x="0" y="0" width="350" height="110" class="box"/>
     <text x="8" y="16" class="h">C · DataSource Registry   <tspan class="proto">⟨I⟩ DataSource</tspan></text>
-    <text x="8" y="34" class="lbl">LocalFile — filesystem (live)</text>
-    <text x="8" y="48" class="lbl-b">SharePoint — Graph API [LocalFile mirror]</text>
-    <text x="8" y="62" class="lbl-b">SAP — REST / OData [CSV fixtures]</text>
-    <text x="8" y="76" class="lbl-b">STK / MATLAB — adapter [reserved]</text>
-    <text x="8" y="90" class="lbl-b">Vector index — AI Search [LocalFile]</text>
-    <text x="8" y="112" class="lbl-i">per-request · RBAC-scoped · MSAL / OAuth</text>
-    <text x="8" y="126" class="lbl-i">response carries doc / page / section + confidence</text>
+    <text x="8" y="34" class="lbl">LocalFile (live) · others pending (see Figure 1)</text>
+    <text x="8" y="54" class="lbl-i">concrete backend is swappable per-request</text>
+    <text x="8" y="68" class="lbl-i">per-request · RBAC-scoped · MSAL / OAuth</text>
+    <text x="8" y="90" class="lbl-i">response carries doc / page / section + confidence</text>
+    <text x="8" y="104" class="lbl-i">end state: Azure AI Foundry index / Azure AI Search</text>
   </g>
 
   <!-- ============== D · AUTH ============== -->
-  <g transform="translate(20,492)">
+  <g transform="translate(20,500)">
     <rect x="0" y="0" width="720" height="42" class="box"/>
     <text x="8" y="14" class="h">D · Auth + RBAC + Trace</text>
     <text x="360" y="28" class="flow">

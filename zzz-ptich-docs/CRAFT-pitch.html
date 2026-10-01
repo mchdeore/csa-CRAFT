@@ -167,53 +167,89 @@ blockquote {
 <thead>
 <tr>
 <th>Component</th>
-<th>Why chosen</th>
+<th>End-state choice</th>
+<th>Current alternative</th>
+<th>Why</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>Flask (server) + Dash (UI)</strong></td>
-<td>Routes are the integration contract — anything with a token (user, cron, agent, Teams bot) can call CRAFT. Dash shares the Flask process so the HITL reviewer UI inherits the same auth and audit.</td>
+<td>HTTP surface</td>
+<td><strong>Flask</strong> + Dash reviewer UI</td>
+<td>— (live)</td>
+<td>Routes are the integration contract — any token-bearing caller (user, cron, agent) can hit CRAFT; Dash shares the auth and audit perimeter.</td>
 </tr>
 <tr>
+<td>Agent runtime</td>
 <td><strong>LangGraph ReAct</strong></td>
-<td>First-class <code>interrupt</code> for HITL (UMR-021), bounded recursion (UMR-013/AAR-003 → <code>recursion_limit</code>), graph-level test anchors. Actively maintained by LangChain Inc.; standard pattern.</td>
+<td>— (live)</td>
+<td>First-class <code>interrupt</code> for HITL, bounded recursion, graph-level test anchors; maintained by LangChain Inc.</td>
 </tr>
 <tr>
-<td><strong>Protocol-typed registries (<code>Tool</code>, <code>DataSource</code>, <code>ChatProvider</code>, <code>WorkspaceStore</code>, <code>AgentActionLog</code>)</strong></td>
-<td>New capability or new backend = one class satisfying a protocol; no agent edit. Pyright-checked contracts (UMR-012/AAR-002).</td>
+<td>LLM inference</td>
+<td><strong>Azure AI Foundry (Azure IQ)</strong> — model routing + rate limits + Content Safety</td>
+<td><strong>Azure OpenAI direct</strong> (Canadian PBMM region)</td>
+<td>Foundry collapses model, rate-limit and guardrail procurement into one line while PBMM residency stays.</td>
 </tr>
 <tr>
-<td><strong>Azure OpenAI / Azure AI Foundry (end state)</strong></td>
-<td>Canadian-region PBMM data residency; Foundry gives us model routing (UMR-028), rate limits (UMR-030/ASG-004), and content safety (UMR-020/ASG-001) under one procurement line.</td>
+<td>Retrieval</td>
+<td><strong>Azure AI Foundry index / Azure AI Search</strong> hybrid (vector + BM25)</td>
+<td><strong>LocalFileSource</strong> via <code>⟨I⟩ DataSource</code> with filename / path search</td>
+<td>Same <code>⟨I⟩ DataSource</code> call site; cutover is config. Satisfies UMR-004/005/006.</td>
 </tr>
 <tr>
-<td><strong>Azure AI Search (end state)</strong></td>
-<td>Hybrid semantic + BM25 natively (UMR-005/ARR-002), top-K ranking at 0.72 cosine (UMR-004), managed vector store.</td>
+<td>Guardrails + sandbox</td>
+<td><strong>Content Safety + Azure Container Apps</strong></td>
+<td>Guardrail hook disabled; <code>CodeExecTool</code> slot reserved</td>
+<td>End-state wires into the tool wrapper CRAFT already runs. UMR-020 / UMR-093.</td>
 </tr>
 <tr>
-<td><strong>Azure Container Apps sandbox</strong></td>
-<td>Isolated per-request code exec for UMR-093 (code, inputs, outputs, exit status audited).</td>
-</tr>
-<tr>
+<td>Identity</td>
 <td><strong>Entra ID + MSAL</strong></td>
-<td>CSA-standard identity; same token flow for human and agent callers (UMR-017/AAR-007).</td>
+<td>Local <code>AuthProvider</code> stub</td>
+<td>Same token flow for humans and external agents; CSA-standard.</td>
 </tr>
 <tr>
-<td><strong>Log Analytics (end state) / hash-chained JSONL (now)</strong></td>
-<td>Immutable audit per UMR-027/ASG-003; KQL-queryable at end state, grep-able today.</td>
+<td>Audit sink</td>
+<td><strong>Azure Log Analytics</strong> (immutable retention)</td>
+<td>Hash-chained JSONL on disk</td>
+<td>KQL at end state; grep today; UMR-027 / ASG-003.</td>
 </tr>
 <tr>
-<td><strong>Postgres (HITL queue, 3-tier memory)</strong></td>
-<td>Durable approval state across restarts (UMR-025 TTL); same instance backs the episodic/semantic/procedural tiers (UMR-014/AAR-004).</td>
+<td>HITL queue + memory</td>
+<td><strong>Postgres</strong> (approval queue + 3-tier memory)</td>
+<td>SQLite scratch; approval table staged</td>
+<td>Durable across restarts; UMR-025 TTL, UMR-014 memory.</td>
 </tr>
 <tr>
-<td><strong>SQLite (now) / managed DB (end state)</strong></td>
-<td>File-local for scratch + per-user data today; swap target already named behind <code>WorkspaceStore</code>.</td>
+<td>Session + per-user data</td>
+<td><strong>Managed DB</strong> behind <code>⟨I⟩ WorkspaceStore</code></td>
+<td>SQLite file-local</td>
+<td>Swap target already named behind the protocol.</td>
 </tr>
 <tr>
+<td>Edge</td>
+<td><strong>APIM + App Gateway (WAF)</strong></td>
+<td>Direct App Service</td>
+<td>WAF + rate limit at perimeter; UMR-030.</td>
+</tr>
+<tr>
+<td>Deployment</td>
+<td><strong>App Service PBMM + SSC LaunchPad HA</strong></td>
+<td>Single-region App Service</td>
+<td>HA + landing zone come with LaunchPad; UMR-057.</td>
+</tr>
+<tr>
+<td>Protocol contracts</td>
+<td><strong><code>⟨I⟩ Tool</code>, <code>⟨I⟩ DataSource</code>, <code>⟨I⟩ ChatProvider</code>, <code>⟨I⟩ WorkspaceStore</code>, <code>⟨I⟩ AgentActionLog</code></strong></td>
+<td>— (live)</td>
+<td>New capability or backend = one class satisfying a protocol; agent unchanged. Pyright-checked.</td>
+</tr>
+<tr>
+<td>Invariants</td>
 <td><strong>pytest + pyright + ruff + bandit + pip-audit + detect-secrets</strong></td>
-<td>Architecture invariants ship as tests (route × role, protocol contracts, audit-envelope present). Industry-standard, maintained.</td>
+<td>— (live)</td>
+<td>Route × role matrix, protocol contracts, audit-envelope present. Industry-standard, maintained.</td>
 </tr>
 </tbody>
 </table>

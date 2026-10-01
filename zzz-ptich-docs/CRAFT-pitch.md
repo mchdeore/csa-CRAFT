@@ -29,19 +29,21 @@ HITL (UMR-021–026/HITL-001–007) is a graph interrupt off `tool_node`, not mi
 
 ## 4. Design Decisions
 
-| Component | Why chosen |
-|---|---|
-| **Flask (server) + Dash (UI)** | Routes are the integration contract — anything with a token (user, cron, agent, Teams bot) can call CRAFT. Dash shares the Flask process so the HITL reviewer UI inherits the same auth and audit. |
-| **LangGraph ReAct** | First-class `interrupt` for HITL (UMR-021), bounded recursion (UMR-013/AAR-003 → `recursion_limit`), graph-level test anchors. Actively maintained by LangChain Inc.; standard pattern. |
-| **Protocol-typed registries (`Tool`, `DataSource`, `ChatProvider`, `WorkspaceStore`, `AgentActionLog`)** | New capability or new backend = one class satisfying a protocol; no agent edit. Pyright-checked contracts (UMR-012/AAR-002). |
-| **Azure OpenAI / Azure AI Foundry (end state)** | Canadian-region PBMM data residency; Foundry gives us model routing (UMR-028), rate limits (UMR-030/ASG-004), and content safety (UMR-020/ASG-001) under one procurement line. |
-| **Azure AI Search (end state)** | Hybrid semantic + BM25 natively (UMR-005/ARR-002), top-K ranking at 0.72 cosine (UMR-004), managed vector store. |
-| **Azure Container Apps sandbox** | Isolated per-request code exec for UMR-093 (code, inputs, outputs, exit status audited). |
-| **Entra ID + MSAL** | CSA-standard identity; same token flow for human and agent callers (UMR-017/AAR-007). |
-| **Log Analytics (end state) / hash-chained JSONL (now)** | Immutable audit per UMR-027/ASG-003; KQL-queryable at end state, grep-able today. |
-| **Postgres (HITL queue, 3-tier memory)** | Durable approval state across restarts (UMR-025 TTL); same instance backs the episodic/semantic/procedural tiers (UMR-014/AAR-004). |
-| **SQLite (now) / managed DB (end state)** | File-local for scratch + per-user data today; swap target already named behind `WorkspaceStore`. |
-| **pytest + pyright + ruff + bandit + pip-audit + detect-secrets** | Architecture invariants ship as tests (route × role, protocol contracts, audit-envelope present). Industry-standard, maintained. |
+| Component | End-state choice | Current alternative | Why |
+|---|---|---|---|
+| HTTP surface | **Flask** + Dash reviewer UI | — (live) | Routes are the integration contract — any token-bearing caller (user, cron, agent) can hit CRAFT; Dash shares the auth and audit perimeter. |
+| Agent runtime | **LangGraph ReAct** | — (live) | First-class `interrupt` for HITL, bounded recursion, graph-level test anchors; maintained by LangChain Inc. |
+| LLM inference | **Azure AI Foundry (Azure IQ)** — model routing + rate limits + Content Safety | **Azure OpenAI direct** (Canadian PBMM region) | Foundry collapses model, rate-limit and guardrail procurement into one line while PBMM residency stays. |
+| Retrieval | **Azure AI Foundry index / Azure AI Search** hybrid (vector + BM25) | **LocalFileSource** via `⟨I⟩ DataSource` with filename / path search | Same `⟨I⟩ DataSource` call site; cutover is config. Satisfies UMR-004/005/006. |
+| Guardrails + sandbox | **Content Safety + Azure Container Apps** | Guardrail hook disabled; `CodeExecTool` slot reserved | End-state wires into the tool wrapper CRAFT already runs. UMR-020 / UMR-093. |
+| Identity | **Entra ID + MSAL** | Local `AuthProvider` stub | Same token flow for humans and external agents; CSA-standard. |
+| Audit sink | **Azure Log Analytics** (immutable retention) | Hash-chained JSONL on disk | KQL at end state; grep today; UMR-027 / ASG-003. |
+| HITL queue + memory | **Postgres** (approval queue + 3-tier memory) | SQLite scratch; approval table staged | Durable across restarts; UMR-025 TTL, UMR-014 memory. |
+| Session + per-user data | **Managed DB** behind `⟨I⟩ WorkspaceStore` | SQLite file-local | Swap target already named behind the protocol. |
+| Edge | **APIM + App Gateway (WAF)** | Direct App Service | WAF + rate limit at perimeter; UMR-030. |
+| Deployment | **App Service PBMM + SSC LaunchPad HA** | Single-region App Service | HA + landing zone come with LaunchPad; UMR-057. |
+| Protocol contracts | **`⟨I⟩ Tool`, `⟨I⟩ DataSource`, `⟨I⟩ ChatProvider`, `⟨I⟩ WorkspaceStore`, `⟨I⟩ AgentActionLog`** | — (live) | New capability or backend = one class satisfying a protocol; agent unchanged. Pyright-checked. |
+| Invariants | **pytest + pyright + ruff + bandit + pip-audit + detect-secrets** | — (live) | Route × role matrix, protocol contracts, audit-envelope present. Industry-standard, maintained. |
 
 ## 5. Solving the Problems — Today and at End State
 
