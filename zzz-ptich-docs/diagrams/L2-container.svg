@@ -11,7 +11,7 @@
       .hc { font-size: 10.5px; font-weight: 600; fill: #000; text-anchor: middle; }
       .mono { font-family: "SF Mono", Menlo, Consolas, "Courier New", monospace; font-size: 10px; fill: #000; }
       .title { font-size: 13px; font-weight: 600; fill: #000; text-anchor: middle; }
-      .num { font-size: 13px; font-weight: 700; fill: #fff; text-anchor: middle; dominant-baseline: central; }
+      .num { font-size: 11px; font-weight: 700; fill: #fff; text-anchor: middle; dominant-baseline: central; }
       .numcirc { fill: #000; }
       .proto { font-weight: 700; }
     ]]></style>
@@ -22,7 +22,7 @@
   <!-- 1 ACTORS -->
   <g transform="translate(20,36)">
     <rect x="0" y="0" width="720" height="42" class="box"/>
-    <circle cx="18" cy="21" r="11" class="numcirc"/><text x="18" y="21" class="num">1</text>
+    <circle cx="22" cy="22" r="9" class="numcirc"/><text x="22" y="22" class="num">1</text>
     <text x="36" y="18" class="h">Actors</text>
     <text x="36" y="34" class="lbl">Mission Engineer · Systems Engineer · Program Admin · HITL Reviewer · external agent / trigger</text>
   </g>
@@ -30,7 +30,7 @@
   <!-- 2 RBAC -->
   <g transform="translate(20,88)">
     <rect x="0" y="0" width="720" height="106" class="box"/>
-    <circle cx="18" cy="21" r="11" class="numcirc"/><text x="18" y="21" class="num">2</text>
+    <circle cx="22" cy="22" r="9" class="numcirc"/><text x="22" y="22" class="num">2</text>
     <text x="36" y="18" class="h">Route-gated RBAC   <tspan class="proto">⟨I⟩ AuthProvider</tspan></text>
     <text x="36" y="34" class="mono">@route("/path/*", role=&lt;required&gt;)  def handler(req): before_request(); after_request()</text>
     <text x="36" y="50" class="lbl-i">before_request → auth · role · trace_id   ·   after_request → audit emit (AgentAction)</text>
@@ -45,7 +45,7 @@
   <!-- 3 PRIMARY AGENT -->
   <g transform="translate(20,204)">
     <rect x="0" y="0" width="720" height="46" class="box"/>
-    <circle cx="18" cy="21" r="11" class="numcirc"/><text x="18" y="21" class="num">3</text>
+    <circle cx="22" cy="22" r="9" class="numcirc"/><text x="22" y="22" class="num">3</text>
     <text x="36" y="18" class="h">Primary Agent (entry point)</text>
     <text x="36" y="32" class="lbl">LangGraph ReAct · bounded recursion · HITL interrupt</text>
     <text x="36" y="42" class="lbl-i"><tspan class="proto">⟨I⟩ ChatProvider</tspan>   <tspan class="proto">⟨I⟩ AgentActionLog</tspan>   <tspan class="proto">⟨I⟩ Tool</tspan></text>
@@ -54,7 +54,7 @@
   <!-- 4 REGISTRIES -->
   <g transform="translate(20,260)">
     <rect x="0" y="0" width="350" height="118" class="box"/>
-    <circle cx="18" cy="21" r="11" class="numcirc"/><text x="18" y="21" class="num">4</text>
+    <circle cx="22" cy="22" r="9" class="numcirc"/><text x="22" y="22" class="num">4</text>
     <text x="36" y="18" class="h">Tool Registry   <tspan class="proto">⟨I⟩ Tool</tspan></text>
     <text x="8" y="40" class="lbl">documents — ingest · search · cite</text>
     <text x="8" y="54" class="lbl">query_data — SQL · RBAC-scoped</text>
@@ -63,7 +63,7 @@
     <text x="8" y="106" class="lbl-i">new tool = new class, agent unchanged</text>
 
     <rect x="370" y="0" width="350" height="118" class="box"/>
-    <circle cx="388" cy="21" r="11" class="numcirc"/><text x="388" y="21" class="num">4</text>
+    <circle cx="392" cy="22" r="9" class="numcirc"/><text x="392" y="22" class="num">4</text>
     <text x="406" y="18" class="h">DataSource Registry   <tspan class="proto">⟨I⟩ DataSource</tspan></text>
     <text x="378" y="40" class="lbl">LocalFile — filesystem (live)</text>
     <text x="378" y="54" class="lbl-b">SharePoint — Graph API [LocalFile mirror]</text>
@@ -76,7 +76,7 @@
   <!-- 5 STORAGE -->
   <g transform="translate(20,388)">
     <rect x="0" y="0" width="720" height="66" class="box"/>
-    <circle cx="18" cy="21" r="11" class="numcirc"/><text x="18" y="21" class="num">5</text>
+    <circle cx="22" cy="22" r="9" class="numcirc"/><text x="22" y="22" class="num">5</text>
     <text x="36" y="18" class="h">Storage   <tspan class="proto">⟨I⟩ WorkspaceStore</tspan></text>
     <line x1="240" y1="26" x2="240" y2="64" stroke="#000" stroke-width="0.4" stroke-dasharray="2 2"/>
     <line x1="480" y1="26" x2="480" y2="64" stroke="#000" stroke-width="0.4" stroke-dasharray="2 2"/>
@@ -94,7 +94,7 @@
   <!-- 6 EXTERNAL -->
   <g transform="translate(20,464)">
     <rect x="0" y="0" width="720" height="80" class="box"/>
-    <circle cx="18" cy="21" r="11" class="numcirc"/><text x="18" y="21" class="num">6</text>
+    <circle cx="22" cy="22" r="9" class="numcirc"/><text x="22" y="22" class="num">6</text>
     <text x="36" y="18" class="h">External systems — end state: Azure-consolidated (Foundry · IQ)</text>
     <text x="8" y="38" class="lbl">Azure OpenAI — LLM inference (live)</text>
     <text x="8" y="52" class="lbl-b">Azure AI Search — hybrid retrieval  [LocalFileSource today]</text>
@@ -109,7 +109,7 @@
   <!-- 7 TEST -->
   <g transform="translate(20,554)">
     <rect x="0" y="0" width="720" height="22" class="box"/>
-    <circle cx="18" cy="11" r="11" class="numcirc"/><text x="18" y="11" class="num">7</text>
+    <circle cx="22" cy="14" r="9" class="numcirc"/><text x="22" y="14" class="num">7</text>
     <text x="36" y="14" class="lbl">Test surface — ruff · pyright · pytest · bandit · pip-audit · detect-secrets   (pre-commit + CI)</text>
   </g>
 </svg>
