@@ -14,7 +14,6 @@ werkzeug
 
 # CI / quality
 bandit
-pip-audit
 pytest-cov
 detect-secrets
 
