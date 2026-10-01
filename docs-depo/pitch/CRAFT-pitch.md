@@ -8,64 +8,65 @@ lin: 1.10
 ---
 
 ## Legend
-■ Actor · ◇ Gate · ☁ Cloud · ⬡ Terminal · ▦ Store · ⟨I⟩ Protocol · Blue=Auth · Green=Audit
-
-## 1. What CRAFT Is
-
-Proposed audited retrieval-augmented AI assistant for CSA mission engineering and finance. This document describes the target architecture — the seams, the components behind each seam, and the invariants that hold across the system.
+■ Actor · ◇ Gate · ☁ Cloud · ⬡ Terminal · ▦ Store · <span class="d-proto">⟨I⟩</span> Protocol · <span class="d-actor">Blue</span>=Auth · <span class="d-audit">Green</span>=Audit
 
 ## 2a. L1 System Context
 
-```text
-┌─────────────────┐
-│Mission Eng      │──▶┌──────────────────────────────────────────┐
-│Systems Eng      │──▶│                CRAFT                     │
-│Program Admin    │──▶│           Flask + Dash                   │
-│HITL Reviewer    │──▶│                                          │
+<pre class="diagram">┌─────────────────┐
+│<span class="d-actor">Mission Eng</span>      │──▶┌──────────────────────────────────────────┐
+│<span class="d-actor">Systems Eng</span>      │──▶│                <span class="d-head">CRAFT</span>                     │
+│<span class="d-actor">Program Admin</span>    │──▶│           Flask + Dash                   │
+│<span class="d-actor">HITL Reviewer</span>    │──▶│                                          │
 └─────────────────┘   └──┬────────┬─────────┬──────────┬────────┘
                          ▼        ▼         ▼          ▼
                     ┌────────┐┌────────┐┌─────────┐┌────────────┐
-                    │LLM & AI││Internal││External ││Ops & Audit │
-                    │AzureOA ││ Data   ││  Data   ││LogAnalyt   │
-                    │AgentFW ││⟨I⟩WS   ││ShPt     ││AppSvc PBMM │
+                    │<span class="d-head">LLM &amp; AI</span>││<span class="d-head">Internal</span>││<span class="d-head">External</span> ││<span class="d-head">Ops &amp; Audit</span> │
+                    │AzureOA ││ Data   ││  Data   ││<span class="d-audit">LogAnalyt</span>   │
+                    │AgentFW ││<span class="d-proto">⟨I⟩</span>WS   ││ShPt     ││AppSvc PBMM │
                     │Foundry ││Managed ││SAP      ││LaunchP     │
                     │ContSfty││scratch ││STK      ││ContApp     │
                     │        ││        ││AI Srch  ││Entra       │
-                    │        ││⟨I⟩DS   ││⟨I⟩DS    ││APIM        │
+                    │        ││<span class="d-proto">⟨I⟩</span>DS   ││<span class="d-proto">⟨I⟩</span>DS    ││APIM        │
                     │        ││        ││         ││            │
-                    └────────┘└────────┘└─────────┘└────────────┘
-```
-In: `/chat/send [base]` `/admin/* [admin]`. Out: thin italic. **Internal data** lives in the CRAFT process and the managed DB; **external data** reaches CRAFT through `⟨I⟩ DataSource` adapters (MSAL/OAuth).
+                    └────────┘└────────┘└─────────┘└────────────┘</pre>
+
+CRAFT is reached through two role-tagged routes: `/chat/send [base]` and `/admin/* [admin]`. Downstream, it fans out to four service domains: **LLM & AI**, **Internal Data** (CRAFT's own managed DB), **External Data** (business sources behind `⟨I⟩ DataSource` adapters with MSAL / OAuth), and **Ops & Audit**.
 
 ## 2b. L2 Container
 
-The architecture reduces to three horizontal bands: **a route-gated RBAC layer**, **the surfaces it dispatches to** (tools, storage, data sources), and **an audit envelope** that wraps every call. Two caller shapes — the primary agent and any external token-bearing client — converge on the same gate; any exposed endpoint can be hit from anywhere, with anything, and returns a structured response. The design is agnostic to what we run it on, where it's called from, and how it's called — a terminal, a cron, a pipeline, a webhook target, or the agent itself all look the same to the gate.
+The architecture reduces to three horizontal bands: **a Route-Gated RBAC Layer** at the top, **four protocol-backed surfaces** it dispatches to beneath, and **an audit envelope** that wraps every call. The four surfaces are:
 
-```text
-┌──────────────────────────┐          ┌─────────────────────────────┐
-│  Internal caller         │          │  External caller            │
+- **Tool Registry** (`⟨I⟩ Tool`) — the callable actions.
+- **Storage** (`⟨I⟩ WorkspaceStore` and `⟨I⟩ ApprovalQueue`) — CRAFT's own operational state.
+- **Data Sources** (`⟨I⟩ DataSource`) — read-mostly business data behind one contract.
+- **Audit Sink** (`⟨I⟩ AgentActionLog`) — the hash-chained record of everything that happened.
+
+Two caller shapes — the primary agent and any external token-bearing client — converge on the same gate; any exposed endpoint can be hit from anywhere, with anything, and returns a structured response. The design is agnostic to **what we run it on** (host, container, cloud), **where it's called from** (terminal, cron, pipeline, webhook target, the agent itself), and **how it's called** (sync request, scheduled job, callback). All paths look the same to the gate.
+
+<pre class="diagram">┌──────────────────────────┐          ┌─────────────────────────────┐
+│  <span class="d-actor">Internal caller</span>         │          │  <span class="d-actor">External caller</span>            │
 │   Primary Agent          │          │   Service · Cron · Pipeline │
 │   Agent Framework        │          │   User-scoped token         │
-│   ⟨I⟩ ChatProvider       │          │   (base / power / admin)    │
+│   <span class="d-proto">⟨I⟩ ChatProvider</span>       │          │   (<span class="d-role">base</span> / <span class="d-role">power</span> / <span class="d-role">admin</span>)    │
 └────────────┬─────────────┘          └──────────────┬──────────────┘
              │                                       │
              └───────────────────┬───────────────────┘
                                  ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│                 Route-Gated RBAC Layer (auth-blue)                 │
-│   /chat/send         [base]     ·   /uploads            [power]    │
-│   /tools/execute/*   [base+]    ·   /storage/*          [base+]    │
-│   /admin/approvals/* [admin]                                       │
-│   before_request → auth · role · trace_id   ·   after_request → audit│
+│                 <span class="d-head">Route-Gated RBAC Layer</span>                             │
+│   /chat/send         [<span class="d-role">base</span>]     ·   /uploads            [<span class="d-role">power</span>]    │
+│   /tools/execute/*   [<span class="d-role">base+</span>]    ·   /storage/*          [<span class="d-role">base+</span>]    │
+│   /admin/approvals/* [<span class="d-role">admin</span>]                                       │
+│   before_request → auth · role · trace_id   ·   after_request → <span class="d-audit">audit</span>│
 └────┬──────────────────┬──────────────────┬──────────────────┬──────┘
      ▼                  ▼                  ▼                  ▼
 ┌──────────┐  ┌───────────────────┐  ┌──────────────────┐  ┌─────────┐
-│  Tool    │  │  Storage          │  │  Data Sources    │  │  Audit  │
+│  <span class="d-head">Tool</span>    │  │  <span class="d-head">Storage</span>          │  │  <span class="d-head">Data Sources</span>    │  │  <span class="d-head">Audit</span>  │
 │Registry  │  │ (CRAFT's own      │  │ (business data   │  │  Sink   │
-│⟨I⟩ Tool  │  │  operational      │  │  CRAFT reads)    │  │⟨I⟩ActLog│
-│          │  │  state)           │  │  ⟨I⟩ DataSource  │  │   │     │
-│documents │  │  ⟨I⟩ WsStore      │  │                  │  │   ▼     │
-│charts    │  │  ⟨I⟩ Approval-    │  │  INTERNAL        │  │  Hash-  │
+│<span class="d-proto">⟨I⟩</span> Tool  │  │  operational      │  │  CRAFT reads)    │  │<span class="d-proto">⟨I⟩</span>ActLog│
+│          │  │  state)           │  │  <span class="d-proto">⟨I⟩ DataSource</span>  │  │   │     │
+│documents │  │  <span class="d-proto">⟨I⟩</span> WsStore      │  │                  │  │   ▼     │
+│charts    │  │  <span class="d-proto">⟨I⟩</span> Approval-    │  │  INTERNAL        │  │  Hash-  │
 │query_data│  │     Queue         │  │  (in-process,    │  │  chained│
 │classifier│  │                   │  │   connector-     │  │  JSONL  │
 │hist_mis'n│  │  ▦ Workspace      │  │   backed)        │  │   │     │
@@ -84,8 +85,7 @@ The architecture reduces to three horizontal bands: **a route-gated RBAC layer**
 ┌──────────────┐
 │Test Surface  │──▶ pre-commit · GitHub Actions
 │(audit-green) │
-└──────────────┘
-```
+└──────────────┘</pre>
 
 **Storage vs Data Sources.** They are different concerns.
 

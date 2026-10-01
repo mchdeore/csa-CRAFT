@@ -8,29 +8,36 @@
     --code-bg: #eef0f3;
     --link: #264478;
     --th-bg: #e9ecef;
-    --base: 10pt;
-    --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --base: 11pt;
+    --serif: "Times New Roman", "Times", "Georgia", serif;
+    --mono: ui-monospace, "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
+
+    /* Diagram semantic palette — muted, print-safe */
+    --d-proto:  #1a5490;  /* ⟨I⟩ interface markers */
+    --d-role:   #8d6708;  /* [base] / [power] / [admin] */
+    --d-gate:   #9a5c00;  /* ◇ decision gates */
+    --d-term:   #2e7d32;  /* ● terminal states */
+    --d-actor:  #0e7490;  /* caller / actor labels */
+    --d-audit:  #2e7d32;  /* audit-related tokens */
   }
   body {
-    font-family: var(--sans);
+    font-family: var(--serif);
     font-size: var(--base);
-    line-height: 1.45;
+    line-height: 1.5;
     color: var(--fg);
     margin: 0.6in;
   }
-  h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; }
-  h1 { font-size: 1.5em;  margin: 0 0 6pt 0; }
-  h2 { font-size: 1.2em;  margin: 14pt 0 4pt 0; padding-bottom: 2pt; border-bottom: 0.5px solid var(--rule-strong); }
-  h3 { font-size: 1.05em; margin: 8pt 0 3pt 0; color: var(--fg); }
-  h4 { font-size: 1em;    margin: 6pt 0 2pt 0; color: var(--muted); }
-  p  { margin: 3pt 0; }
+  h1, h2, h3, h4 { font-family: var(--serif); font-weight: 700; line-height: 1.2; }
+  h1 { font-size: 1.4em;  margin: 0 0 8pt 0; }
+  h2 { font-size: 1.18em; margin: 20pt 0 6pt 0; border-bottom: none; }
+  h3 { font-size: 1.05em; margin: 12pt 0 4pt 0; }
+  h4 { font-size: 1em;    margin: 8pt 0 3pt 0; color: var(--muted); }
+  p  { margin: 4pt 0; }
 
-  /* Lists share the body size and leading. */
-  ul, ol { margin: 3pt 0; padding-left: 18pt; }
-  li { margin: 1pt 0; }
+  ul, ol { margin: 4pt 0; padding-left: 20pt; }
+  li { margin: 2pt 0; }
 
-  /* Code — inline + diagram blocks share one monospace family. */
+  /* Inline code uses the mono stack but stays small. */
   code, kbd, samp {
     font-family: var(--mono);
     font-size: 0.9em;
@@ -38,63 +45,68 @@
     padding: 0 3px;
     border-radius: 2px;
   }
-  pre {
+
+  /* Diagram blocks — mono, slightly bolder weight for crispness. */
+  pre, pre.diagram {
     font-family: var(--mono);
-    font-size: 0.88em;
-    line-height: 1.35;
+    font-size: 0.86em;
+    font-weight: 500;
+    line-height: 1.3;
     background: var(--surface);
     border: 0.5px solid var(--rule);
     border-left: 2px solid var(--rule-strong);
     border-radius: 3px;
-    padding: 8px 12px;
-    margin: 6pt 0;
+    padding: 10px 14px;
+    margin: 8pt 0;
     overflow-x: auto;
     page-break-inside: avoid;
+    color: var(--fg);
+    white-space: pre;
   }
   pre code {
     background: transparent;
     padding: 0;
     border-radius: 0;
     font-size: inherit;
+    font-weight: inherit;
   }
 
-  /* Tables — one size, consistent padding, zebra rows. */
+  /* Diagram semantic highlighting */
+  pre .d-proto  { color: var(--d-proto);  font-weight: 700; }
+  pre .d-role   { color: var(--d-role);   font-weight: 700; }
+  pre .d-gate   { color: var(--d-gate);   font-weight: 700; }
+  pre .d-term   { color: var(--d-term);   font-weight: 700; }
+  pre .d-actor  { color: var(--d-actor);  font-weight: 700; }
+  pre .d-audit  { color: var(--d-audit);  font-weight: 700; }
+  pre .d-head   { color: var(--fg);       font-weight: 700; }
+
   table {
     border-collapse: collapse;
     width: 100%;
-    font-size: 0.88em;
-    margin: 6pt 0;
+    font-size: 0.92em;
+    margin: 8pt 0;
   }
   th, td {
     border: 0.5px solid var(--rule);
-    padding: 4px 6px;
+    padding: 5px 7px;
     text-align: left;
     vertical-align: top;
-    line-height: 1.35;
+    line-height: 1.4;
   }
-  th { background: var(--th-bg); font-weight: 600; }
+  th { background: var(--th-bg); font-weight: 700; }
   tbody tr:nth-child(even) td { background: #fafbfc; }
 
-  /* Figures */
-  .diagram-container {
-    page-break-inside: avoid;
-    text-align: center;
-    margin: 6pt 0;
-  }
+  .diagram-container { page-break-inside: avoid; text-align: center; margin: 8pt 0; }
   .diagram-container img, .diagram-container svg {
     max-width: 100%;
     height: auto;
     max-height: 320px;
     object-fit: contain;
   }
-  .figure-caption {
-    font-size: 0.82em;
-    color: var(--muted);
-    margin: 2pt 0 6pt 0;
-  }
+  .figure-caption { font-size: 0.85em; color: var(--muted); margin: 2pt 0 8pt 0; }
 
   a { color: var(--link); }
-  strong { font-weight: 600; }
+  strong { font-weight: 700; }
 
   @media print {
     body { margin: 0.5in; }

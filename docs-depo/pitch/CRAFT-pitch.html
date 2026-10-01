@@ -8,29 +8,36 @@
     --code-bg: #eef0f3;
     --link: #264478;
     --th-bg: #e9ecef;
-    --base: 10pt;
-    --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    --base: 11pt;
+    --serif: "Times New Roman", "Times", "Georgia", serif;
+    --mono: ui-monospace, "SF Mono", "Menlo", "Consolas", "Liberation Mono", monospace;
+
+    /* Diagram semantic palette — muted, print-safe */
+    --d-proto:  #1a5490;  /* ⟨I⟩ interface markers */
+    --d-role:   #8d6708;  /* [base] / [power] / [admin] */
+    --d-gate:   #9a5c00;  /* ◇ decision gates */
+    --d-term:   #2e7d32;  /* ● terminal states */
+    --d-actor:  #0e7490;  /* caller / actor labels */
+    --d-audit:  #2e7d32;  /* audit-related tokens */
   }
   body {
-    font-family: var(--sans);
+    font-family: var(--serif);
     font-size: var(--base);
-    line-height: 1.45;
+    line-height: 1.5;
     color: var(--fg);
     margin: 0.6in;
   }
-  h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; }
-  h1 { font-size: 1.5em;  margin: 0 0 6pt 0; }
-  h2 { font-size: 1.2em;  margin: 14pt 0 4pt 0; padding-bottom: 2pt; border-bottom: 0.5px solid var(--rule-strong); }
-  h3 { font-size: 1.05em; margin: 8pt 0 3pt 0; color: var(--fg); }
-  h4 { font-size: 1em;    margin: 6pt 0 2pt 0; color: var(--muted); }
-  p  { margin: 3pt 0; }
+  h1, h2, h3, h4 { font-family: var(--serif); font-weight: 700; line-height: 1.2; }
+  h1 { font-size: 1.4em;  margin: 0 0 8pt 0; }
+  h2 { font-size: 1.18em; margin: 20pt 0 6pt 0; border-bottom: none; }
+  h3 { font-size: 1.05em; margin: 12pt 0 4pt 0; }
+  h4 { font-size: 1em;    margin: 8pt 0 3pt 0; color: var(--muted); }
+  p  { margin: 4pt 0; }
 
-  /* Lists share the body size and leading. */
-  ul, ol { margin: 3pt 0; padding-left: 18pt; }
-  li { margin: 1pt 0; }
+  ul, ol { margin: 4pt 0; padding-left: 20pt; }
+  li { margin: 2pt 0; }
 
-  /* Code — inline + diagram blocks share one monospace family. */
+  /* Inline code uses the mono stack but stays small. */
   code, kbd, samp {
     font-family: var(--mono);
     font-size: 0.9em;
@@ -38,118 +45,128 @@
     padding: 0 3px;
     border-radius: 2px;
   }
-  pre {
+
+  /* Diagram blocks — mono, slightly bolder weight for crispness. */
+  pre, pre.diagram {
     font-family: var(--mono);
-    font-size: 0.88em;
-    line-height: 1.35;
+    font-size: 0.86em;
+    font-weight: 500;
+    line-height: 1.3;
     background: var(--surface);
     border: 0.5px solid var(--rule);
     border-left: 2px solid var(--rule-strong);
     border-radius: 3px;
-    padding: 8px 12px;
-    margin: 6pt 0;
+    padding: 10px 14px;
+    margin: 8pt 0;
     overflow-x: auto;
     page-break-inside: avoid;
+    color: var(--fg);
+    white-space: pre;
   }
   pre code {
     background: transparent;
     padding: 0;
     border-radius: 0;
     font-size: inherit;
+    font-weight: inherit;
   }
 
-  /* Tables — one size, consistent padding, zebra rows. */
+  /* Diagram semantic highlighting */
+  pre .d-proto  { color: var(--d-proto);  font-weight: 700; }
+  pre .d-role   { color: var(--d-role);   font-weight: 700; }
+  pre .d-gate   { color: var(--d-gate);   font-weight: 700; }
+  pre .d-term   { color: var(--d-term);   font-weight: 700; }
+  pre .d-actor  { color: var(--d-actor);  font-weight: 700; }
+  pre .d-audit  { color: var(--d-audit);  font-weight: 700; }
+  pre .d-head   { color: var(--fg);       font-weight: 700; }
+
   table {
     border-collapse: collapse;
     width: 100%;
-    font-size: 0.88em;
-    margin: 6pt 0;
+    font-size: 0.92em;
+    margin: 8pt 0;
   }
   th, td {
     border: 0.5px solid var(--rule);
-    padding: 4px 6px;
+    padding: 5px 7px;
     text-align: left;
     vertical-align: top;
-    line-height: 1.35;
+    line-height: 1.4;
   }
-  th { background: var(--th-bg); font-weight: 600; }
+  th { background: var(--th-bg); font-weight: 700; }
   tbody tr:nth-child(even) td { background: #fafbfc; }
 
-  /* Figures */
-  .diagram-container {
-    page-break-inside: avoid;
-    text-align: center;
-    margin: 6pt 0;
-  }
+  .diagram-container { page-break-inside: avoid; text-align: center; margin: 8pt 0; }
   .diagram-container img, .diagram-container svg {
     max-width: 100%;
     height: auto;
     max-height: 320px;
     object-fit: contain;
   }
-  .figure-caption {
-    font-size: 0.82em;
-    color: var(--muted);
-    margin: 2pt 0 6pt 0;
-  }
+  .figure-caption { font-size: 0.85em; color: var(--muted); margin: 2pt 0 8pt 0; }
 
   a { color: var(--link); }
-  strong { font-weight: 600; }
+  strong { font-weight: 700; }
 
   @media print {
     body { margin: 0.5in; }
   }
 </style>
 </head><body><h2>Legend</h2>
-<p>■ Actor · ◇ Gate · ☁ Cloud · ⬡ Terminal · ▦ Store · ⟨I⟩ Protocol · Blue=Auth · Green=Audit</p>
-<h2>1. What CRAFT Is</h2>
-<p>Proposed audited retrieval-augmented AI assistant for CSA mission engineering and finance. This document describes the target architecture — the seams, the components behind each seam, and the invariants that hold across the system.</p>
+<p>■ Actor · ◇ Gate · ☁ Cloud · ⬡ Terminal · ▦ Store · <span class="d-proto">⟨I⟩</span> Protocol · <span class="d-actor">Blue</span>=Auth · <span class="d-audit">Green</span>=Audit</p>
 <h2>2a. L1 System Context</h2>
-<pre><code class="language-text">┌─────────────────┐
-│Mission Eng      │──▶┌──────────────────────────────────────────┐
-│Systems Eng      │──▶│                CRAFT                     │
-│Program Admin    │──▶│           Flask + Dash                   │
-│HITL Reviewer    │──▶│                                          │
+<pre class="diagram">┌─────────────────┐
+│<span class="d-actor">Mission Eng</span>      │──▶┌──────────────────────────────────────────┐
+│<span class="d-actor">Systems Eng</span>      │──▶│                <span class="d-head">CRAFT</span>                     │
+│<span class="d-actor">Program Admin</span>    │──▶│           Flask + Dash                   │
+│<span class="d-actor">HITL Reviewer</span>    │──▶│                                          │
 └─────────────────┘   └──┬────────┬─────────┬──────────┬────────┘
                          ▼        ▼         ▼          ▼
                     ┌────────┐┌────────┐┌─────────┐┌────────────┐
-                    │LLM &amp; AI││Internal││External ││Ops &amp; Audit │
-                    │AzureOA ││ Data   ││  Data   ││LogAnalyt   │
-                    │AgentFW ││⟨I⟩WS   ││ShPt     ││AppSvc PBMM │
+                    │<span class="d-head">LLM &amp; AI</span>││<span class="d-head">Internal</span>││<span class="d-head">External</span> ││<span class="d-head">Ops &amp; Audit</span> │
+                    │AzureOA ││ Data   ││  Data   ││<span class="d-audit">LogAnalyt</span>   │
+                    │AgentFW ││<span class="d-proto">⟨I⟩</span>WS   ││ShPt     ││AppSvc PBMM │
                     │Foundry ││Managed ││SAP      ││LaunchP     │
                     │ContSfty││scratch ││STK      ││ContApp     │
                     │        ││        ││AI Srch  ││Entra       │
-                    │        ││⟨I⟩DS   ││⟨I⟩DS    ││APIM        │
+                    │        ││<span class="d-proto">⟨I⟩</span>DS   ││<span class="d-proto">⟨I⟩</span>DS    ││APIM        │
                     │        ││        ││         ││            │
-                    └────────┘└────────┘└─────────┘└────────────┘
-</code></pre>
-<p>In: <code>/chat/send [base]</code> <code>/admin/* [admin]</code>. Out: thin italic. <strong>Internal data</strong> lives in the CRAFT process and the managed DB; <strong>external data</strong> reaches CRAFT through <code>⟨I⟩ DataSource</code> adapters (MSAL/OAuth).</p>
+                    └────────┘└────────┘└─────────┘└────────────┘</pre>
+
+<p>CRAFT is reached through two role-tagged routes: <code>/chat/send [base]</code> and <code>/admin/* [admin]</code>. Downstream, it fans out to four service domains: <strong>LLM &amp; AI</strong>, <strong>Internal Data</strong> (CRAFT's own managed DB), <strong>External Data</strong> (business sources behind <code>⟨I⟩ DataSource</code> adapters with MSAL / OAuth), and <strong>Ops &amp; Audit</strong>.</p>
 <h2>2b. L2 Container</h2>
-<p>The architecture reduces to three horizontal bands: <strong>a route-gated RBAC layer</strong>, <strong>the surfaces it dispatches to</strong> (tools, storage, data sources), and <strong>an audit envelope</strong> that wraps every call. Two caller shapes — the primary agent and any external token-bearing client — converge on the same gate; any exposed endpoint can be hit from anywhere, with anything, and returns a structured response. The design is agnostic to what we run it on, where it's called from, and how it's called — a terminal, a cron, a pipeline, a webhook target, or the agent itself all look the same to the gate.</p>
-<pre><code class="language-text">┌──────────────────────────┐          ┌─────────────────────────────┐
-│  Internal caller         │          │  External caller            │
+<p>The architecture reduces to three horizontal bands: <strong>a Route-Gated RBAC Layer</strong> at the top, <strong>four protocol-backed surfaces</strong> it dispatches to beneath, and <strong>an audit envelope</strong> that wraps every call. The four surfaces are:</p>
+<ul>
+<li><strong>Tool Registry</strong> (<code>⟨I⟩ Tool</code>) — the callable actions.</li>
+<li><strong>Storage</strong> (<code>⟨I⟩ WorkspaceStore</code> and <code>⟨I⟩ ApprovalQueue</code>) — CRAFT's own operational state.</li>
+<li><strong>Data Sources</strong> (<code>⟨I⟩ DataSource</code>) — read-mostly business data behind one contract.</li>
+<li><strong>Audit Sink</strong> (<code>⟨I⟩ AgentActionLog</code>) — the hash-chained record of everything that happened.</li>
+</ul>
+<p>Two caller shapes — the primary agent and any external token-bearing client — converge on the same gate; any exposed endpoint can be hit from anywhere, with anything, and returns a structured response. The design is agnostic to <strong>what we run it on</strong> (host, container, cloud), <strong>where it's called from</strong> (terminal, cron, pipeline, webhook target, the agent itself), and <strong>how it's called</strong> (sync request, scheduled job, callback). All paths look the same to the gate.</p>
+<pre class="diagram">┌──────────────────────────┐          ┌─────────────────────────────┐
+│  <span class="d-actor">Internal caller</span>         │          │  <span class="d-actor">External caller</span>            │
 │   Primary Agent          │          │   Service · Cron · Pipeline │
 │   Agent Framework        │          │   User-scoped token         │
-│   ⟨I⟩ ChatProvider       │          │   (base / power / admin)    │
+│   <span class="d-proto">⟨I⟩ ChatProvider</span>       │          │   (<span class="d-role">base</span> / <span class="d-role">power</span> / <span class="d-role">admin</span>)    │
 └────────────┬─────────────┘          └──────────────┬──────────────┘
              │                                       │
              └───────────────────┬───────────────────┘
                                  ▼
 ┌────────────────────────────────────────────────────────────────────┐
-│                 Route-Gated RBAC Layer (auth-blue)                 │
-│   /chat/send         [base]     ·   /uploads            [power]    │
-│   /tools/execute/*   [base+]    ·   /storage/*          [base+]    │
-│   /admin/approvals/* [admin]                                       │
-│   before_request → auth · role · trace_id   ·   after_request → audit│
+│                 <span class="d-head">Route-Gated RBAC Layer</span>                             │
+│   /chat/send         [<span class="d-role">base</span>]     ·   /uploads            [<span class="d-role">power</span>]    │
+│   /tools/execute/*   [<span class="d-role">base+</span>]    ·   /storage/*          [<span class="d-role">base+</span>]    │
+│   /admin/approvals/* [<span class="d-role">admin</span>]                                       │
+│   before_request → auth · role · trace_id   ·   after_request → <span class="d-audit">audit</span>│
 └────┬──────────────────┬──────────────────┬──────────────────┬──────┘
      ▼                  ▼                  ▼                  ▼
 ┌──────────┐  ┌───────────────────┐  ┌──────────────────┐  ┌─────────┐
-│  Tool    │  │  Storage          │  │  Data Sources    │  │  Audit  │
+│  <span class="d-head">Tool</span>    │  │  <span class="d-head">Storage</span>          │  │  <span class="d-head">Data Sources</span>    │  │  <span class="d-head">Audit</span>  │
 │Registry  │  │ (CRAFT's own      │  │ (business data   │  │  Sink   │
-│⟨I⟩ Tool  │  │  operational      │  │  CRAFT reads)    │  │⟨I⟩ActLog│
-│          │  │  state)           │  │  ⟨I⟩ DataSource  │  │   │     │
-│documents │  │  ⟨I⟩ WsStore      │  │                  │  │   ▼     │
-│charts    │  │  ⟨I⟩ Approval-    │  │  INTERNAL        │  │  Hash-  │
+│<span class="d-proto">⟨I⟩</span> Tool  │  │  operational      │  │  CRAFT reads)    │  │<span class="d-proto">⟨I⟩</span>ActLog│
+│          │  │  state)           │  │  <span class="d-proto">⟨I⟩ DataSource</span>  │  │   │     │
+│documents │  │  <span class="d-proto">⟨I⟩</span> WsStore      │  │                  │  │   ▼     │
+│charts    │  │  <span class="d-proto">⟨I⟩</span> Approval-    │  │  INTERNAL        │  │  Hash-  │
 │query_data│  │     Queue         │  │  (in-process,    │  │  chained│
 │classifier│  │                   │  │   connector-     │  │  JSONL  │
 │hist_mis'n│  │  ▦ Workspace      │  │   backed)        │  │   │     │
@@ -168,8 +185,8 @@
 ┌──────────────┐
 │Test Surface  │──▶ pre-commit · GitHub Actions
 │(audit-green) │
-└──────────────┘
-</code></pre>
+└──────────────┘</pre>
+
 <p><strong>Storage vs Data Sources.</strong> They are different concerns.</p>
 <ul>
 <li><strong>Storage</strong> holds CRAFT's <em>own</em> operational state. Two protocols, three surfaces:</li>
