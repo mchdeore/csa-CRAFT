@@ -86,8 +86,19 @@ class ExcelTool:
         }
 
 
-# Validate requested columns exist in the dataframe
 def _validate_columns(df: pd.DataFrame, x_column: str, y_columns: list[str]) -> str | None:
+    """Validate that requested columns exist in the dataframe.
+
+    Returns None if all columns are valid, or an error message string.
+
+    >>> import pandas as pd
+    >>> df = pd.DataFrame({"A": [1, 2], "B": [3, 4]})
+    >>> _validate_columns(df, "A", ["B"])
+    >>> _validate_columns(df, "X", ["B"])
+    "Column 'X' not found. Available: A, B"
+    >>> _validate_columns(df, "A", ["Z"])
+    "Columns not found: Z. Available: A, B"
+    """
     if x_column not in df.columns:
         return f"Column '{x_column}' not found. Available: {', '.join(df.columns)}"
     missing = [c for c in y_columns if c not in df.columns]
