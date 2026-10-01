@@ -1,8 +1,11 @@
 """Enforce project folder structure rules — auto-discovers feature folders."""
 
 import ast
+import os
+import re
 import subprocess
 import sys
+from collections.abc import Generator
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
@@ -19,6 +22,121 @@ SHARED_MODULES = {"app.core"}
 ALWAYS_SKIP = {"venv", "tests", "__pycache__", ".pytest_cache", "tools"}
 
 NO_CALLBACKS = {"app"}
+
+# Modules exempt from doctest requirement — no public logic to test
+_DOCTEST_EXEMPT_PATTERNS = {
+    "__init__.py",
+    "templates.py",
+    "protocols.py",
+    "config.py",
+    "dash_app.py",
+    "logging.py",
+    "_shared.py",
+    "connection.py",
+    "runner.py",
+    "registry.py",
+    "entry.py",
+    "app.py",
+    "callbacks.py",
+}
+
+# Imports that indicate a module is stateful (needs pytest, not just doctest)
+_STATEFUL_IMPORTS = {
+    "sqlite3",
+    "flask",
+    "requests",
+    "openai",
+    "pdfplumber",
+    "docx",
+}
+
+# Modules exempt from pytest file requirement — pure logic covered by doctest
+_PYTEST_EXEMPT_NAME_PATTERNS = {
+    "__init__.py",
+    "templates.py",
+    "protocols.py",
+    "config.py",
+    "dash_app.py",
+    "logging.py",
+    "_shared.py",
+    "registry.py",
+    "cadre_mission_params.py",
+    "demo_seed.py",
+    "connection.py",
+}
+
+_BRANCH_TYPES = (
+    ast.If,
+    ast.IfExp,
+    ast.For,
+    ast.AsyncFor,
+    ast.While,
+    ast.ExceptHandler,
+    ast.With,
+    ast.AsyncWith,
+    ast.Assert,
+)
+
+
+def python_files(include_tests: bool = False) -> Generator[Path, None, None]:
+    """Yield .py files in the project, excluding venv."""
+    for dirpath, _, filenames in os.walk(PROJECT_ROOT):
+        path = Path(dirpath)
+        if "venv" in path.parts or ".venv" in path.parts:
+            continue
+        if not include_tests and "tests" in path.parts:
+            continue
+        for f in filenames:
+            if f.endswith(".py"):
+                yield path / f
+
+
+def _has_public_functions(tree: ast.Module) -> bool:
+    """Check if a module defines any public (non-underscore) functions or methods."""
+    for node in ast.iter_child_nodes(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and not node.name.startswith(
+            "_"
+        ):
+            return True
+        if isinstance(node, ast.ClassDef):
+            for method in ast.iter_child_nodes(node):
+                if isinstance(
+                    method, (ast.FunctionDef, ast.AsyncFunctionDef)
+                ) and not method.name.startswith("_"):
+                    return True
+    return False
+
+
+def _has_stateful_imports(tree: ast.Module) -> bool:
+    """Check if a module imports anything that makes it stateful (db, http, files)."""
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name.split(".")[0] in _STATEFUL_IMPORTS:
+                    return True
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            top = node.module.split(".")[0]
+            if top in _STATEFUL_IMPORTS:
+                return True
+    # Also check for file opening (open, Path.open, Path.read_text, etc.)
+    source = ast.unparse(tree) if hasattr(ast, "unparse") else ""
+    if "open(" in source or "read_text(" in source or "write_text(" in source:
+        # Only flag if it's a public function doing file I/O, not config/init
+        if _has_public_functions(tree):
+            return True
+    return False
+
+
+def _has_doctest(tree: ast.Module) -> bool:
+    """Check if a function node's docstring contains >>> doctest examples."""
+    for node in ast.iter_child_nodes(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            if node.name.startswith("_"):
+                continue
+            docstring = ast.get_docstring(node)
+            if docstring and ">>>" in docstring:
+                return True
+    return False
 
 
 def _discover_features() -> set[str]:
@@ -228,3 +346,93 @@ class TestArchitecture:
                     f"does not match any module at {'/'.join(parts)}.py"
                 )
         assert not violations, "Canonical paths don't match modules:\n" + "\n".join(violations)
+
+    def test_doctest_coverage(self) -> None:
+        """Every public function must have a doctest in its docstring.
+
+        Walks all source files (excluding exempt patterns). For each module
+        with public functions, checks that at least one public function has
+        >>> examples in its docstring. This is not per-function granular —
+        if a module has public functions but zero doctests anywhere, it fails.
+        """
+        violations: list[str] = []
+        for fp in python_files():
+            if fp.name in _DOCTEST_EXEMPT_PATTERNS:
+                continue
+            if fp.name.startswith("_"):
+                continue
+
+            rel = fp.relative_to(PROJECT_ROOT)
+            tree = ast.parse(fp.read_text())
+
+            if not _has_public_functions(tree):
+                continue
+
+            if not _has_doctest(tree):
+                violations.append(f"{rel} has public functions but no doctests")
+
+        assert not violations, (
+            "Modules with public functions missing doctests:\n" + "\n".join(violations)
+        )
+
+    def test_pytest_coverage_for_stateful(self) -> None:
+        """Every stateful module with public functions must have a matching pytest file.
+
+        Stateful = imports sqlite3, flask, requests, openai, pdfplumber, docx,
+        or opens/reads files in public functions. These modules need fixtures
+        and mocks — doctests alone aren't sufficient.
+
+        Checks that tests/test_{source_filename}.py exists relative to the
+        feature root or subpackage root where the source file lives.
+        """
+        violations: list[str] = []
+        features = _discover_features()
+
+        for fp in python_files():
+            if fp.name in _PYTEST_EXEMPT_NAME_PATTERNS:
+                continue
+            if fp.name.startswith("_"):
+                continue
+
+            rel = fp.relative_to(PROJECT_ROOT)
+            tree = ast.parse(fp.read_text())
+
+            if not _has_public_functions(tree):
+                continue
+            if not _has_stateful_imports(tree):
+                continue
+
+            # Find the feature root or subpackage root for this file
+            # The source file lives at feature/subdir/file.py
+            # The test file should be at feature/subdir/tests/test_file.py
+            feature_root = None
+            for feature_name in features:
+                feature_dir = PROJECT_ROOT / feature_name
+                if str(rel).startswith(feature_name + "/") or str(rel).startswith(feature_name):
+                    # Determine the parent directory of this file relative to feature
+                    rel_parts = Path(str(rel))
+                    if len(rel_parts.parts) > 1:
+                        parent_dir = rel_parts.parent
+                        test_file = parent_dir / "tests" / f"test_{fp.stem}.py"
+                    else:
+                        test_file = PROJECT_ROOT / feature_name / "tests" / f"test_{fp.stem}.py"
+
+                    if not test_file.exists():
+                        violations.append(
+                            f"{rel} is stateful (imports db/http/files) "
+                            f"but missing {test_file.relative_to(PROJECT_ROOT)}"
+                        )
+                    break
+            else:
+                # File is not inside a feature folder — tools/ or demo/
+                # Look for tests/ in the same directory as the file
+                test_file = fp.parent / "tests" / f"test_{fp.stem}.py"
+                if not test_file.exists():
+                    violations.append(
+                        f"{rel} is stateful (imports db/http/files) "
+                        f"but missing {test_file.relative_to(PROJECT_ROOT)}"
+                    )
+
+        assert not violations, (
+            "Stateful modules missing pytest test files:\n" + "\n".join(violations)
+        )

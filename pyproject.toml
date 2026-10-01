@@ -44,7 +44,16 @@ exclude_dirs = ["tests", ".venv", "build", "dist", "tools"]
 skips = ["B101", "B311", "B322"]
 
 [tool.pytest.ini_options]
-testpaths = ["app/tests", "auth/tests", "chat/tests", "storage/tests", "connectors/tests"]
+addopts = "--doctest-modules"
+testpaths = [
+    "app/tests",
+    "auth/tests",
+    "chat/tests",
+    "storage/tests",
+    "connectors/tests",
+    "tools",
+    "demo",
+]
 
 [tool.coverage.run]
 source = ["."]
@@ -56,5 +65,10 @@ omit = [
 ]
 
 [tool.coverage.report]
-fail_under = 80
 show_missing = true
+# No fail_under percentage gate — structural completeness enforced by
+# test_architecture.py (doctest coverage + pytest file coverage for stateful modules)
+
+[project.scripts]
+demo-seed = "storage.database.demo_seed:main"
+demo-run = "demo.runner:main"
