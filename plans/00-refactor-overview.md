@@ -39,10 +39,14 @@ Goal of this refactor: align to the pitch, delete the demo garbage, bring the pr
 | 08 | `08-delete-weather-news.md` | 03, 07 | delete demo tools; reserve pitch tool slots as `NotImplementedError` stubs |
 | 09 | `09-packaging-makefile.md` | 01–08 | `[project]` + hatchling + Makefile |
 | 10 | `10-debug-routes-gated.md` | 01, 06 | gate `/debug/*` on `ENABLE_DEBUG_ROUTES` |
-| 11 | `11-docs-cleanup.md` | 08 | root README + CONTRIBUTING + folder READMEs; delete stale docs |
+| 11 | `11-docs-cleanup.md` | 08 | delete root README + onboarding; folder-explainer READMEs only |
 | 12 | `12-test-guardrails.md` | 01–11 | config / permissions / audit / imports guardrails + route×role matrix |
 | 13 | `13-hitl-skeleton.md` | 03, 04, 06 | SQLite approval queue + resume routes; UI reserved |
-| 14 | `14-dead-code-sweep.md` | all above | delete symbols with zero callers |
+| 14 | `14-dead-code-sweep.md` | 01–13 | delete symbols with zero callers |
+| 15 | `15-dir-reorg.md` | 01–11 | rename `docs-depo` → `dev-docs-depo`; move `data/` and `plans/` under it; delete `pitch/` |
+| 16 | `16-test-structure-adoption.md` | 01, 03, 07, 08, 09 | cherry-pick the three-tier test strategy from `feat/development-rules-and-test-suite`; reject what doesn't fit |
+
+Plans 01–14 run strictly in order. Plan 15 (dir reorg) runs after plan 11 and can land before 12/14 — once it ships, every reference to `docs-depo/` in the tree becomes `dev-docs-depo/` and `plans/` moves to `dev-docs-depo/plans/` (including these plan files themselves). Plan 16 (test adoption) is independent of 15 and can run in parallel; its only hard deps are plans 01, 03, 07, 08, 09.
 
 Each plan file is standalone — a reader following it does not need to open another plan to execute. Shared decisions (env schema, dependency list, agent-runtime choice) are repeated in the plans that need them, intentionally.
 
@@ -83,6 +87,9 @@ Once plans 01–14 are shipped:
 - "we are using good developer practices like abstract var names in the env, and proper routes".
 - "don't prefix stuff with CHEDDAR, make it real dev names".
 - "break plans into smaller plans, pull from head of repo and put plans in dedicated plan folders".
+- "remove onboarding docs" (plan 11 scope locked to folder explainers only, no README/CONTRIBUTING).
+- "i feel like there is too many data folders... rename docs-depo to dev-docs-depo, delete zzz pitch docs, put all demo, research, plans and things of that nature in dev-doc-depo" (plan 15).
+- "make another plan to review and implement this branches test structure feat/development-rules-and-test-suite" (plan 16).
 
 **Why Azure OpenAI SDK beats LangGraph for this scope:**
 LangChain pulls `pydantic` as a hard transitive dep; at ~1 primary agent + 10 tools the framework is net overhead. The SDK gives us tool-calling, streaming, structured outputs, and a Content Safety hook direct. HITL interrupt and checkpointing fit in ~50 extra lines against our existing SQLite store. Deployment surface is identical.
