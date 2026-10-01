@@ -73,37 +73,80 @@ AGENT_ACTION (green). Connectors ◆. Test surface dotted. Audit JSONL is hash-c
 
 ## 2c. L3 Internals
 
-```text
-Panel A · Agent:   ChatAgent (Agent Framework)         Panel B · Tools/Connectors:
-                   │                                   ··Tool Protocol··
-                   ▼                                   documents · charts · query_data
-             LLM turn ◀──┐                             classifier · hist_mission
-                   │     │                             cost_agg · vendor_agg · code_exec
-                   ▼     │                             ··DataSource Protocol··
-         user_input_req? │                             INTERNAL: LocalFile · SqliteDataStore
-                 │ no    │                             EXTERNAL: ShPt · SAP · STK · AISrch
-          respond        │
-                 │ yes (@tool approval_mode)
-                 ▼       │
-         ApprovalQueue   │                             POST /tools/exec/<name>
-         (Postgres)      │                             ◇HITL via framework approval
-                 │       │                             ◆Filesystem Cloud SAP
-         ◇ approve/deny  │
-                 │       │
-            resume ──────┘  (iteration cap)
-            →llm_inf → Audit (hash-chained JSONL, green)
-            →tool_cl → Audit (hash-chained JSONL, green)
-            ⟨I⟩ChatProvider
-            ⟨I⟩AgentActionLog
+### Panel A · Agent
 
-Panel C · Auth:  Public inbound [/route][role]
-                 → FlaskRoute → ◇ before_request (hex, blue)
-                 auth · role · ws · traceID
-                 → handler → after_request (audit, green)
-                 → response
-              permissions.json: /send→base /upload→power /admin→admin
-              RBAC: base(1) < power(2) < admin(3)
-              ⟨test⟩ arch invariants (audit-green)
+```text
+ChatAgent (Agent Framework)
+      │
+      ▼
+  LLM turn ◀──────────────┐
+      │                   │
+  user_input_req?         │
+    │ no                  │
+   respond                │
+    │ yes (@tool approval_mode)
+    ▼                     │
+ ApprovalQueue            │
+ (Postgres)               │
+    │                     │
+ ◇ approve/deny           │
+    │                     │
+  resume ─────────────────┘  (iteration cap)
+
+ →llm_inf → Audit (hash-chained JSONL, green)
+ →tool_cl → Audit (hash-chained JSONL, green)
+ ⟨I⟩ ChatProvider · ⟨I⟩ AgentActionLog
+```
+
+### Panel B · Tools, Storage & Route-Gated Access
+
+Every tool and storage/data-source operation sits behind the same `⟨I⟩` protocol **and** the same HTTP route. The agent calls routes probabilistically; an external caller with a scoped token calls the same routes deterministically. One RBAC gate, one audit envelope, both paths.
+
+```text
+┌──── Tool Registry  ⟨I⟩ Tool ─────────────────┐    ┌──── Data Sources  ⟨I⟩ DataSource ────┐
+│  documents · charts · query_data             │    │  INTERNAL (connector-backed):        │
+│  classifier · hist_mission · cost_agg        │    │    LocalFileSource · SqliteDataStore │
+│  vendor_agg · code_exec                      │    │  EXTERNAL (perimeter, MSAL/OAuth):   │
+│                                              │    │    SharePoint · SAP · STK/MATLAB     │
+│                                              │    │    AzureAISearchSource               │
+└──────────────────────────────────────────────┘    └──────────────────────────────────────┘
+
+┌──── Workspace & Audit  ⟨I⟩ WorkspaceStore / ⟨I⟩ AgentActionLog / ⟨I⟩ ApprovalQueue ────┐
+│  SqliteStore (workspaces + scratch)   HashChainedJsonlLog (audit → Azure Log Analytics) │
+│  SqliteDataStore (per-user scoped)    ApprovalQueue (Postgres, HITL)                    │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+                  ▲ internal call                      ▲ internal call
+                  │                                    │
+┌─────────────────┴────────────────────────────────────┴───────────────────────────────┐
+│                        Route-Gated RBAC Layer                                        │
+│   POST /tools/execute/<name>    /storage/*    /chat/send    /admin/approvals/*       │
+│   before_request: auth · role · trace_id   →   handler   →   after_request: audit    │
+│   permissions.json  ·  base(1) < power(2) < admin(3)   ·   role < required → 403     │
+└────────────────────┬───────────────────────────────────────────────┬─────────────────┘
+                     │                                               │
+         ┌───────────┴────────────┐                     ┌────────────┴────────────┐
+         │ Caller: Primary Agent  │                     │ Caller: External client │
+         │  (Agent Framework)     │                     │  (user-scoped token)    │
+         │  probabilistic use     │                     │  deterministic use      │
+         └────────────────────────┘                     └─────────────────────────┘
+```
+
+Why this matters: granting a token with the right role lets an external service drive CRAFT's tools and storage without going through the agent — a cron job can read documents, a reporting pipeline can hit `query_data`, an upstream workflow can post an approval decision. Audit and RBAC behave identically whichever caller it is.
+
+### Panel C · Auth
+
+```text
+Public inbound [/route][role]
+  → FlaskRoute → ◇ before_request (hex, blue)
+     auth · role · workspace · trace_id
+  → handler
+  → after_request (audit, green)
+  → response
+
+permissions.json : /chat/send → base   /uploads → power   /admin/* → admin
+RBAC             : base(1) < power(2) < admin(3)
+⟨test⟩ arch invariants (audit-green)
 ```
 
 ## 2d. UC State Models

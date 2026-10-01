@@ -1,28 +1,81 @@
 <!doctype html><html><head><meta charset="utf-8"><title>CRAFT</title><style>
+  :root {
+    --fg: #1a1a1a;
+    --muted: #666;
+    --rule: #c7c7c7;
+    --rule-strong: #8a8a8a;
+    --surface: #f6f7f9;
+    --code-bg: #eef0f3;
+    --link: #264478;
+    --th-bg: #e9ecef;
+    --base: 10pt;
+    --sans: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
   body {
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 9pt;
-    line-height: 1.35;
+    font-family: var(--sans);
+    font-size: var(--base);
+    line-height: 1.45;
+    color: var(--fg);
     margin: 0.6in;
   }
-  h1 { font-size: 14pt; margin: 0 0 4pt 0; }
-  h2 { font-size: 11pt; border-bottom: 0.5px solid #aaa; margin: 10pt 0 4pt 0; }
-  h3 { font-size: 10pt; margin: 6pt 0 2pt 0; }
-  p { margin: 2pt 0; }
+  h1, h2, h3, h4 { font-weight: 600; line-height: 1.2; }
+  h1 { font-size: 1.5em;  margin: 0 0 6pt 0; }
+  h2 { font-size: 1.2em;  margin: 14pt 0 4pt 0; padding-bottom: 2pt; border-bottom: 0.5px solid var(--rule-strong); }
+  h3 { font-size: 1.05em; margin: 8pt 0 3pt 0; color: var(--fg); }
+  h4 { font-size: 1em;    margin: 6pt 0 2pt 0; color: var(--muted); }
+  p  { margin: 3pt 0; }
+
+  /* Lists share the body size and leading. */
+  ul, ol { margin: 3pt 0; padding-left: 18pt; }
+  li { margin: 1pt 0; }
+
+  /* Code — inline + diagram blocks share one monospace family. */
+  code, kbd, samp {
+    font-family: var(--mono);
+    font-size: 0.9em;
+    background: var(--code-bg);
+    padding: 0 3px;
+    border-radius: 2px;
+  }
+  pre {
+    font-family: var(--mono);
+    font-size: 0.88em;
+    line-height: 1.35;
+    background: var(--surface);
+    border: 0.5px solid var(--rule);
+    border-left: 2px solid var(--rule-strong);
+    border-radius: 3px;
+    padding: 8px 12px;
+    margin: 6pt 0;
+    overflow-x: auto;
+    page-break-inside: avoid;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-size: inherit;
+  }
+
+  /* Tables — one size, consistent padding, zebra rows. */
   table {
     border-collapse: collapse;
     width: 100%;
-    font-size: 7pt;
-    margin: 4pt 0;
+    font-size: 0.88em;
+    margin: 6pt 0;
   }
   th, td {
-    border: 0.5px solid #999;
-    padding: 2px 3px;
+    border: 0.5px solid var(--rule);
+    padding: 4px 6px;
     text-align: left;
     vertical-align: top;
-    line-height: 1.15;
+    line-height: 1.35;
   }
-  th { background: #eee; font-weight: bold; }
+  th { background: var(--th-bg); font-weight: 600; }
+  tbody tr:nth-child(even) td { background: #fafbfc; }
+
+  /* Figures */
   .diagram-container {
     page-break-inside: avoid;
     text-align: center;
@@ -31,15 +84,23 @@
   .diagram-container img, .diagram-container svg {
     max-width: 100%;
     height: auto;
-    max-height: 280px;
+    max-height: 320px;
     object-fit: contain;
   }
-  ul { margin: 2pt 0; padding-left: 16pt; }
-  li { margin: 1pt 0; font-size: 8pt; }
-  code { font-size: 8pt; background: #f5f5f5; padding: 1px 2px; border-radius: 2px; }
-  a { color: #264478; }
-  .figure-caption { font-size: 7pt; color: #666; margin: 2pt 0 6pt 0; }
-</style></head><body><h2>Legend</h2>
+  .figure-caption {
+    font-size: 0.82em;
+    color: var(--muted);
+    margin: 2pt 0 6pt 0;
+  }
+
+  a { color: var(--link); }
+  strong { font-weight: 600; }
+
+  @media print {
+    body { margin: 0.5in; }
+  }
+</style>
+</head><body><h2>Legend</h2>
 <p>■ Actor · ◇ Gate · ☁ Cloud · ⬡ Terminal · ▦ Store · ⟨I⟩ Protocol · Blue=Auth · Green=Audit</p>
 <h2>1. What CRAFT Is</h2>
 <p>Proposed audited retrieval-augmented AI assistant for CSA mission engineering and finance. This document describes the target architecture — the seams, the components behind each seam, and the invariants that hold across the system.</p>
@@ -95,36 +156,70 @@
 </code></pre>
 <p>AGENT_ACTION (green). Connectors ◆. Test surface dotted. Audit JSONL is hash-chained and forwarded to Azure Log Analytics.</p>
 <h2>2c. L3 Internals</h2>
-<pre><code class="language-text">Panel A · Agent:   ChatAgent (Agent Framework)         Panel B · Tools/Connectors:
-                   │                                   ··Tool Protocol··
-                   ▼                                   documents · charts · query_data
-             LLM turn ◀──┐                             classifier · hist_mission
-                   │     │                             cost_agg · vendor_agg · code_exec
-                   ▼     │                             ··DataSource Protocol··
-         user_input_req? │                             INTERNAL: LocalFile · SqliteDataStore
-                 │ no    │                             EXTERNAL: ShPt · SAP · STK · AISrch
-          respond        │
-                 │ yes (@tool approval_mode)
-                 ▼       │
-         ApprovalQueue   │                             POST /tools/exec/&lt;name&gt;
-         (Postgres)      │                             ◇HITL via framework approval
-                 │       │                             ◆Filesystem Cloud SAP
-         ◇ approve/deny  │
-                 │       │
-            resume ──────┘  (iteration cap)
-            →llm_inf → Audit (hash-chained JSONL, green)
-            →tool_cl → Audit (hash-chained JSONL, green)
-            ⟨I⟩ChatProvider
-            ⟨I⟩AgentActionLog
+<h3>Panel A · Agent</h3>
+<pre><code class="language-text">ChatAgent (Agent Framework)
+      │
+      ▼
+  LLM turn ◀──────────────┐
+      │                   │
+  user_input_req?         │
+    │ no                  │
+   respond                │
+    │ yes (@tool approval_mode)
+    ▼                     │
+ ApprovalQueue            │
+ (Postgres)               │
+    │                     │
+ ◇ approve/deny           │
+    │                     │
+  resume ─────────────────┘  (iteration cap)
 
-Panel C · Auth:  Public inbound [/route][role]
-                 → FlaskRoute → ◇ before_request (hex, blue)
-                 auth · role · ws · traceID
-                 → handler → after_request (audit, green)
-                 → response
-              permissions.json: /send→base /upload→power /admin→admin
-              RBAC: base(1) &lt; power(2) &lt; admin(3)
-              ⟨test⟩ arch invariants (audit-green)
+ →llm_inf → Audit (hash-chained JSONL, green)
+ →tool_cl → Audit (hash-chained JSONL, green)
+ ⟨I⟩ ChatProvider · ⟨I⟩ AgentActionLog
+</code></pre>
+<h3>Panel B · Tools, Storage &amp; Route-Gated Access</h3>
+<p>Every tool and storage/data-source operation sits behind the same <code>⟨I⟩</code> protocol <strong>and</strong> the same HTTP route. The agent calls routes probabilistically; an external caller with a scoped token calls the same routes deterministically. One RBAC gate, one audit envelope, both paths.</p>
+<pre><code class="language-text">┌──── Tool Registry  ⟨I⟩ Tool ─────────────────┐    ┌──── Data Sources  ⟨I⟩ DataSource ────┐
+│  documents · charts · query_data             │    │  INTERNAL (connector-backed):        │
+│  classifier · hist_mission · cost_agg        │    │    LocalFileSource · SqliteDataStore │
+│  vendor_agg · code_exec                      │    │  EXTERNAL (perimeter, MSAL/OAuth):   │
+│                                              │    │    SharePoint · SAP · STK/MATLAB     │
+│                                              │    │    AzureAISearchSource               │
+└──────────────────────────────────────────────┘    └──────────────────────────────────────┘
+
+┌──── Workspace &amp; Audit  ⟨I⟩ WorkspaceStore / ⟨I⟩ AgentActionLog / ⟨I⟩ ApprovalQueue ────┐
+│  SqliteStore (workspaces + scratch)   HashChainedJsonlLog (audit → Azure Log Analytics) │
+│  SqliteDataStore (per-user scoped)    ApprovalQueue (Postgres, HITL)                    │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+
+                  ▲ internal call                      ▲ internal call
+                  │                                    │
+┌─────────────────┴────────────────────────────────────┴───────────────────────────────┐
+│                        Route-Gated RBAC Layer                                        │
+│   POST /tools/execute/&lt;name&gt;    /storage/*    /chat/send    /admin/approvals/*       │
+│   before_request: auth · role · trace_id   →   handler   →   after_request: audit    │
+│   permissions.json  ·  base(1) &lt; power(2) &lt; admin(3)   ·   role &lt; required → 403     │
+└────────────────────┬───────────────────────────────────────────────┬─────────────────┘
+                     │                                               │
+         ┌───────────┴────────────┐                     ┌────────────┴────────────┐
+         │ Caller: Primary Agent  │                     │ Caller: External client │
+         │  (Agent Framework)     │                     │  (user-scoped token)    │
+         │  probabilistic use     │                     │  deterministic use      │
+         └────────────────────────┘                     └─────────────────────────┘
+</code></pre>
+<p>Why this matters: granting a token with the right role lets an external service drive CRAFT's tools and storage without going through the agent — a cron job can read documents, a reporting pipeline can hit <code>query_data</code>, an upstream workflow can post an approval decision. Audit and RBAC behave identically whichever caller it is.</p>
+<h3>Panel C · Auth</h3>
+<pre><code class="language-text">Public inbound [/route][role]
+  → FlaskRoute → ◇ before_request (hex, blue)
+     auth · role · workspace · trace_id
+  → handler
+  → after_request (audit, green)
+  → response
+
+permissions.json : /chat/send → base   /uploads → power   /admin/* → admin
+RBAC             : base(1) &lt; power(2) &lt; admin(3)
+⟨test⟩ arch invariants (audit-green)
 </code></pre>
 <h2>2d. UC State Models</h2>
 <pre><code class="language-text">UC-E2 Risk ID+HITL (Eng):  Req→◇Auth→Retrieval[002-006]→Classifier[036-040]→◇HITL[HITL-001]
