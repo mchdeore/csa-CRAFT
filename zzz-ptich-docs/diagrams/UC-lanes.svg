@@ -1,200 +1,177 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 960" font-family="Times New Roman, Times, serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 640" font-family="Times New Roman, Times, serif">
   <defs>
     <marker id="arrUC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/>
     </marker>
     <style><![CDATA[
-      .lane-bg { fill: #ffffff; stroke: #000; stroke-width: 0.9; }
-      .lane-title { font-size: 12.5px; font-weight: bold; font-variant: small-caps; letter-spacing: 1px; fill: #000; }
-      .uc-sub { font-size: 10px; font-style: italic; fill: #000; }
-      .lane-divider { stroke: #000; stroke-width: 0.5; stroke-dasharray: 2 2; }
-      .node { fill: #fff; stroke: #000; stroke-width: 1; }
-      .node-dashed { fill: #fff; stroke: #000; stroke-width: 1; stroke-dasharray: 4 2; }
-      .gate { fill: #fff; stroke: #000; stroke-width: 1.2; }
-      .terminal { fill: #000; stroke: #000; stroke-width: 1; }
-      .lbl { font-size: 10px; fill: #000; text-anchor: middle; }
-      .lbl-s { font-size: 8.5px; fill: #000; text-anchor: middle; font-style: italic; }
-      .req { font-size: 8px; fill: #000; text-anchor: middle; font-style: italic; }
-      .edge { stroke: #000; stroke-width: 1; fill: none; }
-      .edge-dashed { stroke: #000; stroke-width: 1; fill: none; stroke-dasharray: 4 2; }
-      .swim-head { font-size: 9.5px; font-weight: bold; font-variant: small-caps; letter-spacing: 0.6px; fill: #000; text-anchor: middle; }
-      .title { font-size: 16px; font-weight: bold; font-variant: small-caps; letter-spacing: 1.5px; fill: #000; text-anchor: middle; }
+      .lane { fill: #fff; stroke: #000; stroke-width: 0.9; }
+      .div  { stroke: #000; stroke-width: 0.4; stroke-dasharray: 2 2; }
+      .box  { fill: #fff; stroke: #000; stroke-width: 0.9; }
+      .box-d{ fill: #fff; stroke: #000; stroke-width: 0.9; stroke-dasharray: 4 2; }
+      .gate { fill: #fff; stroke: #000; stroke-width: 1; }
+      .term { fill: #000; stroke: #000; stroke-width: 1; }
+      .lbl  { font-size: 10px; fill: #000; text-anchor: middle; }
+      .lbl-s{ font-size: 8.5px; fill: #000; text-anchor: middle; font-style: italic; }
+      .req  { font-size: 8px; fill: #000; text-anchor: middle; font-style: italic; }
+      .h    { font-size: 11px; font-weight: bold; fill: #000; }
+      .sub  { font-size: 9.5px; fill: #000; font-style: italic; }
+      .edge { stroke: #000; stroke-width: 0.9; fill: none; }
+      .edge-d { stroke: #000; stroke-width: 0.9; fill: none; stroke-dasharray: 4 2; }
+      .swim { font-size: 9px; font-weight: bold; fill: #000; text-anchor: middle; }
+      .title { font-size: 13px; font-weight: bold; fill: #000; text-anchor: middle; }
     ]]></style>
   </defs>
 
-  <text x="380" y="24" class="title">Use-Case Lanes · E2 · F1 · F4</text>
+  <text x="380" y="18" class="title">Figure 3 · Use-Case Lanes — E2 · F1 · F4</text>
 
-  <!-- Swim lane header row -->
-  <g transform="translate(0,46)">
-    <text x="90"  y="12" class="swim-head">USER</text>
-    <text x="240" y="12" class="swim-head">AGENT</text>
-    <text x="470" y="12" class="swim-head">SERVICES</text>
-    <text x="680" y="12" class="swim-head">TERMINAL</text>
-    <line x1="30"  y1="18" x2="730" y2="18" class="lane-divider"/>
+  <!-- Swim lane header -->
+  <g transform="translate(0,30)">
+    <text x="90"  y="10" class="swim">USER</text>
+    <text x="240" y="10" class="swim">AGENT</text>
+    <text x="470" y="10" class="swim">SERVICES</text>
+    <text x="680" y="10" class="swim">TERMINAL</text>
+    <line x1="30" y1="14" x2="730" y2="14" class="div"/>
   </g>
 
   <!-- =================== LANE 1 : UC-E2 =================== -->
-  <g transform="translate(0,76)">
-    <rect x="30" y="0" width="700" height="260" class="lane-bg"/>
-    <text x="42" y="22" class="lane-title">UC-E2 · Risk ID + HITL</text>
-    <text x="42" y="38" class="uc-sub">Engineering · CADRe Part A upload → classification → HITL approval</text>
+  <g transform="translate(0,54)">
+    <rect x="30" y="0" width="700" height="180" class="lane"/>
+    <text x="40" y="18" class="h">UC-E2 · Risk ID + HITL</text>
+    <text x="40" y="32" class="sub">Engineering · upload CADRe → retrieve → classify → HITL</text>
 
-    <!-- vertical swim dividers -->
-    <line x1="160" y1="48" x2="160" y2="260" class="lane-divider"/>
-    <line x1="340" y1="48" x2="340" y2="260" class="lane-divider"/>
-    <line x1="590" y1="48" x2="590" y2="260" class="lane-divider"/>
+    <line x1="160" y1="40" x2="160" y2="180" class="div"/>
+    <line x1="340" y1="40" x2="340" y2="180" class="div"/>
+    <line x1="590" y1="40" x2="590" y2="180" class="div"/>
 
-    <!-- USER -->
-    <rect x="48" y="110" width="100" height="36" class="node"/>
-    <text x="98" y="128" class="lbl">Engineer</text>
-    <text x="98" y="140" class="lbl-s">upload Part A</text>
+    <rect x="48" y="90" width="100" height="32" class="box"/>
+    <text x="98" y="107" class="lbl">Engineer</text>
+    <text x="98" y="118" class="lbl-s">upload Part A</text>
 
-    <!-- AGENT: auth gate + primary -->
-    <polygon points="178,128 196,112 258,112 276,128 258,144 196,144" class="gate"/>
-    <text x="227" y="131" class="lbl">Auth gate</text>
-    <text x="227" y="142" class="lbl-s">RBAC · trace</text>
+    <polygon points="178,106 196,90 258,90 276,106 258,122 196,122" class="gate"/>
+    <text x="227" y="109" class="lbl">Auth</text>
+    <text x="227" y="120" class="lbl-s">role · trace</text>
 
-    <rect x="286" y="110" width="48" height="36" class="node"/>
-    <text x="310" y="128" class="lbl">Agent</text>
-    <text x="310" y="140" class="lbl-s">ReAct</text>
+    <rect x="286" y="90" width="48" height="32" class="box"/>
+    <text x="310" y="107" class="lbl">Agent</text>
+    <text x="310" y="118" class="lbl-s">ReAct</text>
 
-    <!-- SERVICES: retrieval + classifier + HITL gate -->
-    <rect x="352" y="100" width="100" height="36" class="node-dashed"/>
-    <text x="402" y="118" class="lbl">Hybrid retr.</text>
-    <text x="402" y="130" class="req">UMR-002…006</text>
+    <rect x="352" y="82" width="100" height="32" class="box-d"/>
+    <text x="402" y="99" class="lbl">Hybrid retr.</text>
+    <text x="402" y="110" class="req">UMR-002…006</text>
 
-    <rect x="470" y="100" width="100" height="36" class="node-dashed"/>
-    <text x="520" y="118" class="lbl">Classifier</text>
-    <text x="520" y="130" class="req">UMR-036…040</text>
+    <rect x="470" y="82" width="100" height="32" class="box-d"/>
+    <text x="520" y="99" class="lbl">Classifier</text>
+    <text x="520" y="110" class="req">UMR-036…040</text>
 
-    <polygon points="400,160 420,146 500,146 520,160 500,174 420,174" class="gate"/>
-    <text x="460" y="162" class="lbl">HITL gate</text>
-    <text x="460" y="172" class="req">HITL-001</text>
+    <polygon points="400,136 420,122 500,122 520,136 500,150 420,150" class="gate"/>
+    <text x="460" y="138" class="lbl">HITL</text>
+    <text x="460" y="148" class="req">HITL-001</text>
 
-    <rect x="420" y="194" width="100" height="30" class="node-dashed"/>
-    <text x="470" y="212" class="lbl">Risk register</text>
+    <rect x="420" y="162" width="100" height="18" class="box-d"/>
+    <text x="470" y="175" class="lbl">Risk register</text>
 
-    <!-- TERMINAL -->
-    <circle cx="650" cy="128" r="14" class="terminal"/>
-    <text x="650" y="131" class="lbl" fill="#fff">●</text>
-    <text x="650" y="156" class="lbl-s">audit · end</text>
+    <circle cx="650" cy="106" r="12" class="term"/>
+    <text x="650" y="110" class="lbl" fill="#fff">●</text>
+    <text x="650" y="132" class="lbl-s">audit · end</text>
 
-    <!-- Edges -->
-    <line x1="148" y1="128" x2="176" y2="128" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="276" y1="128" x2="284" y2="128" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="334" y1="128" x2="350" y2="118" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="452" y1="118" x2="468" y2="118" class="edge-dashed" marker-end="url(#arrUC)"/>
-    <path d="M 520 136 L 520 146" class="edge-dashed" marker-end="url(#arrUC)"/>
-    <path d="M 460 174 L 460 194" class="edge-dashed" marker-end="url(#arrUC)"/>
-    <path d="M 520 160 L 580 160 L 580 128 L 634 128" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="148" y1="106" x2="176" y2="106" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="276" y1="106" x2="284" y2="106" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="334" y1="106" x2="350" y2="98" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="452" y1="98" x2="468" y2="98" class="edge-d" marker-end="url(#arrUC)"/>
+    <path d="M 520 114 L 520 122" class="edge-d" marker-end="url(#arrUC)"/>
+    <path d="M 460 150 L 460 162" class="edge-d" marker-end="url(#arrUC)"/>
+    <path d="M 520 136 L 580 136 L 580 106 L 636 106" class="edge" marker-end="url(#arrUC)"/>
   </g>
 
   <!-- =================== LANE 2 : UC-F1 =================== -->
-  <g transform="translate(0,356)">
-    <rect x="30" y="0" width="700" height="260" class="lane-bg"/>
-    <text x="42" y="22" class="lane-title">UC-F1 · Parametric Cost + HITL</text>
-    <text x="42" y="38" class="uc-sub">Finance · Historical lookup → cost aggregation → HITL commit</text>
+  <g transform="translate(0,244)">
+    <rect x="30" y="0" width="700" height="180" class="lane"/>
+    <text x="40" y="18" class="h">UC-F1 · Parametric Cost + HITL</text>
+    <text x="40" y="32" class="sub">Finance · historical lookup → aggregate → HITL commit</text>
 
-    <line x1="160" y1="48" x2="160" y2="260" class="lane-divider"/>
-    <line x1="340" y1="48" x2="340" y2="260" class="lane-divider"/>
-    <line x1="590" y1="48" x2="590" y2="260" class="lane-divider"/>
+    <line x1="160" y1="40" x2="160" y2="180" class="div"/>
+    <line x1="340" y1="40" x2="340" y2="180" class="div"/>
+    <line x1="590" y1="40" x2="590" y2="180" class="div"/>
 
-    <rect x="48" y="110" width="100" height="36" class="node"/>
-    <text x="98" y="128" class="lbl">Admin</text>
-    <text x="98" y="140" class="lbl-s">request estimate</text>
+    <rect x="48" y="90" width="100" height="32" class="box"/>
+    <text x="98" y="107" class="lbl">Admin</text>
+    <text x="98" y="118" class="lbl-s">request estimate</text>
 
-    <polygon points="178,128 196,112 258,112 276,128 258,144 196,144" class="gate"/>
-    <text x="227" y="131" class="lbl">Auth gate</text>
-    <text x="227" y="142" class="lbl-s">RBAC · trace</text>
+    <polygon points="178,106 196,90 258,90 276,106 258,122 196,122" class="gate"/>
+    <text x="227" y="109" class="lbl">Auth</text>
+    <text x="227" y="120" class="lbl-s">role · trace</text>
 
-    <rect x="286" y="110" width="48" height="36" class="node"/>
-    <text x="310" y="128" class="lbl">Agent</text>
-    <text x="310" y="140" class="lbl-s">ReAct</text>
+    <rect x="286" y="90" width="48" height="32" class="box"/>
+    <text x="310" y="107" class="lbl">Agent</text>
+    <text x="310" y="118" class="lbl-s">ReAct</text>
 
-    <rect x="352" y="100" width="100" height="36" class="node-dashed"/>
-    <text x="402" y="118" class="lbl">Hist. retr.</text>
-    <text x="402" y="130" class="req">UMR-031</text>
+    <rect x="352" y="82" width="100" height="32" class="box-d"/>
+    <text x="402" y="99" class="lbl">Hist. retr.</text>
+    <text x="402" y="110" class="req">UMR-031</text>
 
-    <rect x="470" y="100" width="100" height="36" class="node"/>
-    <text x="520" y="118" class="lbl">Cost agg.</text>
-    <text x="520" y="130" class="req">UMR-032…034</text>
+    <rect x="470" y="82" width="100" height="32" class="box"/>
+    <text x="520" y="99" class="lbl">Cost agg.</text>
+    <text x="520" y="110" class="req">UMR-032…034</text>
 
-    <polygon points="400,160 420,146 500,146 520,160 500,174 420,174" class="gate"/>
-    <text x="460" y="162" class="lbl">HITL gate</text>
-    <text x="460" y="172" class="req">UMR-035</text>
+    <polygon points="400,136 420,122 500,122 520,136 500,150 420,150" class="gate"/>
+    <text x="460" y="138" class="lbl">HITL</text>
+    <text x="460" y="148" class="req">UMR-035</text>
 
-    <rect x="420" y="194" width="100" height="30" class="node-dashed"/>
-    <text x="470" y="212" class="lbl">Commitment</text>
+    <rect x="420" y="162" width="100" height="18" class="box-d"/>
+    <text x="470" y="175" class="lbl">Commitment</text>
 
-    <circle cx="650" cy="128" r="14" class="terminal"/>
-    <text x="650" y="131" class="lbl" fill="#fff">●</text>
-    <text x="650" y="156" class="lbl-s">audit · end</text>
+    <circle cx="650" cy="106" r="12" class="term"/>
+    <text x="650" y="110" class="lbl" fill="#fff">●</text>
+    <text x="650" y="132" class="lbl-s">audit · end</text>
 
-    <line x1="148" y1="128" x2="176" y2="128" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="276" y1="128" x2="284" y2="128" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="334" y1="128" x2="350" y2="118" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="452" y1="118" x2="468" y2="118" class="edge-dashed" marker-end="url(#arrUC)"/>
-    <path d="M 520 136 L 520 146" class="edge" marker-end="url(#arrUC)"/>
-    <path d="M 460 174 L 460 194" class="edge-dashed" marker-end="url(#arrUC)"/>
-    <path d="M 520 160 L 580 160 L 580 128 L 634 128" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="148" y1="106" x2="176" y2="106" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="276" y1="106" x2="284" y2="106" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="334" y1="106" x2="350" y2="98" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="452" y1="98" x2="468" y2="98" class="edge-d" marker-end="url(#arrUC)"/>
+    <path d="M 520 114 L 520 122" class="edge" marker-end="url(#arrUC)"/>
+    <path d="M 460 150 L 460 162" class="edge-d" marker-end="url(#arrUC)"/>
+    <path d="M 520 136 L 580 136 L 580 106 L 636 106" class="edge" marker-end="url(#arrUC)"/>
   </g>
 
-  <!-- =================== LANE 3 : UC-F4 =================== -->
-  <g transform="translate(0,636)">
-    <rect x="30" y="0" width="700" height="260" class="lane-bg"/>
-    <text x="42" y="22" class="lane-title">UC-F4 · Vendor Cost Roll-up · SAP</text>
-    <text x="42" y="38" class="uc-sub">Finance · SAP line items via ⟨I⟩ DataSource → aggregate by vendor → audited response</text>
+  <!-- =================== LANE 3 : UC-F4 (clear single-line flow) =================== -->
+  <g transform="translate(0,434)">
+    <rect x="30" y="0" width="700" height="180" class="lane"/>
+    <text x="40" y="18" class="h">UC-F4 · Vendor Cost Roll-up (SAP)</text>
+    <text x="40" y="32" class="sub">Finance · "How much did we spend with vendor X across missions?" — SAP DataSource → aggregate by vendor → report</text>
 
-    <line x1="160" y1="48" x2="160" y2="260" class="lane-divider"/>
-    <line x1="340" y1="48" x2="340" y2="260" class="lane-divider"/>
-    <line x1="590" y1="48" x2="590" y2="260" class="lane-divider"/>
+    <line x1="160" y1="40" x2="160" y2="180" class="div"/>
+    <line x1="340" y1="40" x2="340" y2="180" class="div"/>
+    <line x1="590" y1="40" x2="590" y2="180" class="div"/>
 
-    <rect x="48" y="110" width="100" height="36" class="node"/>
-    <text x="98" y="128" class="lbl">Analyst</text>
-    <text x="98" y="140" class="lbl-s">vendor cost query</text>
+    <rect x="48" y="94" width="100" height="36" class="box"/>
+    <text x="98" y="112" class="lbl">Analyst</text>
+    <text x="98" y="124" class="lbl-s">vendor cost query</text>
 
-    <polygon points="178,128 196,112 258,112 276,128 258,144 196,144" class="gate"/>
-    <text x="227" y="131" class="lbl">Auth gate</text>
-    <text x="227" y="142" class="lbl-s">RBAC · trace</text>
+    <polygon points="178,112 196,96 258,96 276,112 258,128 196,128" class="gate"/>
+    <text x="227" y="115" class="lbl">Auth</text>
+    <text x="227" y="126" class="lbl-s">role · trace</text>
 
-    <rect x="286" y="110" width="48" height="36" class="node"/>
-    <text x="310" y="128" class="lbl">Agent</text>
-    <text x="310" y="140" class="lbl-s">ReAct</text>
+    <rect x="286" y="94" width="48" height="36" class="box"/>
+    <text x="310" y="112" class="lbl">Agent</text>
+    <text x="310" y="124" class="lbl-s">ReAct</text>
 
-    <rect x="352" y="110" width="110" height="36" class="node-dashed"/>
-    <text x="407" y="128" class="lbl">SAP DataSource</text>
-    <text x="407" y="140" class="req">UMR-053…055</text>
+    <rect x="352" y="94" width="110" height="36" class="box-d"/>
+    <text x="407" y="112" class="lbl">SAP DataSource</text>
+    <text x="407" y="124" class="req">UMR-053…055</text>
 
-    <rect x="470" y="110" width="110" height="36" class="node"/>
-    <text x="525" y="128" class="lbl">Line items</text>
-    <text x="525" y="140" class="lbl-s">PO · invoice rows</text>
+    <rect x="478" y="94" width="100" height="36" class="box"/>
+    <text x="528" y="112" class="lbl">Aggregate</text>
+    <text x="528" y="124" class="lbl-s">sum by vendor</text>
 
-    <rect x="411" y="170" width="110" height="36" class="node"/>
-    <text x="466" y="188" class="lbl">Group by vendor</text>
-    <text x="466" y="200" class="lbl-s">sum · period</text>
+    <circle cx="650" cy="112" r="12" class="term"/>
+    <text x="650" y="116" class="lbl" fill="#fff">●</text>
+    <text x="650" y="138" class="lbl-s">report + audit</text>
 
-    <circle cx="650" cy="128" r="14" class="terminal"/>
-    <text x="650" y="131" class="lbl" fill="#fff">●</text>
-    <text x="650" y="156" class="lbl-s">audit · end</text>
-
-    <line x1="148" y1="128" x2="176" y2="128" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="276" y1="128" x2="284" y2="128" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="334" y1="128" x2="350" y2="128" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="462" y1="128" x2="468" y2="128" class="edge-dashed" marker-end="url(#arrUC)"/>
-    <path d="M 525 146 L 525 170 L 521 170 L 521 188" class="edge"/>
-    <path d="M 521 206 L 580 206 L 580 128 L 634 128" class="edge" marker-end="url(#arrUC)"/>
-  </g>
-
-  <!-- Legend -->
-  <g transform="translate(30,920)">
-    <rect x="0" y="-10" width="18" height="12" class="node"/>
-    <text x="24" y="0" font-size="9">solid · live</text>
-    <rect x="110" y="-10" width="18" height="12" class="node-dashed"/>
-    <text x="134" y="0" font-size="9">dashed · end-state (via alternative today)</text>
-    <polygon points="260,-10 270,-16 300,-16 310,-10 300,-4 270,-4" class="gate"/>
-    <text x="318" y="0" font-size="9">hex · gate (auth / HITL)</text>
-    <circle cx="455" cy="-5" r="7" class="terminal"/>
-    <text x="468" y="0" font-size="9">● · audited terminal</text>
+    <line x1="148" y1="112" x2="176" y2="112" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="276" y1="112" x2="284" y2="112" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="334" y1="112" x2="350" y2="112" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="462" y1="112" x2="476" y2="112" class="edge-d" marker-end="url(#arrUC)"/>
+    <line x1="578" y1="112" x2="636" y2="112" class="edge" marker-end="url(#arrUC)"/>
   </g>
 </svg>

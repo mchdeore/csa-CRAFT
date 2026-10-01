@@ -1,135 +1,128 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 1000" font-family="Times New Roman, Times, serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 620" font-family="Times New Roman, Times, serif">
   <defs>
     <marker id="arrL2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/>
     </marker>
     <style><![CDATA[
-      .box { fill: #fff; stroke: #000; stroke-width: 1; }
-      .box-dashed { fill: #fff; stroke: #000; stroke-width: 1; stroke-dasharray: 4 2; }
-      .lbl { font-size: 11px; fill: #000; }
-      .lbl-c { font-size: 11px; fill: #000; text-anchor: middle; }
-      .lbl-i { font-size: 10px; fill: #000; font-style: italic; }
-      .lbl-i-c { font-size: 10px; fill: #000; font-style: italic; text-anchor: middle; }
-      .head { font-size: 12px; font-weight: bold; font-variant: small-caps; letter-spacing: 1px; fill: #000; text-anchor: middle; }
-      .head-l { font-size: 12px; font-weight: bold; font-variant: small-caps; letter-spacing: 1px; fill: #000; }
-      .iface { font-size: 10px; font-style: italic; fill: #000; text-anchor: middle; }
-      .edge { stroke: #000; stroke-width: 1; fill: none; }
-      .edge-aud { stroke: #000; stroke-width: 1; fill: none; stroke-dasharray: 2 2; }
-      .title { font-size: 16px; font-weight: bold; font-variant: small-caps; letter-spacing: 1.5px; fill: #000; text-anchor: middle; }
-      .mono { font-family: "Courier New", Courier, monospace; font-size: 10.5px; fill: #000; }
+      .box { fill: #fff; stroke: #000; stroke-width: 0.9; }
+      .box-d { fill: #fff; stroke: #000; stroke-width: 0.9; stroke-dasharray: 4 2; }
+      .lbl { font-size: 10.5px; fill: #000; }
+      .lbl-c { font-size: 10.5px; fill: #000; text-anchor: middle; }
+      .lbl-i { font-size: 9.5px; fill: #000; font-style: italic; }
+      .h  { font-size: 10.5px; font-weight: bold; fill: #000; }
+      .hc { font-size: 10.5px; font-weight: bold; fill: #000; text-anchor: middle; }
+      .mono { font-family: "Courier New", Courier, monospace; font-size: 10px; fill: #000; }
+      .edge { stroke: #000; stroke-width: 0.9; fill: none; }
+      .edge-d { stroke: #000; stroke-width: 0.9; fill: none; stroke-dasharray: 2 2; }
+      .title { font-size: 13px; font-weight: bold; fill: #000; text-anchor: middle; }
     ]]></style>
   </defs>
 
-  <text x="380" y="24" class="title">L2 · Containers · Actors · External Systems</text>
+  <text x="380" y="18" class="title">Figure 1 · L2 — Containers, Actors, External Systems</text>
 
-  <!-- ============== ACTORS as a listed example ============== -->
-  <g transform="translate(20,50)">
-    <rect x="0" y="0" width="720" height="60" class="box"/>
-    <text x="12" y="20" class="head-l">ACTORS (EXAMPLE ROSTER)</text>
-    <text x="12" y="40" class="lbl">Mission Engineer   ·   Systems Engineer   ·   Program Admin   ·   HITL Reviewer   ·   external agent / trigger</text>
-    <text x="12" y="54" class="lbl-i">any principal with an Entra token and the required role reaches CRAFT through the public routes below</text>
+  <!-- ACTORS -->
+  <g transform="translate(20,36)">
+    <rect x="0" y="0" width="720" height="42" class="box"/>
+    <text x="8" y="16" class="h">Actors</text>
+    <text x="8" y="32" class="lbl">Mission Engineer · Systems Engineer · Program Admin · HITL Reviewer · external agent / trigger</text>
   </g>
 
-  <!-- ============== RBAC — flat text block, no nested boxes ============== -->
-  <g transform="translate(20,130)">
-    <rect x="0" y="0" width="720" height="150" class="box"/>
-    <text x="360" y="20" class="head">ROUTE-GATED RBAC   —   ⟨I⟩ AuthProvider</text>
-
-    <text x="20" y="46" class="mono">@route("/path/*", role=&lt;required&gt;)   def handler(req): before_request(); after_request()</text>
-    <text x="20" y="68" class="lbl-i">before_request → auth · role check · workspace · trace_id   ·   after_request → audit emit (AgentAction)</text>
-
-    <text x="20" y="94"  class="mono">base   (1)   read · chat</text>
-    <text x="20" y="110" class="mono">power  (2)   + upload · tools</text>
-    <text x="20" y="126" class="mono">admin  (3)   + /admin/*</text>
-
-    <text x="360" y="94"  class="lbl-i">role &lt; required → 403</text>
-    <text x="360" y="110" class="lbl-i">unregistered route → 404 (before auth)</text>
-    <text x="360" y="126" class="lbl-i">routes callable by any external principal with the matching role</text>
+  <!-- RBAC -->
+  <g transform="translate(20,88)">
+    <rect x="0" y="0" width="720" height="106" class="box"/>
+    <text x="8" y="16" class="h">Route-gated RBAC   ⟨I⟩ AuthProvider</text>
+    <text x="8" y="34" class="mono">@route("/path/*", role=&lt;required&gt;)  def handler(req): before_request(); after_request()</text>
+    <text x="8" y="50" class="lbl-i">before_request → auth · role · trace_id   ·   after_request → audit emit (AgentAction)</text>
+    <text x="8" y="72" class="mono">base   (1)   read · chat</text>
+    <text x="8" y="88" class="mono">power  (2)   + upload · tools</text>
+    <text x="8" y="102" class="mono">admin  (3)   + /admin/*</text>
+    <text x="360" y="72" class="lbl-i">role &lt; required → 403</text>
+    <text x="360" y="88" class="lbl-i">unregistered route → 404 (before auth)</text>
+    <text x="360" y="102" class="lbl-i">any external principal with the right role can call</text>
   </g>
 
-  <!-- ============== PRIMARY AGENT ============== -->
-  <g transform="translate(20,300)">
-    <rect x="0" y="0" width="720" height="70" class="box"/>
-    <text x="360" y="20" class="head">PRIMARY AGENT — ENTRY POINT</text>
-    <text x="360" y="40" class="lbl-c">LangGraph ReAct · recursion_limit=25 · HITL interrupt</text>
-    <text x="360" y="58" class="iface">⟨I⟩ ChatProvider   ⟨I⟩ AgentActionLog   ⟨I⟩ Tool</text>
+  <!-- PRIMARY AGENT -->
+  <g transform="translate(20,204)">
+    <rect x="0" y="0" width="720" height="46" class="box"/>
+    <text x="8" y="16" class="h">Primary Agent (entry point)</text>
+    <text x="8" y="32" class="lbl">LangGraph ReAct · bounded recursion · HITL interrupt</text>
+    <text x="8" y="42" class="lbl-i">⟨I⟩ ChatProvider   ⟨I⟩ AgentActionLog   ⟨I⟩ Tool</text>
   </g>
 
-  <!-- ============== TOOL REGISTRY + DATASOURCE REGISTRY ============== -->
-  <g transform="translate(20,390)">
-    <rect x="0" y="0" width="350" height="160" class="box"/>
-    <text x="175" y="20" class="head">TOOL REGISTRY   ⟨I⟩ Tool</text>
-    <text x="14" y="44" class="lbl">example tools:</text>
-    <text x="14" y="60" class="lbl">• documents  — ingest · search · cite</text>
-    <text x="14" y="76" class="lbl">• query_data — SQL · RBAC-scoped</text>
-    <text x="14" y="98" class="mono">POST /tools/execute/&lt;name&gt;</text>
-    <text x="14" y="114" class="lbl-i">validated against ⟨I⟩ Tool · audited</text>
-    <text x="14" y="130" class="lbl-i">new tool = new class, no agent change</text>
-    <text x="14" y="146" class="lbl-i">registry populated at startup</text>
+  <!-- TOOL + DATASOURCE REGISTRIES -->
+  <g transform="translate(20,260)">
+    <rect x="0" y="0" width="350" height="118" class="box"/>
+    <text x="8" y="16" class="h">Tool Registry   ⟨I⟩ Tool</text>
+    <text x="8" y="34" class="lbl">documents — ingest · search · cite</text>
+    <text x="8" y="50" class="lbl">query_data — SQL · RBAC-scoped</text>
+    <text x="8" y="72" class="mono">POST /tools/execute/&lt;name&gt;</text>
+    <text x="8" y="88" class="lbl-i">validated against ⟨I⟩ Tool · audited</text>
+    <text x="8" y="104" class="lbl-i">new tool = new class, agent unchanged</text>
 
-    <rect x="370" y="0" width="350" height="160" class="box"/>
-    <text x="545" y="20" class="head">DATASOURCE REGISTRY   ⟨I⟩ DataSource</text>
-    <text x="384" y="44" class="lbl">backends (end-state · current alternative):</text>
-    <text x="384" y="60"  class="lbl">• LocalFile    — filesystem (live)</text>
-    <text x="384" y="76"  class="lbl">• SharePoint   — Graph API [blocked · LocalFile mirror]</text>
-    <text x="384" y="92"  class="lbl">• SAP          — REST / OData [blocked · CSV fixtures]</text>
-    <text x="384" y="108" class="lbl">• STK / MATLAB — adapter [blocked · slot reserved]</text>
-    <text x="384" y="124" class="lbl">• Vector index — AI Search [blocked · LocalFile hybrid]</text>
-    <text x="384" y="146" class="lbl-i">per-request · RBAC-scoped · MSAL / OAuth</text>
+    <rect x="370" y="0" width="350" height="118" class="box"/>
+    <text x="378" y="16" class="h">DataSource Registry   ⟨I⟩ DataSource</text>
+    <text x="378" y="32" class="lbl">LocalFile — filesystem (live)</text>
+    <text x="378" y="46" class="lbl">SharePoint — Graph API [blocked · LocalFile mirror]</text>
+    <text x="378" y="60" class="lbl">SAP — REST / OData [blocked · CSV fixtures]</text>
+    <text x="378" y="74" class="lbl">STK / MATLAB — adapter [blocked · reserved]</text>
+    <text x="378" y="88" class="lbl">Vector index — AI Search [blocked · LocalFile hybrid]</text>
+    <text x="378" y="108" class="lbl-i">per-request · RBAC-scoped · MSAL / OAuth</text>
   </g>
 
-  <!-- ============== STORAGE ============== -->
-  <g transform="translate(20,570)">
-    <rect x="0" y="0" width="720" height="90" class="box"/>
-    <text x="360" y="18" class="head">STORAGE   —   ⟨I⟩ WorkspaceStore</text>
-    <line x1="240" y1="26" x2="240" y2="86" stroke="#000" stroke-width="0.5" stroke-dasharray="2 2"/>
-    <line x1="480" y1="26" x2="480" y2="86" stroke="#000" stroke-width="0.5" stroke-dasharray="2 2"/>
-    <text x="120" y="44" class="lbl-c" font-weight="bold">Workspace Store</text>
-    <text x="120" y="60" class="lbl-i-c">session · scratch · uploads</text>
-    <text x="120" y="76" class="iface">SqliteStore + ScratchStore</text>
-    <text x="360" y="44" class="lbl-c" font-weight="bold">Data Store (RBAC)</text>
-    <text x="360" y="60" class="lbl-i-c">per-user query scope</text>
-    <text x="360" y="76" class="iface">SqliteDataStore</text>
-    <text x="600" y="44" class="lbl-c" font-weight="bold">Audit Log</text>
-    <text x="600" y="60" class="lbl-i-c">JSONL · 90-day · append-only</text>
-    <text x="600" y="76" class="iface">→ Log Analytics (dev flag)</text>
+  <!-- STORAGE -->
+  <g transform="translate(20,388)">
+    <rect x="0" y="0" width="720" height="66" class="box"/>
+    <text x="8" y="16" class="h">Storage   ⟨I⟩ WorkspaceStore</text>
+    <line x1="240" y1="22" x2="240" y2="64" stroke="#000" stroke-width="0.4" stroke-dasharray="2 2"/>
+    <line x1="480" y1="22" x2="480" y2="64" stroke="#000" stroke-width="0.4" stroke-dasharray="2 2"/>
+    <text x="120" y="36" class="hc">Workspace Store</text>
+    <text x="120" y="50" class="lbl-c">SqliteStore + ScratchStore</text>
+    <text x="120" y="62" class="lbl-c" font-style="italic">session · scratch</text>
+    <text x="360" y="36" class="hc">Data Store (RBAC)</text>
+    <text x="360" y="50" class="lbl-c">SqliteDataStore</text>
+    <text x="360" y="62" class="lbl-c" font-style="italic">per-user query scope</text>
+    <text x="600" y="36" class="hc">Audit Log</text>
+    <text x="600" y="50" class="lbl-c">JSONL append-only</text>
+    <text x="600" y="62" class="lbl-c" font-style="italic">→ Log Analytics [blocked]</text>
   </g>
 
-  <!-- ============== EXTERNAL SYSTEMS ============== -->
-  <g transform="translate(20,680)">
-    <rect x="0" y="0" width="720" height="90" class="box"/>
-    <text x="360" y="18" class="head">EXTERNAL SYSTEMS   —   END STATE: AZURE-CONSOLIDATED (FOUNDRY · IQ)</text>
-    <text x="14" y="40" class="lbl">• Azure OpenAI                — LLM inference (live)</text>
-    <text x="14" y="56" class="lbl">• Azure AI Search             — hybrid retrieval  [blocked · now: LocalFileSource]</text>
-    <text x="14" y="72" class="lbl">• Entra ID                    — identity · MSAL   [blocked · now: local AuthProvider stub]</text>
-    <text x="374" y="40" class="lbl">• Content Safety              — guardrails        [blocked · now: wrapper off]</text>
-    <text x="374" y="56" class="lbl">• APIM · App Gateway          — edge · WAF        [blocked · now: direct App Service]</text>
-    <text x="374" y="72" class="lbl">• Log Analytics               — immutable audit   [blocked · now: JSONL on disk]</text>
+  <!-- EXTERNAL -->
+  <g transform="translate(20,464)">
+    <rect x="0" y="0" width="720" height="80" class="box"/>
+    <text x="8" y="16" class="h">External systems — end state: Azure-consolidated (Foundry · IQ)</text>
+    <text x="8" y="32" class="lbl">Azure OpenAI — LLM inference (live)</text>
+    <text x="8" y="46" class="lbl">Azure AI Search — hybrid retrieval  [blocked · LocalFileSource]</text>
+    <text x="8" y="60" class="lbl">Entra ID — identity · MSAL  [blocked · local AuthProvider stub]</text>
+    <text x="8" y="74" class="lbl">Content Safety — guardrails  [blocked · wrapper off]</text>
+    <text x="378" y="32" class="lbl">APIM · App Gateway — edge · WAF  [blocked · direct App Service]</text>
+    <text x="378" y="46" class="lbl">Log Analytics — immutable audit  [blocked · JSONL on disk]</text>
+    <text x="378" y="60" class="lbl">Azure Container Apps — code-exec sandbox  [blocked · reserved]</text>
+    <text x="378" y="74" class="lbl">Postgres — HITL queue · 3-tier memory  [staged]</text>
   </g>
 
-  <!-- ============== TEST SURFACE ============== -->
-  <g transform="translate(20,790)">
-    <rect x="0" y="0" width="720" height="56" class="box"/>
-    <text x="360" y="20" class="head">TEST SURFACE</text>
-    <text x="360" y="40" class="lbl-c">ruff · pyright · pytest · bandit · pip-audit · detect-secrets — pre-commit + CI</text>
+  <!-- TEST -->
+  <g transform="translate(20,554)">
+    <rect x="0" y="0" width="720" height="34" class="box"/>
+    <text x="8" y="16" class="h">Test surface</text>
+    <text x="8" y="30" class="lbl">ruff · pyright · pytest · bandit · pip-audit · detect-secrets — pre-commit + CI</text>
   </g>
 
-  <!-- ============== EDGES ============== -->
-  <line x1="380" y1="110" x2="380" y2="128" class="edge" marker-end="url(#arrL2)"/>
-  <line x1="380" y1="280" x2="380" y2="298" class="edge" marker-end="url(#arrL2)"/>
-  <line x1="380" y1="370" x2="175" y2="388" class="edge" marker-end="url(#arrL2)"/>
-  <line x1="380" y1="370" x2="545" y2="388" class="edge" marker-end="url(#arrL2)"/>
-  <line x1="175" y1="550" x2="200" y2="568" class="edge" marker-end="url(#arrL2)"/>
-  <line x1="545" y1="550" x2="520" y2="568" class="edge" marker-end="url(#arrL2)"/>
-  <path d="M 660 660 L 660 678" class="edge-aud" marker-end="url(#arrL2)"/>
+  <!-- edges -->
+  <line x1="380" y1="78"  x2="380" y2="86"  class="edge" marker-end="url(#arrL2)"/>
+  <line x1="380" y1="194" x2="380" y2="202" class="edge" marker-end="url(#arrL2)"/>
+  <line x1="380" y1="250" x2="175" y2="258" class="edge" marker-end="url(#arrL2)"/>
+  <line x1="380" y1="250" x2="545" y2="258" class="edge" marker-end="url(#arrL2)"/>
+  <line x1="175" y1="378" x2="200" y2="386" class="edge" marker-end="url(#arrL2)"/>
+  <line x1="545" y1="378" x2="520" y2="386" class="edge" marker-end="url(#arrL2)"/>
+  <line x1="600" y1="454" x2="600" y2="462" class="edge-d" marker-end="url(#arrL2)"/>
 
   <!-- Legend -->
-  <g transform="translate(20,870)">
-    <rect x="0" y="-10" width="18" height="12" class="box"/>
-    <text x="24" y="0" class="lbl">solid · live</text>
-    <rect x="130" y="-10" width="18" height="12" class="box-dashed"/>
-    <text x="154" y="0" class="lbl">dashed · end-state component (currently via alternative)</text>
-    <text x="470" y="0" class="lbl">⟨I⟩ · Python protocol abstraction point</text>
+  <g transform="translate(20,600)">
+    <rect x="0" y="-10" width="16" height="10" class="box"/>
+    <text x="22" y="0" class="lbl">solid · live</text>
+    <rect x="120" y="-10" width="16" height="10" class="box-d"/>
+    <text x="142" y="0" class="lbl">dashed · end-state via current alternative</text>
+    <text x="430" y="0" class="lbl">⟨I⟩ · Python protocol</text>
   </g>
 </svg>
