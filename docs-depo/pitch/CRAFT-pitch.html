@@ -125,7 +125,8 @@
 </code></pre>
 <p>In: <code>/chat/send [base]</code> <code>/admin/* [admin]</code>. Out: thin italic. <strong>Internal data</strong> lives in the CRAFT process + SQLite; <strong>external data</strong> reaches CRAFT through <code>⟨I⟩ DataSource</code> adapters (MSAL/OAuth).</p>
 <h2>2b. L2 Container</h2>
-<p>Two caller shapes reach the same route surface. The primary agent calls routes from inside the process; external services (cron jobs, pipelines, upstream workflows) call the same routes with user-scoped tokens. One RBAC gate, one audit envelope, both paths. Storage lives behind <code>⟨I⟩</code> protocols — the agent and external callers see the same contracts.</p>
+<p>Two caller shapes reach the same route surface. The primary agent calls routes from inside the process; external services (cron jobs, pipelines, upstream workflows) call the same routes with user-scoped tokens. One RBAC gate, one audit envelope, both paths.</p>
+<p><strong>Storage</strong> holds CRAFT's own operational state (user workspaces, per-user data, HITL approvals). <strong>Data Sources</strong> are where mission and business data lives (corpus files, SharePoint, SAP, AI Search). Both are hidden behind <code>⟨I⟩</code> protocols so callers never bind to a specific backend.</p>
 <pre><code class="language-text">┌──────────────────────────┐          ┌─────────────────────────────┐
 │  Internal caller         │          │  External caller            │
 │   Primary Agent          │          │   Service · Cron · Pipeline │
@@ -145,23 +146,23 @@
      ▼                  ▼                  ▼                  ▼
 ┌──────────┐  ┌───────────────────┐  ┌──────────────────┐  ┌─────────┐
 │  Tool    │  │  Storage          │  │  Data Sources    │  │  Audit  │
-│Registry  │  │  ⟨I⟩ WsStore      │  │  ⟨I⟩ DataSource  │  │  Sink   │
-│⟨I⟩ Tool  │  │  ⟨I⟩ Approval-    │  │                  │  │⟨I⟩ActLog│
-│          │  │     Queue         │  │  INTERNAL        │  │   │     │
-│documents │  │                   │  │  (in-process,    │  │   ▼     │
-│charts    │  │  ▦ SqliteStore    │  │   connector-     │  │  Hash-  │
-│query_data│  │   workspaces +    │  │   backed)        │  │  chained│
-│classifier│  │   scratch         │  │  · LocalFile-    │  │  JSONL  │
-│hist_mis'n│  │                   │  │    Source        │  │   │     │
-│cost_agg  │  │  ▦ SqliteData-    │  │  · SqliteData-   │  │   ▼     │
-│vendor_agg│  │   Store (per-user │  │    Store         │  │  Azure  │
-│code_exec │  │   RBAC-scoped)    │  │                  │  │   Log   │
-│          │  │                   │  │  EXTERNAL        │  │Analytics│
-│          │  │  ▦ ApprovalQueue  │  │  (perimeter,     │  └─────────┘
-│          │  │   (Postgres,      │  │   MSAL / OAuth)  │
-│          │  │   HITL)           │  │  · SharePoint    │
-│          │  │                   │  │  · SAP           │
-│          │  │                   │  │  · STK / MATLAB  │
+│Registry  │  │ (CRAFT's own      │  │ (business data   │  │  Sink   │
+│⟨I⟩ Tool  │  │  operational      │  │  CRAFT reads)    │  │⟨I⟩ActLog│
+│          │  │  state)           │  │  ⟨I⟩ DataSource  │  │   │     │
+│documents │  │  ⟨I⟩ WsStore      │  │                  │  │   ▼     │
+│charts    │  │  ⟨I⟩ Approval-    │  │  INTERNAL        │  │  Hash-  │
+│query_data│  │     Queue         │  │  (in-process,    │  │  chained│
+│classifier│  │                   │  │   connector-     │  │  JSONL  │
+│hist_mis'n│  │  ▦ Workspace      │  │   backed)        │  │   │     │
+│cost_agg  │  │    sessions +    │  │  · LocalFile-    │  │   ▼     │
+│vendor_agg│  │    scratch        │  │    Source        │  │  Azure  │
+│code_exec │  │                   │  │                  │  │   Log   │
+│          │  │  ▦ Per-user data  │  │  EXTERNAL        │  │Analytics│
+│          │  │    (RBAC-scoped,  │  │  (perimeter,     │  └─────────┘
+│          │  │     QueryTool)    │  │   MSAL / OAuth)  │
+│          │  │                   │  │  · SharePoint    │
+│          │  │  ▦ HITL approvals │  │  · SAP           │
+│          │  │    (Postgres)     │  │  · STK / MATLAB  │
 │          │  │                   │  │  · AzureAISearch │
 └──────────┘  └───────────────────┘  └──────────────────┘
 
@@ -170,7 +171,7 @@
 │(audit-green) │
 └──────────────┘
 </code></pre>
-<p><strong>How to read it.</strong> Both callers hit the top layer; the gate stamps <code>trace_id</code> + <code>role</code> on the request and the audit record. Routes dispatch to the four domain registries beneath. <code>⟨I⟩ DataSource</code> is the single point of connection for <em>any</em> data in or out — internal (filesystem + SQLite) and external (SharePoint, SAP, STK/MATLAB, Azure AI Search) look identical to callers; only the connector implementation differs.</p>
+<p><strong>How to read it.</strong> Both callers hit the top layer; the gate stamps <code>trace_id</code> + <code>role</code> on the request and the audit record. Routes dispatch to the four domain surfaces beneath. <strong>Storage</strong> is CRAFT's own state — three tables / stores accessed through <code>⟨I⟩ WorkspaceStore</code> and <code>⟨I⟩ ApprovalQueue</code>. <strong>Data Sources</strong> are where business data lives — one <code>⟨I⟩ DataSource</code> contract covers both internal (the mission corpus on disk via <code>LocalFileSource</code>) and external (SharePoint, SAP, STK/MATLAB, Azure AI Search). Every call lands in the audit sink before returning.</p>
 <h2>2c. L3 Internals</h2>
 <h3>Panel A · Agent</h3>
 <pre><code class="language-text">ChatAgent (Agent Framework)

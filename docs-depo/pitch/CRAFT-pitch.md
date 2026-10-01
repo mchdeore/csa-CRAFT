@@ -39,7 +39,9 @@ In: `/chat/send [base]` `/admin/* [admin]`. Out: thin italic. **Internal data** 
 
 ## 2b. L2 Container
 
-Two caller shapes reach the same route surface. The primary agent calls routes from inside the process; external services (cron jobs, pipelines, upstream workflows) call the same routes with user-scoped tokens. One RBAC gate, one audit envelope, both paths. Storage lives behind `⟨I⟩` protocols — the agent and external callers see the same contracts.
+Two caller shapes reach the same route surface. The primary agent calls routes from inside the process; external services (cron jobs, pipelines, upstream workflows) call the same routes with user-scoped tokens. One RBAC gate, one audit envelope, both paths.
+
+**Storage** holds CRAFT's own operational state (user workspaces, per-user data, HITL approvals). **Data Sources** are where mission and business data lives (corpus files, SharePoint, SAP, AI Search). Both are hidden behind `⟨I⟩` protocols so callers never bind to a specific backend.
 
 ```text
 ┌──────────────────────────┐          ┌─────────────────────────────┐
@@ -61,23 +63,23 @@ Two caller shapes reach the same route surface. The primary agent calls routes f
      ▼                  ▼                  ▼                  ▼
 ┌──────────┐  ┌───────────────────┐  ┌──────────────────┐  ┌─────────┐
 │  Tool    │  │  Storage          │  │  Data Sources    │  │  Audit  │
-│Registry  │  │  ⟨I⟩ WsStore      │  │  ⟨I⟩ DataSource  │  │  Sink   │
-│⟨I⟩ Tool  │  │  ⟨I⟩ Approval-    │  │                  │  │⟨I⟩ActLog│
-│          │  │     Queue         │  │  INTERNAL        │  │   │     │
-│documents │  │                   │  │  (in-process,    │  │   ▼     │
-│charts    │  │  ▦ SqliteStore    │  │   connector-     │  │  Hash-  │
-│query_data│  │   workspaces +    │  │   backed)        │  │  chained│
-│classifier│  │   scratch         │  │  · LocalFile-    │  │  JSONL  │
-│hist_mis'n│  │                   │  │    Source        │  │   │     │
-│cost_agg  │  │  ▦ SqliteData-    │  │  · SqliteData-   │  │   ▼     │
-│vendor_agg│  │   Store (per-user │  │    Store         │  │  Azure  │
-│code_exec │  │   RBAC-scoped)    │  │                  │  │   Log   │
-│          │  │                   │  │  EXTERNAL        │  │Analytics│
-│          │  │  ▦ ApprovalQueue  │  │  (perimeter,     │  └─────────┘
-│          │  │   (Postgres,      │  │   MSAL / OAuth)  │
-│          │  │   HITL)           │  │  · SharePoint    │
-│          │  │                   │  │  · SAP           │
-│          │  │                   │  │  · STK / MATLAB  │
+│Registry  │  │ (CRAFT's own      │  │ (business data   │  │  Sink   │
+│⟨I⟩ Tool  │  │  operational      │  │  CRAFT reads)    │  │⟨I⟩ActLog│
+│          │  │  state)           │  │  ⟨I⟩ DataSource  │  │   │     │
+│documents │  │  ⟨I⟩ WsStore      │  │                  │  │   ▼     │
+│charts    │  │  ⟨I⟩ Approval-    │  │  INTERNAL        │  │  Hash-  │
+│query_data│  │     Queue         │  │  (in-process,    │  │  chained│
+│classifier│  │                   │  │   connector-     │  │  JSONL  │
+│hist_mis'n│  │  ▦ Workspace      │  │   backed)        │  │   │     │
+│cost_agg  │  │    sessions +    │  │  · LocalFile-    │  │   ▼     │
+│vendor_agg│  │    scratch        │  │    Source        │  │  Azure  │
+│code_exec │  │                   │  │                  │  │   Log   │
+│          │  │  ▦ Per-user data  │  │  EXTERNAL        │  │Analytics│
+│          │  │    (RBAC-scoped,  │  │  (perimeter,     │  └─────────┘
+│          │  │     QueryTool)    │  │   MSAL / OAuth)  │
+│          │  │                   │  │  · SharePoint    │
+│          │  │  ▦ HITL approvals │  │  · SAP           │
+│          │  │    (Postgres)     │  │  · STK / MATLAB  │
 │          │  │                   │  │  · AzureAISearch │
 └──────────┘  └───────────────────┘  └──────────────────┘
 
@@ -87,7 +89,7 @@ Two caller shapes reach the same route surface. The primary agent calls routes f
 └──────────────┘
 ```
 
-**How to read it.** Both callers hit the top layer; the gate stamps `trace_id` + `role` on the request and the audit record. Routes dispatch to the four domain registries beneath. `⟨I⟩ DataSource` is the single point of connection for *any* data in or out — internal (filesystem + SQLite) and external (SharePoint, SAP, STK/MATLAB, Azure AI Search) look identical to callers; only the connector implementation differs.
+**How to read it.** Both callers hit the top layer; the gate stamps `trace_id` + `role` on the request and the audit record. Routes dispatch to the four domain surfaces beneath. **Storage** is CRAFT's own state — three tables / stores accessed through `⟨I⟩ WorkspaceStore` and `⟨I⟩ ApprovalQueue`. **Data Sources** are where business data lives — one `⟨I⟩ DataSource` contract covers both internal (the mission corpus on disk via `LocalFileSource`) and external (SharePoint, SAP, STK/MATLAB, Azure AI Search). Every call lands in the audit sink before returning.
 
 ## 2c. L3 Internals
 
