@@ -114,7 +114,19 @@ def _build_boxplot_figure(
     show_points: bool,
     horizontal: bool,
 ) -> dict[str, Any]:
-    """Build a Plotly box plot figure."""
+    """Build a Plotly box plot figure dict.
+
+    Returns the figure as a dict via to_dict() for JSON serialization.
+
+    >>> groups = [{"name": "Control", "values": [1, 2, 3, 4, 5]}, {"name": "Test", "values": [3, 4, 5, 6, 7]}]
+    >>> fig = _build_boxplot_figure("Comparison", groups, "Value", False, False)
+    >>> isinstance(fig, dict)
+    True
+    >>> "data" in fig
+    True
+    >>> fig["layout"]["title"]["text"]
+    'Comparison'
+    """
     import plotly.graph_objects as go
 
     fig = go.Figure()

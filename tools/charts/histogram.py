@@ -113,7 +113,18 @@ def _build_histogram_figure(
     show_curve: bool,
     opacity: float,
 ) -> dict[str, Any]:
-    """Build a Plotly histogram figure with optional normal curve overlay."""
+    """Build a Plotly histogram figure dict with optional normal curve overlay.
+
+    Returns the figure as a dict via to_dict() for JSON serialization.
+
+    >>> fig = _build_histogram_figure("Distribution", [1.0, 2.0, 3.0, 4.0, 5.0], 5, "Value", False, 0.7)
+    >>> isinstance(fig, dict)
+    True
+    >>> "data" in fig
+    True
+    >>> fig["layout"]["title"]["text"]
+    'Distribution'
+    """
     import plotly.graph_objects as go
 
     fig = go.Figure()

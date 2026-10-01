@@ -132,7 +132,19 @@ def _build_line_figure(
     x_is_date: bool,
     markers: bool,
 ) -> dict[str, Any]:
-    """Build a Plotly line chart figure."""
+    """Build a Plotly line chart figure dict.
+
+    Returns the figure as a dict via to_dict() for JSON serialization.
+
+    >>> series = [{"name": "Sales", "y_values": [100, 200, 300]}]
+    >>> fig = _build_line_figure("Revenue", ["Q1", "Q2", "Q3"], series, "Quarter", "USD", False, False, True)
+    >>> isinstance(fig, dict)
+    True
+    >>> "data" in fig
+    True
+    >>> fig["layout"]["title"]["text"]
+    'Revenue'
+    """
     import plotly.graph_objects as go
 
     fig = go.Figure()

@@ -137,7 +137,22 @@ def _build_heatmap_figure(
     y_label: str,
     colorscale: str,
 ) -> dict[str, Any]:
-    """Build a Plotly heatmap figure from a 2D grid."""
+    """Build a Plotly heatmap figure dict from a 2D grid.
+
+    Returns the figure as a dict via to_dict() for JSON serialization.
+
+    >>> fig = _build_heatmap_figure(
+    ...     "Correlation", ["A", "B"], ["X", "Y"],
+    ...     [[1.0, 0.5], [0.5, 1.0]],
+    ...     "Variables", "Variables", "viridis"
+    ... )
+    >>> isinstance(fig, dict)
+    True
+    >>> "data" in fig
+    True
+    >>> fig["layout"]["title"]["text"]
+    'Correlation'
+    """
     import plotly.graph_objects as go
 
     # Validate colorscale name, default to viridis
