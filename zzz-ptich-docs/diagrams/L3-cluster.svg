@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 580" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 440" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif">
   <defs>
     <marker id="arrL3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/>
@@ -47,84 +47,54 @@
     <text x="420" y="56" class="lbl-i-c">should_continue?</text>
 
     <rect x="530" y="24" width="130" height="40" class="box"/>
-    <text x="595" y="42" class="lbl-c">Call Tool</text>
-    <text x="595" y="56" class="lbl-i-c">⟨I⟩ Tool</text>
+    <text x="595" y="42" class="lbl-c">Call Tool / Plan</text>
+    <text x="595" y="56" class="lbl-i-c">⟨I⟩ Tool · callable externally</text>
 
     <line x1="150" y1="44" x2="178" y2="44" class="edge" marker-end="url(#arrL3)"/>
     <line x1="310" y1="44" x2="338" y2="44" class="edge" marker-end="url(#arrL3)"/>
     <line x1="500" y1="44" x2="528" y2="44" class="edge" marker-end="url(#arrL3)"/>
     <text x="513" y="38" class="lbl-i">tool</text>
 
-    <!-- Workspace Storage directly from Agent (session read/write) -->
-    <rect x="180" y="86" width="130" height="40" class="box"/>
-    <text x="245" y="104" class="lbl-c">Workspace Storage</text>
-    <text x="245" y="118" class="lbl-i-c">⟨I⟩ WorkspaceStore</text>
-    <path d="M 245 64 L 245 86" class="edge" marker-end="url(#arrL3)"/>
-    <path d="M 255 86 L 255 64" class="edge" marker-end="url(#arrL3)"/>
-    <text x="195" y="78" class="lbl-i">r/w</text>
-
-    <!-- Right column: Risky? right after Call Tool, then Reviewer, then Data -->
-    <polygon points="530,108 560,86 630,86 660,108 630,130 560,130" class="gate"/>
-    <text x="595" y="106" class="lbl-c">Risky?</text>
-    <text x="595" y="120" class="lbl-i-c">approval needed from human</text>
-
-    <rect x="515" y="150" width="180" height="46" class="box"/>
-    <text x="605" y="168" class="lbl-c">Reviewer approves</text>
-    <text x="605" y="184" class="lbl-i-c">queue · Dash UI · logged</text>
-
-    <rect x="515" y="216" width="180" height="40" class="box"/>
-    <text x="605" y="234" class="lbl-c">Data via ⟨I⟩ DataSource</text>
-    <text x="605" y="248" class="lbl-i-c">read / write (any backend)</text>
-
-    <!-- edges: Call Tool → Risky -->
+    <!-- HITL abstraction popping off Call Tool -->
+    <polygon points="530,110 560,86 630,86 660,110 630,134 560,134" class="gate"/>
+    <text x="595" y="108" class="lbl-c">Approval?</text>
+    <text x="595" y="122" class="lbl-i-c">human-in-the-loop</text>
     <path d="M 595 64 L 595 86" class="edge" marker-end="url(#arrL3)"/>
-    <text x="572" y="78" class="lbl-i">tap</text>
-
-    <!-- Risky yes → Reviewer approves -->
-    <path d="M 595 130 L 595 150" class="edge" marker-end="url(#arrL3)"/>
-    <text x="602" y="146" class="lbl-i">yes</text>
-
-    <!-- Risky no → bypass Reviewer, go around to Data -->
-    <path d="M 660 108 L 710 108 L 710 236 L 695 236" class="edge" marker-end="url(#arrL3)"/>
-    <text x="716" y="104" class="lbl-i">no</text>
-
-    <!-- Reviewer approves → Data -->
-    <path d="M 605 196 L 605 216" class="edge" marker-end="url(#arrL3)"/>
-    <text x="614" y="212" class="lbl-i">approve</text>
+    <text x="602" y="78" class="lbl-i">if risky</text>
 
     <!-- Row 3: outputs -->
-    <rect x="20"  y="290" width="150" height="40" class="box"/>
-    <text x="95"  y="310" class="lbl-c">Response + citations</text>
-    <text x="95"  y="324" class="lbl-i-c">UMR-002 / 006</text>
+    <rect x="20"  y="180" width="150" height="40" class="box"/>
+    <text x="95"  y="200" class="lbl-c">Response + citations</text>
+    <text x="95"  y="214" class="lbl-i-c">UMR-002 / 006</text>
 
-    <rect x="200" y="290" width="170" height="40" class="box"/>
-    <text x="285" y="310" class="lbl-c">AgentAction recorded</text>
-    <text x="285" y="324" class="lbl-i-c">UMR-015 / 027</text>
+    <rect x="200" y="180" width="170" height="40" class="box"/>
+    <text x="285" y="200" class="lbl-c">AgentAction recorded</text>
+    <text x="285" y="214" class="lbl-i-c">UMR-015 / 027</text>
 
-    <circle cx="420" cy="310" r="14" class="term"/>
-    <text x="420" y="314" class="lbl-c" fill="#fff">END</text>
+    <circle cx="420" cy="200" r="14" class="term"/>
+    <text x="420" y="204" class="lbl-c" fill="#fff">END</text>
 
-    <line x1="170" y1="310" x2="198" y2="310" class="edge" marker-end="url(#arrL3)"/>
-    <line x1="370" y1="310" x2="406" y2="310" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="170" y1="200" x2="198" y2="200" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="370" y1="200" x2="406" y2="200" class="edge" marker-end="url(#arrL3)"/>
 
     <!-- "respond" from decision: straight down to Response bus -->
-    <path d="M 420 68 L 420 270 L 95 270 L 95 290" class="edge" marker-end="url(#arrL3)"/>
+    <path d="M 420 68 L 420 160 L 95 160 L 95 180" class="edge" marker-end="url(#arrL3)"/>
     <text x="428" y="100" class="lbl-i">respond</text>
   </g>
 
   <!-- ============== B · TOOL REGISTRY ============== -->
-  <g transform="translate(20,394)">
+  <g transform="translate(20,284)">
     <rect x="0" y="0" width="350" height="110" class="box"/>
     <text x="8" y="16" class="h">B · Tool Registry   <tspan class="proto">⟨I⟩ Tool</tspan></text>
     <text x="8" y="34" class="lbl">examples:  documents · query_data</text>
     <text x="8" y="56" class="mono">POST /tools/execute/&lt;name&gt;</text>
     <text x="8" y="70" class="mono">body: { "args": {...}, "trace_id": ... }</text>
     <text x="8" y="92" class="lbl-i">validated against <tspan class="proto">⟨I⟩ Tool</tspan> · audited</text>
-    <text x="8" y="104" class="lbl-i">new tool = new class · agent unchanged</text>
+    <text x="8" y="104" class="lbl-i">a Tool may itself be a planning sub-agent</text>
   </g>
 
   <!-- ============== C · DATASOURCE ============== -->
-  <g transform="translate(390,394)">
+  <g transform="translate(390,284)">
     <rect x="0" y="0" width="350" height="110" class="box"/>
     <text x="8" y="16" class="h">C · DataSource Registry   <tspan class="proto">⟨I⟩ DataSource</tspan></text>
     <text x="8" y="34" class="lbl">LocalFile (live) · others pending (see Figure 1)</text>
@@ -135,12 +105,11 @@
   </g>
 
   <!-- ============== D · AUTH ============== -->
-  <g transform="translate(20,520)">
-    <rect x="0" y="0" width="720" height="42" class="box"/>
-    <text x="8" y="14" class="h">D · Auth + RBAC + Trace</text>
-    <text x="360" y="28" class="flow">
+  <g transform="translate(20,406)">
+    <rect x="0" y="0" width="720" height="34" class="box"/>
+    <text x="360" y="14" class="flow">
       <tspan class="flow-k">route</tspan>  →  <tspan class="flow-k">before_request</tspan> (auth · role · trace_id)  →  <tspan class="flow-k">handler</tspan>  →  <tspan class="flow-k">after_request</tspan> (audit emit)  →  <tspan class="flow-k">response</tspan>
     </text>
-    <text x="360" y="40" class="lbl-i-c">base(1) &lt; power(2) &lt; admin(3)   ·   role &lt; required → 403   ·   unregistered route → 404 before auth</text>
+    <text x="360" y="28" class="lbl-i-c">base(1) &lt; power(2) &lt; admin(3)   ·   role &lt; required → 403   ·   unregistered route → 404 before auth</text>
   </g>
 </svg>
