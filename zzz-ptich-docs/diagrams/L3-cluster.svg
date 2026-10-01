@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 720" font-family="Times New Roman, Times, serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="Times New Roman, Times, serif">
   <defs>
     <marker id="arrL3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/>
@@ -10,150 +10,144 @@
       .boundary { fill: none; stroke: #000; stroke-width: 1.25; }
       .gate { fill: #fff; stroke: #000; stroke-width: 1.2; }
       .terminal { fill: #000; stroke: #000; stroke-width: 1; }
-      .label { font-size: 11px; fill: #000; text-anchor: middle; }
-      .label-small { font-size: 9px; fill: #000; text-anchor: middle; font-style: italic; }
-      .cluster-head { font-size: 12px; font-weight: bold; font-variant: small-caps; letter-spacing: 1px; fill: #000; text-anchor: middle; }
+      .lbl-c { font-size: 11px; fill: #000; text-anchor: middle; }
+      .lbl { font-size: 10.5px; fill: #000; }
+      .lbl-i-c { font-size: 9.5px; fill: #000; font-style: italic; text-anchor: middle; }
+      .head { font-size: 12px; font-weight: bold; font-variant: small-caps; letter-spacing: 1px; fill: #000; text-anchor: middle; }
       .edge { stroke: #000; stroke-width: 1; fill: none; }
-      .edge-audit { stroke: #000; stroke-width: 1; fill: none; stroke-dasharray: 2 2; }
+      .edge-aud { stroke: #000; stroke-width: 1; fill: none; stroke-dasharray: 2 2; }
       .title { font-size: 15px; font-weight: bold; font-variant: small-caps; letter-spacing: 1.5px; fill: #000; text-anchor: middle; }
-      .iface { font-size: 9px; font-style: italic; fill: #000; text-anchor: middle; }
+      .iface { font-size: 9.5px; font-style: italic; fill: #000; text-anchor: middle; }
+      .mono { font-family: "Courier New", Courier, monospace; font-size: 10px; fill: #000; }
+      .mono-c { font-family: "Courier New", Courier, monospace; font-size: 10px; fill: #000; text-anchor: middle; }
     ]]></style>
   </defs>
 
-  <text x="500" y="22" class="title">L3 · Internal Clusters</text>
+  <text x="600" y="22" class="title">L3 · Internal Clusters</text>
 
   <!-- =============== CLUSTER A : AGENT =============== -->
-  <g transform="translate(0,50)">
-    <rect x="40" y="0" width="920" height="180" class="boundary"/>
-    <text x="500" y="18" class="cluster-head">A · PRIMARY AGENT (LANGGRAPH REACT)</text>
+  <g transform="translate(20,50)">
+    <rect x="0" y="0" width="1160" height="170" class="boundary"/>
+    <text x="580" y="18" class="head">A · PRIMARY AGENT   (LANGGRAPH REACT)</text>
 
-    <rect x="80"  y="40" width="130" height="60" class="box"/>
-    <text x="145" y="64" class="label">chatbot</text>
-    <text x="145" y="80" class="label-small">LLM inference</text>
+    <rect x="40"  y="40" width="160" height="60" class="box"/>
+    <text x="120" y="62" class="lbl-c">chatbot</text>
+    <text x="120" y="78" class="lbl-i-c">LLM inference</text>
 
-    <polygon points="250,70 270,50 400,50 420,70 400,90 270,90" class="gate"/>
-    <text x="335" y="68" class="label">should_continue?</text>
-    <text x="335" y="82" class="label-small">loop · limit=25</text>
+    <polygon points="250,70 275,45 410,45 435,70 410,95 275,95" class="gate"/>
+    <text x="342" y="66" class="lbl-c">should_continue?</text>
+    <text x="342" y="82" class="lbl-i-c">loop · limit=25</text>
 
-    <rect x="460" y="40" width="140" height="60" class="box"/>
-    <text x="530" y="64" class="label">tool_node</text>
-    <text x="530" y="80" class="label-small">dispatch · ⟨I⟩ Tool</text>
+    <rect x="480" y="40" width="170" height="60" class="box"/>
+    <text x="565" y="62" class="lbl-c">tool_node</text>
+    <text x="565" y="78" class="lbl-i-c">dispatch · ⟨I⟩ Tool</text>
 
-    <rect x="640" y="40" width="140" height="60" class="box"/>
-    <text x="710" y="64" class="label">audit emit</text>
-    <text x="710" y="80" class="label-small">AgentAction</text>
+    <rect x="700" y="40" width="170" height="60" class="box"/>
+    <text x="785" y="62" class="lbl-c">audit emit</text>
+    <text x="785" y="78" class="lbl-i-c">AgentAction envelope</text>
 
-    <circle cx="860" cy="70" r="14" class="terminal"/>
-    <text x="860" y="74" class="label" fill="#fff">●</text>
+    <circle cx="1030" cy="70" r="16" class="terminal"/>
+    <text x="1030" y="75" class="lbl-c" fill="#fff">END</text>
 
-    <!-- loop + edges -->
-    <line x1="210" y1="70" x2="248" y2="70" class="edge" marker-end="url(#arrL3)"/>
-    <line x1="422" y1="70" x2="458" y2="70" class="edge" marker-end="url(#arrL3)"/>
-    <line x1="600" y1="70" x2="638" y2="70" class="edge-audit" marker-end="url(#arrL3)"/>
-    <line x1="780" y1="70" x2="845" y2="70" class="edge" marker-end="url(#arrL3)"/>
-    <!-- loop back -->
-    <path d="M 530 100 L 530 150 L 145 150 L 145 100" class="edge" marker-end="url(#arrL3)"/>
-    <text x="337" y="146" class="label-small">tool_call → chatbot</text>
+    <line x1="200" y1="70" x2="248" y2="70" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="437" y1="70" x2="478" y2="70" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="650" y1="70" x2="698" y2="70" class="edge-aud" marker-end="url(#arrL3)"/>
+    <line x1="870" y1="70" x2="1012" y2="70" class="edge" marker-end="url(#arrL3)"/>
 
-    <!-- interfaces -->
-    <text x="500" y="172" class="iface">interfaces · ⟨I⟩ ChatProvider  ⟨I⟩ AgentActionLog  ⟨I⟩ Tool</text>
+    <path d="M 565 100 L 565 140 L 120 140 L 120 100" class="edge" marker-end="url(#arrL3)"/>
+    <text x="340" y="136" class="lbl-i-c">tool_call → chatbot (loop)</text>
+
+    <text x="580" y="160" class="iface">interfaces · ⟨I⟩ ChatProvider   ⟨I⟩ AgentActionLog   ⟨I⟩ Tool</text>
   </g>
 
   <!-- =============== CLUSTER B : TOOLS + CONNECTORS =============== -->
-  <g transform="translate(0,250)">
-    <rect x="40" y="0" width="920" height="200" class="boundary"/>
-    <text x="500" y="18" class="cluster-head">B · TOOLS + CONNECTORS</text>
+  <g transform="translate(20,240)">
+    <rect x="0" y="0" width="1160" height="200" class="boundary"/>
+    <text x="580" y="18" class="head">B · TOOLS + CONNECTORS</text>
 
-    <!-- Tool protocol -->
-    <text x="200" y="38" class="iface">⟨I⟩ Tool</text>
-    <rect x="60"  y="46" width="90"  height="36" class="box"/>
-    <text x="105" y="68" class="label">weather</text>
-    <rect x="160" y="46" width="90"  height="36" class="box"/>
-    <text x="205" y="68" class="label">documents</text>
-    <rect x="260" y="46" width="90"  height="36" class="box"/>
-    <text x="305" y="68" class="label">charts</text>
-    <rect x="60"  y="92" width="90"  height="36" class="box"/>
-    <text x="105" y="114" class="label">query_data</text>
-    <rect x="160" y="92" width="90"  height="36" class="box-dashed"/>
-    <text x="205" y="114" class="label">code_exec</text>
-    <rect x="260" y="92" width="90"  height="36" class="box"/>
-    <text x="305" y="114" class="label">report</text>
+    <!-- Tool protocol: single box with list -->
+    <rect x="30"  y="36" width="420" height="140" class="box"/>
+    <text x="240" y="54" class="head">TOOL REGISTRY   ⟨I⟩ Tool</text>
+    <text x="50" y="78"  class="lbl">• weather          — forecast · observation</text>
+    <text x="50" y="94"  class="lbl">• documents        — ingest · search · cite</text>
+    <text x="50" y="110" class="lbl">• charts           — overlaid bar · radar</text>
+    <text x="50" y="126" class="lbl">• query_data       — SQL · RBAC-scoped</text>
+    <text x="50" y="142" class="lbl">• code_exec        — sandbox (dev flag)</text>
+    <text x="50" y="158" class="lbl">• report / costing — distance · compliance</text>
 
     <!-- HITL gate between -->
-    <polygon points="380,80 400,60 490,60 510,80 490,100 400,100" class="gate"/>
-    <text x="445" y="78" class="label">HITL gate</text>
-    <text x="445" y="92" class="label-small">high-risk</text>
+    <polygon points="480,90 505,65 625,65 650,90 625,115 505,115" class="gate"/>
+    <text x="565" y="86" class="lbl-c">HITL gate</text>
+    <text x="565" y="100" class="lbl-i-c">high-risk</text>
+    <text x="565" y="112" class="lbl-i-c">intercept</text>
 
-    <!-- DataSource protocol -->
-    <text x="770" y="38" class="iface">⟨I⟩ DataSource</text>
-    <rect x="560" y="46" width="110" height="36" class="box"/>
-    <text x="615" y="68" class="label">LocalFile</text>
-    <rect x="680" y="46" width="110" height="36" class="box-dashed"/>
-    <text x="735" y="68" class="label">SharePoint</text>
-    <rect x="800" y="46" width="110" height="36" class="box-dashed"/>
-    <text x="855" y="68" class="label">SAP</text>
-    <rect x="560" y="92" width="110" height="36" class="box-dashed"/>
-    <text x="615" y="114" class="label">STK</text>
-    <rect x="680" y="92" width="110" height="36" class="box-dashed"/>
-    <text x="735" y="114" class="label">MATLAB</text>
-    <rect x="800" y="92" width="110" height="36" class="box-dashed"/>
-    <text x="855" y="114" class="label">Vector index</text>
+    <!-- DataSource: single box with list -->
+    <rect x="680" y="36" width="450" height="140" class="box"/>
+    <text x="905" y="54" class="head">DATASOURCE REGISTRY   ⟨I⟩ DataSource</text>
+    <text x="700" y="78"  class="lbl">• LocalFile      — filesystem · live</text>
+    <text x="700" y="94"  class="lbl">• SharePoint     — Graph API · MSAL · dev flag</text>
+    <text x="700" y="110" class="lbl">• SAP            — REST · OData · dev flag</text>
+    <text x="700" y="126" class="lbl">• STK / MATLAB   — adapter · license · dev flag</text>
+    <text x="700" y="142" class="lbl">• Vector index   — Azure AI Search · dev flag</text>
+    <text x="700" y="158" class="lbl">• Per-source auth — MSAL · OAuth · service account</text>
 
-    <!-- exec endpoint -->
-    <rect x="60"  y="150" width="340" height="34" class="box"/>
-    <text x="230" y="171" class="label">POST /tools/exec/&lt;name&gt;   —   validated · audited · scoped</text>
-
-    <rect x="560" y="150" width="350" height="34" class="box"/>
-    <text x="735" y="171" class="label">MSAL · OAuth · service accounts   —   per-source auth</text>
-
-    <!-- edges between protocols -->
-    <line x1="350" y1="80" x2="378" y2="80" class="edge" marker-end="url(#arrL3)"/>
-    <line x1="510" y1="80" x2="558" y2="80" class="edge" marker-end="url(#arrL3)"/>
+    <!-- edges tool -> HITL -> DataSource -->
+    <line x1="450" y1="90" x2="478" y2="90" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="650" y1="90" x2="678" y2="90" class="edge" marker-end="url(#arrL3)"/>
   </g>
 
-  <!-- =============== CLUSTER C : AUTH / RBAC =============== -->
-  <g transform="translate(0,470)">
-    <rect x="40" y="0" width="920" height="230" class="boundary"/>
-    <text x="500" y="18" class="cluster-head">C · AUTH + RBAC + TRACE</text>
+  <!-- =============== CLUSTER C : AUTH / RBAC / TRACE =============== -->
+  <g transform="translate(20,460)">
+    <rect x="0" y="0" width="1160" height="240" class="boundary"/>
+    <text x="580" y="18" class="head">C · AUTH + RBAC + TRACE</text>
 
-    <rect x="60"  y="40" width="150" height="56" class="box"/>
-    <text x="135" y="60" class="label">Flask route</text>
-    <text x="135" y="76" class="label-small">/send · /uploads · /admin</text>
-    <text x="135" y="90" class="label-small">[base · power · admin]</text>
+    <!-- Flow row (uniform block widths) -->
+    <rect x="30"  y="40" width="190" height="64" class="box"/>
+    <text x="125" y="60" class="lbl-c">Flask route</text>
+    <text x="125" y="76" class="lbl-i-c">handler entry</text>
+    <text x="125" y="92" class="lbl-i-c">[role · route]</text>
 
-    <polygon points="240,68 260,48 400,48 420,68 400,88 260,88" class="gate"/>
-    <text x="330" y="66" class="label">before_request</text>
-    <text x="330" y="80" class="label-small">auth · role · ws · trace</text>
+    <polygon points="260,72 290,45 450,45 480,72 450,99 290,99" class="gate"/>
+    <text x="370" y="68" class="lbl-c">before_request</text>
+    <text x="370" y="82" class="lbl-i-c">auth · role · ws</text>
+    <text x="370" y="94" class="lbl-i-c">trace_id · ctx</text>
 
-    <rect x="450" y="40" width="140" height="56" class="box"/>
-    <text x="520" y="60" class="label">handler</text>
-    <text x="520" y="76" class="label-small">route body</text>
+    <rect x="520" y="40" width="190" height="64" class="box"/>
+    <text x="615" y="60" class="lbl-c">handler</text>
+    <text x="615" y="76" class="lbl-i-c">route body</text>
+    <text x="615" y="92" class="lbl-i-c">tool · query · admin</text>
 
-    <polygon points="620,68 640,48 780,48 800,68 780,88 640,88" class="gate"/>
-    <text x="710" y="66" class="label">after_request</text>
-    <text x="710" y="80" class="label-small">audit emit</text>
+    <polygon points="750,72 780,45 940,45 970,72 940,99 780,99" class="gate"/>
+    <text x="860" y="68" class="lbl-c">after_request</text>
+    <text x="860" y="82" class="lbl-i-c">audit emit</text>
+    <text x="860" y="94" class="lbl-i-c">AgentAction</text>
 
-    <rect x="830" y="40" width="110" height="56" class="box"/>
-    <text x="885" y="60" class="label">response</text>
-    <text x="885" y="76" class="label-small">to client</text>
+    <rect x="1010" y="40" width="130" height="64" class="box"/>
+    <text x="1075" y="60" class="lbl-c">response</text>
+    <text x="1075" y="76" class="lbl-i-c">to client</text>
 
-    <!-- flow -->
-    <line x1="210" y1="68" x2="238" y2="68" class="edge" marker-end="url(#arrL3)"/>
-    <line x1="420" y1="68" x2="448" y2="68" class="edge" marker-end="url(#arrL3)"/>
-    <line x1="590" y1="68" x2="618" y2="68" class="edge" marker-end="url(#arrL3)"/>
-    <line x1="800" y1="68" x2="828" y2="68" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="220" y1="72" x2="258" y2="72" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="482" y1="72" x2="518" y2="72" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="710" y1="72" x2="748" y2="72" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="972" y1="72" x2="1008" y2="72" class="edge" marker-end="url(#arrL3)"/>
 
-    <!-- Route rules + roles aligned under flow -->
-    <rect x="60"  y="120" width="430" height="46" class="box"/>
-    <text x="275" y="138" class="label">_ROUTE_RULES</text>
-    <text x="275" y="154" class="label-small">/send → base   ·   /uploads → power   ·   /admin → admin</text>
+    <!-- Route rules (lists, uniform width, no overflow) -->
+    <rect x="30"  y="120" width="555" height="90" class="box"/>
+    <text x="307" y="138" class="head">_ROUTE_RULES</text>
+    <text x="50" y="158" class="mono">/chat/send             → base   (1)</text>
+    <text x="50" y="174" class="mono">/chat/upload           → power  (2)</text>
+    <text x="50" y="190" class="mono">/storage/list/*        → base   (1)</text>
+    <text x="310" y="158" class="mono">/tools/execute/&lt;name&gt; → internal</text>
+    <text x="310" y="174" class="mono">/uploads              → power  (2)</text>
+    <text x="310" y="190" class="mono">/admin/*              → admin  (3)</text>
 
-    <rect x="510" y="120" width="430" height="46" class="box"/>
-    <text x="725" y="138" class="label">_ROLE_LEVEL</text>
-    <text x="725" y="154" class="label-small">base(1) &lt; power(2) &lt; admin(3)</text>
-
-    <!-- Test surface strip -->
-    <rect x="60"  y="178" width="880" height="36" class="box-dashed"/>
-    <text x="500" y="200" class="label">architecture invariants · route rules · role levels · protocol contracts  —  pytest + CI</text>
+    <rect x="605" y="120" width="535" height="90" class="box"/>
+    <text x="872" y="138" class="head">_ROLE_LEVEL · INVARIANTS</text>
+    <text x="625" y="158" class="mono">base(1) &lt; power(2) &lt; admin(3)</text>
+    <text x="625" y="174" class="mono">role &lt; required → 403</text>
+    <text x="625" y="190" class="mono">unregistered route → 404 before auth</text>
+    <text x="875" y="158" class="lbl-i-c">tests · route × role matrix</text>
+    <text x="875" y="174" class="lbl-i-c">tests · protocol contract (Tool / DS)</text>
+    <text x="875" y="190" class="lbl-i-c">tests · audit envelope present</text>
   </g>
 </svg>

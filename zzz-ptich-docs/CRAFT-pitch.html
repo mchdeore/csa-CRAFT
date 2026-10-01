@@ -1,6 +1,6 @@
 <!doctype html><html><head><meta charset='utf-8'><title>CRAFT — Pitch Package</title><style>@page {
   size: Letter portrait;
-  margin: 0.65in 0.6in 0.65in 0.6in;
+  margin: 0.6in 0.55in 0.6in 0.55in;
   @bottom-right {
     content: counter(page) " / " counter(pages);
     font-family: "Times New Roman", Times, serif;
@@ -13,6 +13,18 @@
     font-size: 8pt;
     color: #000;
   }
+}
+
+@page landscape {
+  size: Letter landscape;
+  margin: 0.45in 0.5in 0.45in 0.5in;
+}
+
+.figure.landscape { page: landscape; }
+.figure.landscape img, .figure.landscape svg, .figure.landscape object {
+  max-width: 100%;
+  height: auto;
+  max-height: 7.4in;
 }
 
 html, body {
@@ -131,41 +143,25 @@ blockquote {
 }
 </style></head><body><h1>CRAFT — Pitch Package</h1>
 <p><em>Audited retrieval-augmented AI assistant for CSA mission engineering and finance.</em></p>
-<h2>1. System Context (L1)</h2>
-<div class="figure">
-<object type="image/svg+xml" data="diagrams/L1-context.svg"></object>
-<div class="caption">Figure 1 · Actors, external systems, and the CRAFT boundary.</div>
-</div>
-
-<p>Four actor roles reach CRAFT through a single Flask + Dash edge. Inbound traffic is role-gated at <code>/chat/send</code>, <code>/uploads</code>, and <code>/admin/*</code>. Outbound traffic fans to four control planes: LLM &amp; AI (Azure OpenAI, Azure AI Search, Content Safety), Data Sources (local FS, SharePoint, SAP, STK/MATLAB), Identity &amp; Edge (Entra ID, APIM, App Gateway), and Operations &amp; Audit (Log Analytics, App Service PBMM, LaunchPad, Container Apps). Dashed outlines in the diagram mark services staged behind IT or procurement gates — the integration seams are production, the backing services arrive on IT's cadence.</p>
-<h2>2. Containers (L2)</h2>
-<div class="figure">
+<h2>1. Containers &amp; Context (L2)</h2>
+<div class="figure landscape">
 <object type="image/svg+xml" data="diagrams/L2-container.svg"></object>
-<div class="caption">Figure 2 · Internal containers, interfaces, and the RBAC + audit perimeters.</div>
+<div class="caption">Figure 1 · Actors, external systems, routes, containers, and the audit + RBAC perimeters.</div>
 </div>
 
-<p>Requests enter the route-gated RBAC layer and are dispatched to the Primary Agent, which drives a Tool Registry over the <code>Tool</code> protocol and reads/writes through <code>WorkspaceStore</code>, <code>DataStore</code>, and <code>AuditLog</code>. Every tool and LLM turn emits an <code>AgentAction</code> envelope to the Audit Sink and from there to Log Analytics. Perimeter Connectors (LocalFile, SharePoint, SAP, STK/MATLAB) sit outside the audit boundary and are reached only through <code>DataSource</code> adapters. The test surface validates architectural invariants (route rules, role levels, protocol contracts) on every commit.</p>
-<h2>3. Internals (L3)</h2>
-<div class="figure">
+<h2>2. Internals (L3)</h2>
+<div class="figure landscape">
 <object type="image/svg+xml" data="diagrams/L3-cluster.svg"></object>
-<div class="caption">Figure 3 · Primary agent loop, tool/connector cluster, and auth cluster.</div>
+<div class="caption">Figure 2 · Primary agent loop, tool/connector cluster, and auth cluster.</div>
 </div>
 
-<p><strong>Agent cluster.</strong> The LangGraph chatbot node calls the tool node, loops on <code>_should_continue</code> with <code>recursion_limit=25</code>, and funnels <code>llm_inference</code> and <code>tool_call</code> into the audit sink via <code>AgentActionLog</code>. <strong>Tools + connectors cluster.</strong> The <code>Tool</code> protocol groups weather, document, chart, query, and code-exec tools; the <code>DataSource</code> protocol groups LocalFile, SharePoint, SAP, and STK adapters; a HITL gate interrupts high-risk calls before they reach <code>/tools/exec/&lt;name&gt;</code>. <strong>Auth cluster.</strong> Every public route runs through <code>before_request</code> (auth, role, workspace, trace id), the handler, then <code>after_request</code> (audit emit). <code>_ROUTE_RULES</code> maps <code>/send→base</code>, <code>/uploads→power</code>, <code>/admin→admin</code>; <code>_ROLE_LEVEL</code> enforces <code>base(1) &lt; power(2) &lt; admin(3)</code>. Architecture invariants are checked by the audit-green test surface.</p>
-<h2>4. Use Cases (One-Sheet)</h2>
-<div class="figure">
+<h2>3. Use Cases (One-Sheet)</h2>
+<div class="figure landscape">
 <object type="image/svg+xml" data="diagrams/UC-lanes.svg"></object>
-<div class="caption">Figure 4 · Three use-case lanes laid out left-to-right with UC IDs and swim-lane dividers.</div>
+<div class="caption">Figure 3 · Three use-case lanes laid out left-to-right with UC IDs and swim-lane dividers.</div>
 </div>
 
-<p>Each lane runs User → Agent → Services → Terminal left to right. Dashed nodes mark steps whose backing service is still an IT or data-governance dependency — the control flow and audit envelope through the lane are identical whether the step runs against the production service or its scratch adapter.</p>
-<ul>
-<li><strong>UC-E2 · Risk ID + HITL (Engineering).</strong> Engineer uploads CADRe Part A → auth gate → hybrid retrieval over corpus <code>[UMR-002…006]</code> → risk classifier <code>[UMR-036…040]</code> → HITL gate <code>[HITL-001]</code> → risk register write → audit → terminal.</li>
-<li><strong>UC-F1 · Parametric Cost + HITL (Finance).</strong> Admin requests estimate → auth gate → historical retrieval <code>[UMR-031]</code> → cost aggregator <code>[UMR-032…034]</code> → HITL gate <code>[UMR-035]</code> → commitment write → audit → terminal.</li>
-<li><strong>UC-F4 · Vendor Cost via SAP (Finance).</strong> Analyst queries vendor cost → auth gate → SAP connector <code>[UMR-053…055]</code> → vendor extract → aggregate → audit → terminal.</li>
-</ul>
-<p>Other mission flows (budget scenarios, anomaly triage, bilingual reports, cross-mission comparison) attach as new <code>Tool</code> + <code>DataSource</code> pairs along the same lanes.</p>
-<h2>5. Requirements → Design</h2>
+<h2>4. Requirements → Design</h2>
 <table>
 <thead>
 <tr>
@@ -238,8 +234,7 @@ blockquote {
 </tr>
 </tbody>
 </table>
-<h2>6. Development Flags &amp; System-Health Tooling</h2>
-<p>Development flags surface the external dependencies still in flight; health tooling is run on every commit and in CI.</p>
+<h2>5. Development Flags &amp; System-Health Tooling</h2>
 <table>
 <thead>
 <tr>

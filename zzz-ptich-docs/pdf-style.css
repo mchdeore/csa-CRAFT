@@ -1,6 +1,6 @@
 @page {
   size: Letter portrait;
-  margin: 0.65in 0.6in 0.65in 0.6in;
+  margin: 0.6in 0.55in 0.6in 0.55in;
   @bottom-right {
     content: counter(page) " / " counter(pages);
     font-family: "Times New Roman", Times, serif;
@@ -13,6 +13,18 @@
     font-size: 8pt;
     color: #000;
   }
+}
+
+@page landscape {
+  size: Letter landscape;
+  margin: 0.45in 0.5in 0.45in 0.5in;
+}
+
+.figure.landscape { page: landscape; }
+.figure.landscape img, .figure.landscape svg, .figure.landscape object {
+  max-width: 100%;
+  height: auto;
+  max-height: 7.4in;
 }
 
 html, body {
