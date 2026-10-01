@@ -1,8 +1,10 @@
-# Dependency strategy — minimal surface, pitch-aligned, Azure-ready
+# Dependency strategy — Azure-native, pitch-aligned, trade-off visible
 
-Why CRAFT's dependency list is deliberately short, what the current set lets us ship today, and what we can grow into without rewrites.
+Why CRAFT's dependency list looks the way it does after the Microsoft Agent Framework pivot, what the current set lets us ship today, and what we can grow into without rewrites.
 
-Companion to `azure-openai-sdk-usage.md`. Informs plan `00-refactor-overview.md`.
+> **This doc records the trade-off we already took, not a decision tree.** The project adopted Microsoft Agent Framework as the primary agent runtime (plan 03). The "when would a framework earn its keep" tables below are therefore retrospective — they show what we gained by taking the trigger, and what the honest cost is. The hand-rolled Azure OpenAI SDK path is kept as a documented fallback (`azure-openai-sdk-usage.md`).
+
+Companion to `azure-openai-sdk-usage.md` (fallback reference). Informs plan `00-refactor-overview.md`.
 
 ---
 
@@ -10,12 +12,16 @@ Companion to `azure-openai-sdk-usage.md`. Informs plan `00-refactor-overview.md`
 
 Only runtime deps. Dev tooling (ruff / pyright / pytest etc.) kept separate.
 
+### Direct runtime deps
+
 | Package | Role | Why we need it |
 |---|---|---|
 | `dash` | Web UI framework | Chat UI, workspace sidebar, chart rendering. Built on Flask. |
 | `flask` | HTTP routing | Routes, before/after request hooks, session management. |
 | `flask-login` | Session auth | Login / logout flow against our `⟨I⟩ AuthProvider`. |
-| `openai` | Azure OpenAI SDK | Only LLM transport. Chat completions, tool calling, structured output, streaming. |
+| `openai` | OpenAI / Azure OpenAI SDK | Still a direct dep: used by Agent Framework's `agent-framework-openai` provider; also used by the fallback `AzureChatProvider` sketch if we ever drop Agent Framework. |
+| `agent-framework` | Microsoft Agent Framework (umbrella) | Primary agent runtime — `ChatAgent`, function-tool decorator, HITL via `approval_mode="always_require"`, workflow `RequestPort`. Successor to Semantic Kernel, GA April 2026. Pulls `agent-framework-core` and `agent-framework-openai` automatically. |
+| `agent-framework-foundry` | Microsoft Foundry integration | Added when Foundry (Azure AI Foundry agent runtime) is in-scope. Plan 03 marks this TBD — keep `agent-framework` alone if Foundry isn't exercised in the MVP. |
 | `pandas` | Tabular data | Spreadsheet upload tool, chart data munging. |
 | `plotly` | Interactive charts | What Dash renders for all chart tools. |
 | `python-dotenv` | `.env` loading | Loads env into `os.environ` for `app/core/config.py`. |
@@ -25,7 +31,31 @@ Only runtime deps. Dev tooling (ruff / pyright / pytest etc.) kept separate.
 | `pdfplumber` | PDF parsing | `TextAnalysisTool` reads mission PDFs. |
 | `python-docx` | DOCX parsing | `TextAnalysisTool` reads CADRe parts. |
 
-That's **12 runtime packages**. Compare to a LangChain-based alternative which, at minimum, would add `langchain`, `langchain-core`, `langchain-openai`, `langgraph`, `pydantic`, `pydantic-core`, `langsmith` (transitive), and a handful of smaller helpers — ~20 extra packages for the same capability.
+That's **13–14 direct runtime packages** (14 with `agent-framework-foundry`).
+
+### Transitive deps that come with Agent Framework (acknowledged)
+
+Agent Framework pulls a chunk of the Azure Python surface and `pydantic`:
+
+| Transitive | Why it arrives |
+|---|---|
+| `pydantic`, `pydantic-core` | Agent Framework's `@tool` decorator uses `typing.Annotated[..., pydantic.Field(description=...)]` for parameter descriptions. Hard dep. |
+| `httpx` | Agent Framework's chat clients use `httpx` under the hood. |
+| `azure-core` | Shared Azure Python base. |
+| Deeper `openai` sub-tree | Agent Framework pins / exercises more of the `openai` SDK than our direct use alone. |
+
+Roughly **5–10 extra packages** in the install footprint on top of the direct list. We tolerate the install; plan 12's `test_imports.py` still forbids direct `import pydantic` in **our** source.
+
+### The honest trade-off
+
+The first iteration of this doc said "**12 runtime packages**, compare to ~20 for a LangChain-based path". Agent Framework pushes us from 12 direct deps + near-zero transitives to **~14 direct + 5–10 transitives**, so the overall install is closer to the LangChain footprint than the hand-rolled SDK path was. In exchange:
+
+- **Microsoft-blessed framework** inside an Azure/PBMM end-state — the procurement and support story is Microsoft-native end-to-end.
+- **HITL out of the box** — `approval_mode="always_require"` + `user_input_requests` replaces our 60-line hand roll.
+- **Future-proofing** — multi-agent orchestration, `RequestPort` workflow pauses, OpenTelemetry wiring, hosted tools (Code Interpreter, Bing, Azure AI Search, OpenAPI) all available behind the same `ChatAgent` surface. We don't light them up today, but we don't have to migrate frameworks later to get them.
+- **Successor-to-Semantic-Kernel** story holds for the audit trail: adopting Agent Framework now avoids an eventual migration **from** Semantic Kernel or an ad-hoc hand roll.
+
+What we gave up: the "zero pydantic in the install" rule, and a measurably smaller lockfile. These were defensible choices against a LangChain adoption; against the Microsoft-native framework at the end state we're explicitly aiming for, they're too strict. The trade is visible so the next person reading this doc sees exactly what moved and why.
 
 ---
 
@@ -76,17 +106,15 @@ For each pitch end-state row, how we land it without touching the core deps.
 | Log Analytics forwarding | `azure-monitor-opentelemetry` or `azure-monitor-ingestion` | Pitch §4 Audit sink. A sidecar forwarder reads the same JSONL — not even code in this repo. |
 | Postgres HITL cutover | `psycopg[binary]` | Pitch §4 HITL queue. Swap the SQLite `ApprovalQueue` class; same shape. |
 
-### Capabilities that would justify a framework (and when)
+### Triggers that would have justified a framework (retrospective)
 
-Reproduced from `azure-openai-sdk-usage.md` for completeness. These are the only triggers that would make LangChain / LangGraph worth adding back:
+We already took the trigger — these are kept to record the trade, not to drive a future decision. The ones below *would have* pushed us from a hand roll to a framework; adopting Microsoft Agent Framework from day one preempts them all. If any arrives, we extend inside Agent Framework (its own `Workflow`, hosted tools, OpenTelemetry) instead of swapping frameworks:
 
-- ≥ 3 specialist agents coordinating under a planner (multi-agent orchestration).
-- Dynamic tool composition from user input (tools built at runtime).
-- A hybrid-retrieval chain with self-correction loops that grows past ~400 lines.
-- A requirement that needs streaming per-node graph events to the UI.
-- LangSmith tracing becomes a procurement line.
-
-Until then: Azure SDK direct keeps the dep tree small, the code visible, and the pitch's protocol seams honest.
+- ≥ 3 specialist agents coordinating under a planner (multi-agent orchestration) → Agent Framework `Workflow`.
+- Dynamic tool composition from user input (tools built at runtime) → Agent Framework `@tool` factory.
+- A hybrid-retrieval chain with self-correction loops → Agent Framework hosted retrieval tools + custom `⟨I⟩ DataSource`.
+- A requirement that needs streaming per-node graph events to the UI → Agent Framework streaming + `Workflow` events.
+- Procurement line for first-party tracing → OpenTelemetry via Agent Framework.
 
 ---
 
@@ -94,12 +122,13 @@ Until then: Azure SDK direct keeps the dep tree small, the code visible, and the
 
 Baked into the test suite (plan 12):
 
-- `test_imports.py` fails if `pydantic`, `pydantic_ai`, `langchain`, or `langgraph` ever appear in `importlib.metadata.distributions()` or in our source `import` lines.
+- `test_imports.py` fails if `langchain*`, `langgraph`, or `pydantic-ai` appear in `importlib.metadata.distributions()`. It **does not** fail on `pydantic` alone — Agent Framework pulls it transitively and that is the explicit trade (plan 03).
+- `test_imports.py` also fails if any of `{pydantic, pydantic_core, pydantic_ai, langchain, langchain_core, langchain_openai, langgraph}` appear as a `from`/`import` line in **our source**. The direct-source rule is stricter than the install rule — we tolerate the transitive, we never reach past Agent Framework into pydantic directly.
 - `test_rules.py` fails if `os.environ`/`os.getenv` appears outside `app/core/config.py`.
 - `pre-commit` runs `pip-audit` so any new dep's CVEs surface on the commit that introduces them.
 - `pyproject.toml`'s `dependencies` is the single source of truth; `app/requirements.txt` is derived.
 
-Adding a dep is a code review conversation, not an accident.
+Adding a direct dep is a code review conversation, not an accident. Agent Framework version bumps may change the transitive set; `pip-audit` + the lockfile diff on the bump PR are the review surface.
 
 ---
 
@@ -111,9 +140,9 @@ CRAFT lives in a PBMM / Azure-consolidated end-state. In that environment, every
 - a line on the dependency-audit report,
 - a maintenance commitment for the lifetime of the system.
 
-Shipping with 12 runtime packages instead of 30 is not an aesthetic choice — it is the difference between a dependency-audit PR that passes in a week and one that stalls for a quarter. The architecture choices (protocol seams for `⟨I⟩ Tool`, `⟨I⟩ DataSource`, `⟨I⟩ AuthProvider`, `⟨I⟩ ChatProvider`, `⟨I⟩ AgentActionLog`) mean each Azure cutover above adds one well-scoped package, not a tree of transitive deps.
+Shipping ~14 direct + ~5–10 transitive runtime packages — anchored by **Microsoft-native** packages (`agent-framework`, `openai`, `msal`, future `azure-*` connectors) — is a dependency-audit shape that reads straight for a Microsoft/Azure procurement reviewer: every direct package is either Microsoft-owned or a well-known OSS staple (`dash`, `flask`, `pandas`, `plotly`, `requests`). The architecture choices (protocol seams for `⟨I⟩ Tool`, `⟨I⟩ DataSource`, `⟨I⟩ AuthProvider`, `⟨I⟩ ChatProvider`, `⟨I⟩ AgentActionLog`) still mean each Azure cutover adds one well-scoped package, not a tree of transitive deps.
 
-The ambition at end state is still the full pitch surface — AI Search, Entra, Log Analytics, APIM, Content Safety, Container Apps. The dependency strategy says we get there one targeted swap at a time, with a known cost per step, behind contracts that already exist.
+The ambition at end state is still the full pitch surface — AI Search, Entra, Log Analytics, APIM, Content Safety, Container Apps. The dependency strategy says we get there one targeted swap at a time, with a known cost per step, behind contracts that already exist, inside a Microsoft-native agent runtime from day one.
 
 ---
 

@@ -1,8 +1,10 @@
 # Azure OpenAI SDK — usage reference for CRAFT
 
+> **Status: superseded as the primary plan.** Microsoft Agent Framework (`pip install agent-framework`) is now the chosen agent runtime — see `plans/03-agent-azure-sdk.md`. This doc remains the **fallback reference** for the hand-rolled path on `openai.AsyncAzureOpenAI`: if Agent Framework access is blocked (preview access, licensing, air-gap) or has to be ripped out later, the sketch below is the drop-in alternate `⟨I⟩ ChatProvider` implementation. One class swap in `app/core/services.py`'s provider registry, no changes to routes / audit / data.
+
 Reference notes for building CRAFT's agent on `openai.AsyncAzureOpenAI` directly, with no LangChain / LangGraph. Explains what the SDK gives us, how far it goes, and when LangChain would be worth adding back.
 
-Not read by code. Informs plans `03-agent-azure-sdk.md`, `04-audit-hash-chained.md`, `13-hitl-skeleton.md`.
+Not read by code. Informs the **fallback path** of plan `03-agent-azure-sdk.md`, and still informs plans `04-audit-hash-chained.md`, `13-hitl-skeleton.md`.
 
 ---
 
