@@ -4,21 +4,21 @@
 
 ## 1. Containers & Context (L2)
 
-<div class="figure landscape">
+<div class="figure">
 <object type="image/svg+xml" data="diagrams/L2-container.svg"></object>
 <div class="caption">Figure 1 · Actors, external systems, routes, containers, and the audit + RBAC perimeters.</div>
 </div>
 
 ## 2. Internals (L3)
 
-<div class="figure landscape">
+<div class="figure">
 <object type="image/svg+xml" data="diagrams/L3-cluster.svg"></object>
-<div class="caption">Figure 2 · Primary agent loop, tool/connector cluster, and auth cluster.</div>
+<div class="caption">Figure 2 · Primary agent loop, tool registry, data-source registry, and auth cluster.</div>
 </div>
 
 ## 3. Use Cases (One-Sheet)
 
-<div class="figure landscape">
+<div class="figure">
 <object type="image/svg+xml" data="diagrams/UC-lanes.svg"></object>
 <div class="caption">Figure 3 · Three use-case lanes laid out left-to-right with UC IDs and swim-lane dividers.</div>
 </div>

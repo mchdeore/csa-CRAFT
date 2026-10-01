@@ -15,16 +15,11 @@
   }
 }
 
-@page landscape {
-  size: Letter landscape;
-  margin: 0.45in 0.5in 0.45in 0.5in;
-}
-
-.figure.landscape { page: landscape; }
-.figure.landscape img, .figure.landscape svg, .figure.landscape object {
+.figure object, .figure svg, .figure img {
   max-width: 100%;
+  width: 100%;
   height: auto;
-  max-height: 7.4in;
+  max-height: 9in;
 }
 
 html, body {
@@ -104,10 +99,11 @@ code, kbd, pre {
 .figure {
   page-break-inside: avoid;
   text-align: center;
-  margin: 6pt 0 4pt 0;
+  margin: 4pt 0;
 }
-.figure img, .figure svg, .figure object {
+.figure object, .figure svg, .figure img {
   max-width: 100%;
+  width: 100%;
   height: auto;
   display: block;
   margin: 0 auto;
@@ -118,6 +114,9 @@ code, kbd, pre {
   margin-top: 3pt;
   text-align: center;
 }
+
+h2 { page-break-before: auto; page-break-after: avoid; }
+h2:first-of-type { page-break-before: avoid; }
 
 .page-break { page-break-after: always; }
 
@@ -144,19 +143,19 @@ blockquote {
 </style></head><body><h1>CRAFT — Pitch Package</h1>
 <p><em>Audited retrieval-augmented AI assistant for CSA mission engineering and finance.</em></p>
 <h2>1. Containers &amp; Context (L2)</h2>
-<div class="figure landscape">
+<div class="figure">
 <object type="image/svg+xml" data="diagrams/L2-container.svg"></object>
 <div class="caption">Figure 1 · Actors, external systems, routes, containers, and the audit + RBAC perimeters.</div>
 </div>
 
 <h2>2. Internals (L3)</h2>
-<div class="figure landscape">
+<div class="figure">
 <object type="image/svg+xml" data="diagrams/L3-cluster.svg"></object>
-<div class="caption">Figure 2 · Primary agent loop, tool/connector cluster, and auth cluster.</div>
+<div class="caption">Figure 2 · Primary agent loop, tool registry, data-source registry, and auth cluster.</div>
 </div>
 
 <h2>3. Use Cases (One-Sheet)</h2>
-<div class="figure landscape">
+<div class="figure">
 <object type="image/svg+xml" data="diagrams/UC-lanes.svg"></object>
 <div class="caption">Figure 3 · Three use-case lanes laid out left-to-right with UC IDs and swim-lane dividers.</div>
 </div>

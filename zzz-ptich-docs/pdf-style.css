@@ -15,16 +15,11 @@
   }
 }
 
-@page landscape {
-  size: Letter landscape;
-  margin: 0.45in 0.5in 0.45in 0.5in;
-}
-
-.figure.landscape { page: landscape; }
-.figure.landscape img, .figure.landscape svg, .figure.landscape object {
+.figure object, .figure svg, .figure img {
   max-width: 100%;
+  width: 100%;
   height: auto;
-  max-height: 7.4in;
+  max-height: 9in;
 }
 
 html, body {
@@ -104,10 +99,11 @@ code, kbd, pre {
 .figure {
   page-break-inside: avoid;
   text-align: center;
-  margin: 6pt 0 4pt 0;
+  margin: 4pt 0;
 }
-.figure img, .figure svg, .figure object {
+.figure object, .figure svg, .figure img {
   max-width: 100%;
+  width: 100%;
   height: auto;
   display: block;
   margin: 0 auto;
@@ -118,6 +114,9 @@ code, kbd, pre {
   margin-top: 3pt;
   text-align: center;
 }
+
+h2 { page-break-before: auto; page-break-after: avoid; }
+h2:first-of-type { page-break-before: avoid; }
 
 .page-break { page-break-after: always; }
 
