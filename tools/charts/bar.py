@@ -108,7 +108,23 @@ def _build_bar_figure(
     y_label: str,
     horizontal: bool,
 ) -> dict[str, Any]:
-    import plotly.graph_objects as go
+    """Build a Plotly bar chart figure dict.
+
+    Returns the figure as a dict via to_dict() for JSON serialization.
+    Uses CHART_COLORS for series colors, cycling as needed.
+
+    >>> fig = _build_bar_figure("Sales", ["Q1", "Q2"], [{"name": "Revenue", "values": [100, 200]}], "", "", False)
+    >>> isinstance(fig, dict)
+    True
+    >>> "data" in fig
+    True
+    >>> len(fig["data"])
+    1
+    >>> fig["data"][0]["name"]
+    'Revenue'
+    >>> fig["layout"]["title"]["text"]
+    'Sales'
+    """
 
     fig = go.Figure()
 

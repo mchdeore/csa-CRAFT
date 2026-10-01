@@ -24,7 +24,20 @@ def validate_categories_and_series(
     series: list[dict],
     chart_type: str,
 ) -> str | None:
-    if not categories:
+    """Validate that categories and series are compatible for charting.
+
+    Returns None if valid, or an error message string if invalid.
+    Checks: non-empty categories, each series has name+values,
+    series values match category count.
+
+    >>> validate_categories_and_series([], [], "bar")
+    'No categories provided for bar chart.'
+
+    >>> validate_categories_and_series(["A", "B"], [{"name": "X", "values": [1]}], "bar")
+    "Series 'X' has 1 values but there are 2 categories."
+
+    >>> validate_categories_and_series(["A"], [{"name": "Y", "values": [5]}], "pie")
+    """
         return f"No categories provided for {chart_type} chart."
     for ser in series:
         if "name" not in ser or "values" not in ser:
@@ -38,7 +51,16 @@ def validate_categories_and_series(
 
 
 def error_msg(tool_call_id: str, message: str) -> dict[str, Any]:
-    return {
+    """Build a tool error response dict.
+
+    >>> result = error_msg("call_123", "something went wrong")
+    >>> result["role"]
+    'tool_result'
+    >>> import json
+    >>> content = json.loads(result["content"]["result"])
+    >>> content["error"]
+    'something went wrong'
+    """
         "role": "tool_result",
         "content": {
             "tool_call_id": tool_call_id,
@@ -48,7 +70,20 @@ def error_msg(tool_call_id: str, message: str) -> dict[str, Any]:
 
 
 def success_msg(tool_call_id: str, title: str, count: int) -> dict[str, Any]:
-    return {
+    """Build a tool success response dict.
+
+    >>> result = success_msg("call_456", "My Chart", 10)
+    >>> result["role"]
+    'tool_result'
+    >>> import json
+    >>> content = json.loads(result["content"]["result"])
+    >>> content["status"]
+    'ok'
+    >>> content["title"]
+    'My Chart'
+    >>> content["items"]
+    10
+    """
         "role": "tool_result",
         "content": {
             "tool_call_id": tool_call_id,
@@ -58,7 +93,17 @@ def success_msg(tool_call_id: str, title: str, count: int) -> dict[str, Any]:
 
 
 def rich_chart(title: str, figure: dict[str, Any]) -> dict[str, Any]:
-    return {
+    """Build a rich content chart response dict for Dash rendering.
+
+    >>> fig = {"data": [], "layout": {"title": "Test"}}
+    >>> result = rich_chart("My Chart", fig)
+    >>> result["role"]
+    'rich_content'
+    >>> result["content"]["type"]
+    'chart'
+    >>> result["content"]["title"]
+    'My Chart'
+    """
         "role": "rich_content",
         "content": {
             "type": "chart",
