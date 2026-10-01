@@ -28,20 +28,18 @@ Proposed audited retrieval-augmented AI assistant for CSA mission engineering an
                     │LLM & AI││Internal││External ││Ops & Audit │
                     │AzureOA ││ Data   ││  Data   ││LogAnalyt   │
                     │AgentFW ││⟨I⟩WS   ││ShPt     ││AppSvc PBMM │
-                    │Foundry ││SQLite  ││SAP      ││LaunchP     │
+                    │Foundry ││Managed ││SAP      ││LaunchP     │
                     │ContSfty││scratch ││STK      ││ContApp     │
                     │        ││        ││AI Srch  ││Entra       │
                     │        ││⟨I⟩DS   ││⟨I⟩DS    ││APIM        │
                     │        ││        ││         ││            │
                     └────────┘└────────┘└─────────┘└────────────┘
 ```
-In: `/chat/send [base]` `/admin/* [admin]`. Out: thin italic. **Internal data** lives in the CRAFT process + SQLite; **external data** reaches CRAFT through `⟨I⟩ DataSource` adapters (MSAL/OAuth).
+In: `/chat/send [base]` `/admin/* [admin]`. Out: thin italic. **Internal data** lives in the CRAFT process and the managed DB; **external data** reaches CRAFT through `⟨I⟩ DataSource` adapters (MSAL/OAuth).
 
 ## 2b. L2 Container
 
-Two caller shapes reach the same route surface. The primary agent calls routes from inside the process; external services (cron jobs, pipelines, upstream workflows) call the same routes with user-scoped tokens. One RBAC gate, one audit envelope, both paths.
-
-**Storage** holds CRAFT's own operational state (user workspaces, per-user data, HITL approvals). **Data Sources** are where mission and business data lives (corpus files, SharePoint, SAP, AI Search). Both are hidden behind `⟨I⟩` protocols so callers never bind to a specific backend.
+The architecture reduces to three horizontal bands: **a route-gated RBAC layer**, **the surfaces it dispatches to** (tools, storage, data sources), and **an audit envelope** that wraps every call. Two caller shapes — the primary agent and any external token-bearing client — converge on the same gate; any exposed endpoint can be hit from anywhere, with anything, and returns a structured response. The design is agnostic to what we run it on, where it's called from, and how it's called — a terminal, a cron, a pipeline, a webhook target, or the agent itself all look the same to the gate.
 
 ```text
 ┌──────────────────────────┐          ┌─────────────────────────────┐
@@ -89,7 +87,18 @@ Two caller shapes reach the same route surface. The primary agent calls routes f
 └──────────────┘
 ```
 
-**How to read it.** Both callers hit the top layer; the gate stamps `trace_id` + `role` on the request and the audit record. Routes dispatch to the four domain surfaces beneath. **Storage** is CRAFT's own state — three tables / stores accessed through `⟨I⟩ WorkspaceStore` and `⟨I⟩ ApprovalQueue`. **Data Sources** are where business data lives — one `⟨I⟩ DataSource` contract covers both internal (the mission corpus on disk via `LocalFileSource`) and external (SharePoint, SAP, STK/MATLAB, Azure AI Search). Every call lands in the audit sink before returning.
+**Storage vs Data Sources.** They are different concerns.
+
+- **Storage** holds CRAFT's *own* operational state. Two protocols, three surfaces:
+  - `⟨I⟩ WorkspaceStore` — workspace sessions, scratch, and per-user operational data (RBAC-scoped via `QueryTool.set_user`). Backed by the managed DB.
+  - `⟨I⟩ ApprovalQueue` — the HITL approval queue. Backed by Postgres (durable across restarts, multi-reader for the agent-resume path and the reviewer UI).
+- **Data Sources** are where business data *lives* — read-mostly, often outside CRAFT's trust boundary. One `⟨I⟩ DataSource` contract covers both:
+  - **INTERNAL**: `LocalFileSource` reads the mission corpus on disk.
+  - **EXTERNAL**: SharePoint, SAP, STK/MATLAB, Azure AI Search — each a `⟨I⟩ DataSource` class with MSAL / OAuth at the perimeter.
+
+They're kept separate because they have different lifecycles and trust models: Storage is private state CRAFT owns end-to-end; Data Sources are read-mostly, cross the perimeter, and need per-request RBAC scoping.
+
+**Tools are not just an LLM-callable surface.** The same `/tools/execute/<name>` routes accept direct calls from external processes, and tools can carry a webhook callback — so a long-running simulation (STK / MATLAB on separate hardware, for example) can post its result back and resume the chat without blocking the agent.
 
 ## 2c. L3 Internals
 
@@ -126,7 +135,7 @@ The registries behind the route surface shown in 2b. Each `⟨I⟩` protocol has
 Tool Registry  ⟨I⟩ Tool
 ├─ documents       (search · reader · excel)
 ├─ charts          (bar · pie · scatter · line · heatmap · histogram · boxplot)
-├─ query_data      (per-user RBAC-scoped SQL over SqliteDataStore)
+├─ query_data      (per-user RBAC-scoped SQL over the managed DB)
 ├─ classifier      (UC-E2 risk severity)
 ├─ hist_mission    (UC-F1 historical cost retrieval)
 ├─ cost_agg        (UC-F1 weighted-distance aggregation)
@@ -135,8 +144,7 @@ Tool Registry  ⟨I⟩ Tool
 
 Data-Source Registry  ⟨I⟩ DataSource    (kind → class, via data_sources.json)
 ├─ INTERNAL  (in-process · connector-backed)
-│  ├─ LocalFileSource     (filesystem under CONNECTORS_ROOT · reads mission corpus)
-│  └─ SqliteDataStore     (per-user data · RBAC-scoped)
+│  └─ LocalFileSource     (filesystem under CONNECTORS_ROOT · reads mission corpus)
 └─ EXTERNAL  (perimeter · MSAL / OAuth · one JSON row per source)
    ├─ SharePoint          (Graph API · corpus mirror)
    ├─ SAP                 (OData / REST · line items)
@@ -149,15 +157,18 @@ Data-Source Registry  ⟨I⟩ DataSource    (kind → class, via data_sources.js
 ```text
 Public inbound [/route][role]
   → FlaskRoute → ◇ before_request (hex, blue)
-     auth · role · workspace · trace_id
+     auth · role · workspace · trace_id · flags
   → handler
   → after_request (audit, green)
   → response
 
 permissions.json : /chat/send → base   /uploads → power   /admin/* → admin
 RBAC             : base(1) < power(2) < admin(3)
+flags            : experimental features gated per user (opt-in cohort)
 ⟨test⟩ arch invariants (audit-green)
 ```
+
+**Experimental features and contributor on-ramp.** Role flags gate experimental features so a cohort of users can trial them before general rollout — a straightforward way to run new tools and workflows against a small group (e.g., interested students on Mireille's team) and collect feedback. The same gating lets contributors from non-software-oriented teams land useful work safely: they build **Claude skills, workflows, and rules** (not low-level app code), their contributions target **feature branches only** — main is protected — and their output is exercised behind a flag until it's ready to graduate.
 
 ## 2d. UC State Models
 
@@ -201,7 +212,7 @@ New mission flows (budget scenarios, anomaly triage, cross-mission compare) land
 | Identity | **Entra ID + MSAL** behind `⟨I⟩ AuthProvider` | Same token flow for humans and external agents; CSA-standard. |
 | Audit sink | **`HashChainedJsonlLog` → Azure Log Analytics** (immutable retention) | Append-only JSONL with SHA-256 chain for tamper detection; KQL at query time; same envelope end-to-end. UMR-027 / ASG-003. |
 | HITL queue + memory | **Postgres** (approval queue + 3-tier memory) behind `⟨I⟩ ApprovalQueue` via `psycopg[binary]` | Durable across restarts; UMR-025 TTL, UMR-014 memory. Dash reviewer UI consumes the queue. |
-| Session + per-user data | **Managed DB** behind `⟨I⟩ WorkspaceStore` (`SqliteStore` + `SessionScratchStore` shapes) | Swap target already named behind the protocol; per-user scope via `QueryTool.set_user`. |
+| Session + per-user data | **Managed DB** behind `⟨I⟩ WorkspaceStore` (workspace + scratch surfaces) | Per-user scope via `QueryTool.set_user`; one durable backing store for all operational state. |
 | Edge | **APIM + App Gateway** (WAF, rate limit) | WAF + rate limit at perimeter; UMR-030. |
 | Deployment | **App Service PBMM** + **SSC LaunchPad** HA | HA + landing zone come with LaunchPad; UMR-057. |
 | Protocol contracts | `⟨I⟩ Tool`, `⟨I⟩ DataSource`, `⟨I⟩ ChatProvider`, `⟨I⟩ WorkspaceStore`, `⟨I⟩ AgentActionLog`, `⟨I⟩ ApprovalQueue`, `⟨I⟩ AuthProvider` | New capability or backend = one class satisfying a protocol; agent unchanged. Pyright-strict verified. |
@@ -214,7 +225,7 @@ New mission flows (budget scenarios, anomaly triage, cross-mission compare) land
 | Cited retrieval (UMR-002/005/006, ARR-002/003) | `DocumentSearchTool` + `TextAnalysisTool` call `AzureAISearchSource` through `⟨I⟩ DataSource`; retrieval response schema carries document / page / section provenance; agent surfaces citations to the user. |
 | Grounding + confidence (UMR-007/008/010) | Grounding node sits between retrieve and respond; Foundry evaluation + RAGAS-style scoring emit confidence into `AGENT_ACTION`; threshold check escalates below 0.6. |
 | HITL approvals (UMR-021–026, HITL-001–007) | Agent Framework `@tool(approval_mode="always_require")` on risky tools → `user_input_requests` → `ApprovalQueue` (Postgres) → `/admin/approvals/<trace_id>/<decision>` resume route, same auth as routes; decisions logged immutably with reasoning chain, confidence, sources; Dash reviewer UI. |
-| RBAC + data scope (UMR-012/017/058, AAR-002/007) | Route-gated declarative `permissions.json` (role levels + public prefixes + internal prefixes + route rules); Entra ID issues tokens; `SqliteDataStore` scoped by `QueryTool.set_user`; classification tags enforced at the data store. |
+| RBAC + data scope (UMR-012/017/058, AAR-002/007) | Route-gated declarative `permissions.json` (role levels + public prefixes + internal prefixes + route rules); Entra ID issues tokens; the managed DB (behind `⟨I⟩ WorkspaceStore`) is scoped by `QueryTool.set_user`; classification tags enforced at the data store. |
 | Immutable audit (UMR-015/027/045, ASG-003) | `HashChainedJsonlLog` writes append-only JSONL with SHA-256 hash chain, daily rotation, covering every tool call and LLM turn; forwarded to Azure Log Analytics for KQL and immutable retention. |
 | Guardrails + sandbox (UMR-020/029/030/093, ASG-001/004/011) | Azure Content Safety on the deployment (`content_filter_results` read inline); `GUARDRAIL_HOOK` in the tool wrapper applies thresholds; `CodeExecTool` runs in Azure Container Apps; APIM rate limit at perimeter. |
 | External data (UMR-051–054) | SharePoint, SAP, STK, MATLAB each a `⟨I⟩ DataSource` class with MSAL / OAuth; one JSON row in `data_sources.json`; `AzureAISearchSource` sits behind the same contract for retrieval. |
@@ -231,8 +242,8 @@ New mission flows (budget scenarios, anomaly triage, cross-mission compare) land
 | Retrieval + RAG | UMR-002/003/004/005/006/009/010/060/067, ARR-002–007 | Azure AI Search hybrid · `⟨I⟩ DataSource` registry (declarative JSON) · citation + grounding schema |
 | Audit + traceability | UMR-015/027/045/061/062/093, AAR-005, ASG-003 | `AgentAction` envelope · `⟨I⟩ AgentActionLog` · hash-chained JSONL → Azure Log Analytics |
 | HITL approvals | UMR-021–026/035/039/044/049, HITL-001–007, ASG-002 | Agent Framework `@tool(approval_mode)` · `⟨I⟩ ApprovalQueue` (Postgres) · Dash reviewer UI |
-| RBAC + data scope | UMR-012/017/058/065/066, AAR-002/007 | Declarative `permissions.json` (role levels + rules + prefixes) · Entra ID · `SqliteDataStore` · `QueryTool.set_user` |
-| Session + workspace | UMR-014/092/095 | `⟨I⟩ WorkspaceStore` → `SqliteStore` + `SessionScratchStore` · per-session agent factory |
+| RBAC + data scope | UMR-012/017/058/065/066, AAR-002/007 | Declarative `permissions.json` (role levels + rules + prefixes) · Entra ID · managed DB behind `⟨I⟩ WorkspaceStore` · `QueryTool.set_user` |
+| Session + workspace | UMR-014/092/095 | `⟨I⟩ WorkspaceStore` → managed DB (workspace + scratch surfaces) · per-session agent factory |
 | Guardrails + containment | UMR-020/029/030, ASG-001/004/011 | `GUARDRAIL_HOOK` + Azure Content Safety · APIM rate limit · Azure Container Apps sandbox |
 | Connectors + external | UMR-051–055 | `⟨I⟩ DataSource` kind registry (JSON-driven) + MSAL · Flask REST · SAP / STK / MATLAB classes |
 | Domain capabilities | UMR-007/008/031–050/075, ARR-001 | New `⟨I⟩ Tool` classes over existing registries (`ClassifierTool`, `HistoricalMissionTool`, `CostAggregatorTool`, `VendorAggregatorTool`, `CodeExecTool`) |

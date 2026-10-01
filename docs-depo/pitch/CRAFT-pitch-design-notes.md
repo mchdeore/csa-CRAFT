@@ -12,7 +12,7 @@ Nothing here is read by code. Not onboarding.
 
 **Isn't.** A progress report. We don't say "today we use X, tomorrow we'll use Y." The team already understands that where the end-state tech isn't in place yet, we build temporary alternatives. Pitching the alternatives dilutes the proposal.
 
-**Consequence.** Anywhere the pitch names a backend (Postgres, Azure AI Search, Azure Log Analytics, Microsoft Agent Framework), that is the committed end-state choice. SQLite, hash-chained-JSONL-on-disk, LocalFileSource, in-memory auth — those get built as temporary alternatives when the real thing isn't accessible yet, but they don't belong in the pitch.
+**Consequence.** Anywhere the pitch names a backend (Postgres, Managed DB behind `⟨I⟩ WorkspaceStore`, Azure AI Search, Azure Log Analytics, Microsoft Agent Framework), that is the committed end-state choice. Temporary alternatives — the local backing stores we build when the real thing isn't accessible yet — are team-known and don't belong in the pitch.
 
 ---
 
@@ -197,7 +197,7 @@ Regenerate PDF:
 
 ## 7. What's deliberately NOT in the pitch
 
-- **Temporary alternatives** (SQLite, LocalFileSource read of CSV fixtures, in-memory auth, hand-rolled ReAct loop). Team-understood, not pitch content.
+- **Temporary alternatives** (whatever local backing stores we build before the end-state tech is accessible — including CSV fixtures, in-memory auth, and any hand-rolled runtime that stands in for the framework). Team-understood, not pitch content.
 - **"Today vs end-state" split.** The pitch describes the target.
 - **Framework alternatives** (LangChain / LangGraph, Semantic Kernel). We chose Agent Framework; no alternatives discussion.
 - **Onboarding.** No "how to install", "how to run", setup guide. Keep that out of a proposal.
@@ -213,7 +213,7 @@ Point the agent at `docs-depo/pitch/CRAFT-pitch.md` and `docs-depo/pitch/CRAFT-p
 - *"Why Microsoft Agent Framework over LangGraph?"* → §4 above.
 - *"What's the role of the hash-chained audit log?"* → §3 ("Why hash-chained…") above.
 - *"What does deterministic access mean in 2b?"* → §3 above.
-- *"Why do we not mention SQLite anywhere?"* → §1 above.
+- *"Why doesn't the pitch name any temporary backing stores?"* → §1 above.
 - *"What are the six protocols?"* → §3 above.
 - *"Who owns each dependency in §7 of the pitch?"* → it's a column in the pitch table itself.
 

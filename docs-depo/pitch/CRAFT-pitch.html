@@ -116,17 +116,16 @@
                     │LLM &amp; AI││Internal││External ││Ops &amp; Audit │
                     │AzureOA ││ Data   ││  Data   ││LogAnalyt   │
                     │AgentFW ││⟨I⟩WS   ││ShPt     ││AppSvc PBMM │
-                    │Foundry ││SQLite  ││SAP      ││LaunchP     │
+                    │Foundry ││Managed ││SAP      ││LaunchP     │
                     │ContSfty││scratch ││STK      ││ContApp     │
                     │        ││        ││AI Srch  ││Entra       │
                     │        ││⟨I⟩DS   ││⟨I⟩DS    ││APIM        │
                     │        ││        ││         ││            │
                     └────────┘└────────┘└─────────┘└────────────┘
 </code></pre>
-<p>In: <code>/chat/send [base]</code> <code>/admin/* [admin]</code>. Out: thin italic. <strong>Internal data</strong> lives in the CRAFT process + SQLite; <strong>external data</strong> reaches CRAFT through <code>⟨I⟩ DataSource</code> adapters (MSAL/OAuth).</p>
+<p>In: <code>/chat/send [base]</code> <code>/admin/* [admin]</code>. Out: thin italic. <strong>Internal data</strong> lives in the CRAFT process and the managed DB; <strong>external data</strong> reaches CRAFT through <code>⟨I⟩ DataSource</code> adapters (MSAL/OAuth).</p>
 <h2>2b. L2 Container</h2>
-<p>Two caller shapes reach the same route surface. The primary agent calls routes from inside the process; external services (cron jobs, pipelines, upstream workflows) call the same routes with user-scoped tokens. One RBAC gate, one audit envelope, both paths.</p>
-<p><strong>Storage</strong> holds CRAFT's own operational state (user workspaces, per-user data, HITL approvals). <strong>Data Sources</strong> are where mission and business data lives (corpus files, SharePoint, SAP, AI Search). Both are hidden behind <code>⟨I⟩</code> protocols so callers never bind to a specific backend.</p>
+<p>The architecture reduces to three horizontal bands: <strong>a route-gated RBAC layer</strong>, <strong>the surfaces it dispatches to</strong> (tools, storage, data sources), and <strong>an audit envelope</strong> that wraps every call. Two caller shapes — the primary agent and any external token-bearing client — converge on the same gate; any exposed endpoint can be hit from anywhere, with anything, and returns a structured response. The design is agnostic to what we run it on, where it's called from, and how it's called — a terminal, a cron, a pipeline, a webhook target, or the agent itself all look the same to the gate.</p>
 <pre><code class="language-text">┌──────────────────────────┐          ┌─────────────────────────────┐
 │  Internal caller         │          │  External caller            │
 │   Primary Agent          │          │   Service · Cron · Pipeline │
@@ -171,7 +170,17 @@
 │(audit-green) │
 └──────────────┘
 </code></pre>
-<p><strong>How to read it.</strong> Both callers hit the top layer; the gate stamps <code>trace_id</code> + <code>role</code> on the request and the audit record. Routes dispatch to the four domain surfaces beneath. <strong>Storage</strong> is CRAFT's own state — three tables / stores accessed through <code>⟨I⟩ WorkspaceStore</code> and <code>⟨I⟩ ApprovalQueue</code>. <strong>Data Sources</strong> are where business data lives — one <code>⟨I⟩ DataSource</code> contract covers both internal (the mission corpus on disk via <code>LocalFileSource</code>) and external (SharePoint, SAP, STK/MATLAB, Azure AI Search). Every call lands in the audit sink before returning.</p>
+<p><strong>Storage vs Data Sources.</strong> They are different concerns.</p>
+<ul>
+<li><strong>Storage</strong> holds CRAFT's <em>own</em> operational state. Two protocols, three surfaces:</li>
+<li><code>⟨I⟩ WorkspaceStore</code> — workspace sessions, scratch, and per-user operational data (RBAC-scoped via <code>QueryTool.set_user</code>). Backed by the managed DB.</li>
+<li><code>⟨I⟩ ApprovalQueue</code> — the HITL approval queue. Backed by Postgres (durable across restarts, multi-reader for the agent-resume path and the reviewer UI).</li>
+<li><strong>Data Sources</strong> are where business data <em>lives</em> — read-mostly, often outside CRAFT's trust boundary. One <code>⟨I⟩ DataSource</code> contract covers both:</li>
+<li><strong>INTERNAL</strong>: <code>LocalFileSource</code> reads the mission corpus on disk.</li>
+<li><strong>EXTERNAL</strong>: SharePoint, SAP, STK/MATLAB, Azure AI Search — each a <code>⟨I⟩ DataSource</code> class with MSAL / OAuth at the perimeter.</li>
+</ul>
+<p>They're kept separate because they have different lifecycles and trust models: Storage is private state CRAFT owns end-to-end; Data Sources are read-mostly, cross the perimeter, and need per-request RBAC scoping.</p>
+<p><strong>Tools are not just an LLM-callable surface.</strong> The same <code>/tools/execute/&lt;name&gt;</code> routes accept direct calls from external processes, and tools can carry a webhook callback — so a long-running simulation (STK / MATLAB on separate hardware, for example) can post its result back and resume the chat without blocking the agent.</p>
 <h2>2c. L3 Internals</h2>
 <h3>Panel A · Agent</h3>
 <pre><code class="language-text">ChatAgent (Agent Framework)
@@ -200,7 +209,7 @@
 <pre><code class="language-text">Tool Registry  ⟨I⟩ Tool
 ├─ documents       (search · reader · excel)
 ├─ charts          (bar · pie · scatter · line · heatmap · histogram · boxplot)
-├─ query_data      (per-user RBAC-scoped SQL over SqliteDataStore)
+├─ query_data      (per-user RBAC-scoped SQL over the managed DB)
 ├─ classifier      (UC-E2 risk severity)
 ├─ hist_mission    (UC-F1 historical cost retrieval)
 ├─ cost_agg        (UC-F1 weighted-distance aggregation)
@@ -209,8 +218,7 @@
 
 Data-Source Registry  ⟨I⟩ DataSource    (kind → class, via data_sources.json)
 ├─ INTERNAL  (in-process · connector-backed)
-│  ├─ LocalFileSource     (filesystem under CONNECTORS_ROOT · reads mission corpus)
-│  └─ SqliteDataStore     (per-user data · RBAC-scoped)
+│  └─ LocalFileSource     (filesystem under CONNECTORS_ROOT · reads mission corpus)
 └─ EXTERNAL  (perimeter · MSAL / OAuth · one JSON row per source)
    ├─ SharePoint          (Graph API · corpus mirror)
    ├─ SAP                 (OData / REST · line items)
@@ -220,15 +228,17 @@ Data-Source Registry  ⟨I⟩ DataSource    (kind → class, via data_sources.js
 <h3>Panel C · Auth</h3>
 <pre><code class="language-text">Public inbound [/route][role]
   → FlaskRoute → ◇ before_request (hex, blue)
-     auth · role · workspace · trace_id
+     auth · role · workspace · trace_id · flags
   → handler
   → after_request (audit, green)
   → response
 
 permissions.json : /chat/send → base   /uploads → power   /admin/* → admin
 RBAC             : base(1) &lt; power(2) &lt; admin(3)
+flags            : experimental features gated per user (opt-in cohort)
 ⟨test⟩ arch invariants (audit-green)
 </code></pre>
+<p><strong>Experimental features and contributor on-ramp.</strong> Role flags gate experimental features so a cohort of users can trial them before general rollout — a straightforward way to run new tools and workflows against a small group (e.g., interested students on Mireille's team) and collect feedback. The same gating lets contributors from non-software-oriented teams land useful work safely: they build <strong>Claude skills, workflows, and rules</strong> (not low-level app code), their contributions target <strong>feature branches only</strong> — main is protected — and their output is exercised behind a flag until it's ready to graduate.</p>
 <h2>2d. UC State Models</h2>
 <pre><code class="language-text">UC-E2 · Risk ID + HITL (Engineering)
   Req → ◇ Auth → Retrieval [002-006] → Classifier [036-040] → ◇ HITL [HITL-001]
@@ -302,8 +312,8 @@ UC-F4 · Vendor Cost (SAP)
 </tr>
 <tr>
 <td>Session + per-user data</td>
-<td><strong>Managed DB</strong> behind <code>⟨I⟩ WorkspaceStore</code> (<code>SqliteStore</code> + <code>SessionScratchStore</code> shapes)</td>
-<td>Swap target already named behind the protocol; per-user scope via <code>QueryTool.set_user</code>.</td>
+<td><strong>Managed DB</strong> behind <code>⟨I⟩ WorkspaceStore</code> (workspace + scratch surfaces)</td>
+<td>Per-user scope via <code>QueryTool.set_user</code>; one durable backing store for all operational state.</td>
 </tr>
 <tr>
 <td>Edge</td>
@@ -350,7 +360,7 @@ UC-F4 · Vendor Cost (SAP)
 </tr>
 <tr>
 <td>RBAC + data scope (UMR-012/017/058, AAR-002/007)</td>
-<td>Route-gated declarative <code>permissions.json</code> (role levels + public prefixes + internal prefixes + route rules); Entra ID issues tokens; <code>SqliteDataStore</code> scoped by <code>QueryTool.set_user</code>; classification tags enforced at the data store.</td>
+<td>Route-gated declarative <code>permissions.json</code> (role levels + public prefixes + internal prefixes + route rules); Entra ID issues tokens; the managed DB (behind <code>⟨I⟩ WorkspaceStore</code>) is scoped by <code>QueryTool.set_user</code>; classification tags enforced at the data store.</td>
 </tr>
 <tr>
 <td>Immutable audit (UMR-015/027/045, ASG-003)</td>
@@ -415,12 +425,12 @@ UC-F4 · Vendor Cost (SAP)
 <tr>
 <td>RBAC + data scope</td>
 <td>UMR-012/017/058/065/066, AAR-002/007</td>
-<td>Declarative <code>permissions.json</code> (role levels + rules + prefixes) · Entra ID · <code>SqliteDataStore</code> · <code>QueryTool.set_user</code></td>
+<td>Declarative <code>permissions.json</code> (role levels + rules + prefixes) · Entra ID · managed DB behind <code>⟨I⟩ WorkspaceStore</code> · <code>QueryTool.set_user</code></td>
 </tr>
 <tr>
 <td>Session + workspace</td>
 <td>UMR-014/092/095</td>
-<td><code>⟨I⟩ WorkspaceStore</code> → <code>SqliteStore</code> + <code>SessionScratchStore</code> · per-session agent factory</td>
+<td><code>⟨I⟩ WorkspaceStore</code> → managed DB (workspace + scratch surfaces) · per-session agent factory</td>
 </tr>
 <tr>
 <td>Guardrails + containment</td>
