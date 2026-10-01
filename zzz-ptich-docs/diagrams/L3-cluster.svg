@@ -27,59 +27,60 @@
 
   <!-- =============== CLUSTER A : AGENT (with HITL branch off tool_node) =============== -->
   <g transform="translate(20,50)">
-    <rect x="0" y="0" width="720" height="260" class="boundary"/>
+    <rect x="0" y="0" width="720" height="290" class="boundary"/>
     <text x="360" y="20" class="head">A · PRIMARY AGENT   (LANGGRAPH REACT)</text>
 
     <!-- Row 1: chatbot -> should_continue -> tool_node -> audit -> END -->
-    <rect x="30"  y="48" width="110" height="56" class="box"/>
-    <text x="85"  y="70" class="lbl-c">chatbot</text>
-    <text x="85"  y="86" class="lbl-i-c">LLM inference</text>
+    <rect x="40"  y="44" width="110" height="52" class="box"/>
+    <text x="95"  y="66" class="lbl-c">chatbot</text>
+    <text x="95"  y="82" class="lbl-i-c">LLM inference</text>
 
-    <polygon points="170,76 195,52 320,52 345,76 320,100 195,100" class="gate"/>
-    <text x="257" y="72" class="lbl-c">should_continue?</text>
-    <text x="257" y="88" class="lbl-i-c">loop · limit=25</text>
+    <polygon points="180,70 205,46 318,46 343,70 318,94 205,94" class="gate"/>
+    <text x="261" y="66" class="lbl-c">should_continue?</text>
+    <text x="261" y="82" class="lbl-i-c">loop · limit=25</text>
 
-    <rect x="370" y="48" width="130" height="56" class="box"/>
-    <text x="435" y="70" class="lbl-c">tool_node</text>
-    <text x="435" y="86" class="lbl-i-c">dispatch · ⟨I⟩ Tool</text>
+    <rect x="370" y="44" width="130" height="52" class="box"/>
+    <text x="435" y="66" class="lbl-c">tool_node</text>
+    <text x="435" y="82" class="lbl-i-c">dispatch · ⟨I⟩ Tool</text>
 
-    <rect x="530" y="48" width="120" height="56" class="box"/>
-    <text x="590" y="70" class="lbl-c">audit emit</text>
-    <text x="590" y="86" class="lbl-i-c">AgentAction</text>
+    <rect x="520" y="44" width="110" height="52" class="box"/>
+    <text x="575" y="66" class="lbl-c">audit emit</text>
+    <text x="575" y="82" class="lbl-i-c">AgentAction</text>
 
-    <circle cx="690" cy="76" r="14" class="terminal"/>
-    <text x="690" y="80" class="lbl-c" fill="#fff">END</text>
+    <circle cx="670" cy="70" r="14" class="terminal"/>
+    <text x="670" y="74" class="lbl-c" fill="#fff">END</text>
 
-    <line x1="140" y1="76" x2="168" y2="76" class="edge" marker-end="url(#arrL3)"/>
-    <line x1="347" y1="76" x2="368" y2="76" class="edge" marker-end="url(#arrL3)"/>
-    <line x1="500" y1="76" x2="528" y2="76" class="edge-aud" marker-end="url(#arrL3)"/>
-    <line x1="650" y1="76" x2="675" y2="76" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="150" y1="70" x2="178" y2="70" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="343" y1="70" x2="368" y2="70" class="edge" marker-end="url(#arrL3)"/>
+    <line x1="500" y1="70" x2="518" y2="70" class="edge-aud" marker-end="url(#arrL3)"/>
+    <line x1="630" y1="70" x2="655" y2="70" class="edge" marker-end="url(#arrL3)"/>
 
     <!-- loop back -->
-    <path d="M 435 104 L 435 130 L 85 130 L 85 104" class="edge" marker-end="url(#arrL3)"/>
-    <text x="257" y="126" class="lbl-i-c">tool_call → chatbot (loop)</text>
+    <path d="M 435 96 L 435 118 L 95 118 L 95 96" class="edge" marker-end="url(#arrL3)"/>
+    <text x="265" y="114" class="lbl-i-c">tool_call → chatbot (loop)</text>
 
     <!-- HITL branch off tool_node trace (downward) -->
-    <polygon points="370,160 400,140 490,140 520,160 490,180 400,180" class="gate"/>
-    <text x="445" y="158" class="lbl-c">HITL gate</text>
-    <text x="445" y="172" class="lbl-i-c">high-risk intercept</text>
-    <path d="M 435 104 L 435 140" class="edge" marker-end="url(#arrL3)"/>
-    <text x="455" y="124" class="lbl-i">risk?</text>
+    <polygon points="370,154 400,138 490,138 520,154 490,170 400,170" class="gate"/>
+    <text x="445" y="152" class="lbl-c">HITL gate</text>
+    <text x="445" y="164" class="lbl-i-c">high-risk intercept</text>
+    <path d="M 435 96 L 435 138" class="edge" marker-end="url(#arrL3)"/>
+    <text x="440" y="130" class="lbl-i">risk?</text>
 
-    <rect x="560" y="138" width="140" height="44" class="box"/>
-    <text x="630" y="156" class="lbl-c">reviewer queue</text>
-    <text x="630" y="170" class="lbl-i-c">approve · reject</text>
-    <line x1="520" y1="160" x2="558" y2="160" class="edge" marker-end="url(#arrL3)"/>
+    <rect x="540" y="134" width="140" height="40" class="box"/>
+    <text x="610" y="150" class="lbl-c">reviewer queue</text>
+    <text x="610" y="164" class="lbl-i-c">approve · reject</text>
+    <line x1="520" y1="154" x2="538" y2="154" class="edge" marker-end="url(#arrL3)"/>
 
-    <!-- description -->
-    <text x="30" y="208" class="head" text-anchor="start">HOW ROUTES + GATES COOPERATE</text>
-    <text x="30" y="226" class="lbl">1. route gates (before_request) decide WHO may enter — role check · 403 on fail</text>
-    <text x="30" y="240" class="lbl">2. HITL gate (interrupt) decides WHAT may complete — pauses high-risk tool_calls</text>
-    <text x="30" y="254" class="lbl">3. audit emit (after_request + per-step) records every transition in AgentAction</text>
+    <!-- description — in its own sub-box, well inside the boundary -->
+    <rect x="20" y="196" width="680" height="80" class="box"/>
+    <text x="360" y="214" class="head">HOW ROUTES + GATES COOPERATE</text>
+    <text x="34" y="234" class="lbl">1. route gate (before_request) decides WHO may enter — role check · 403 on fail</text>
+    <text x="34" y="250" class="lbl">2. HITL gate (interrupt) decides WHAT may complete — pauses high-risk tool_calls</text>
+    <text x="34" y="266" class="lbl">3. audit emit (after_request + per-step) records every transition in AgentAction</text>
   </g>
 
   <!-- =============== CLUSTER B : TOOL REGISTRY (independent) =============== -->
-  <g transform="translate(20,340)">
+  <g transform="translate(20,370)">
     <rect x="0" y="0" width="350" height="220" class="boundary"/>
     <text x="175" y="20" class="head">B · TOOL REGISTRY   ⟨I⟩ Tool</text>
     <text x="14" y="46" class="lbl">example tools:</text>
@@ -97,7 +98,7 @@
   </g>
 
   <!-- =============== CLUSTER C : DATASOURCE REGISTRY (independent) =============== -->
-  <g transform="translate(390,340)">
+  <g transform="translate(390,370)">
     <rect x="0" y="0" width="350" height="220" class="boundary"/>
     <text x="175" y="20" class="head">C · DATASOURCE REGISTRY   ⟨I⟩ DataSource</text>
     <text x="14" y="46"  class="lbl">• LocalFile      — filesystem · live</text>
@@ -114,7 +115,7 @@
   </g>
 
   <!-- =============== CLUSTER D : AUTH + TRACE =============== -->
-  <g transform="translate(20,590)">
+  <g transform="translate(20,620)">
     <rect x="0" y="0" width="720" height="260" class="boundary"/>
     <text x="360" y="20" class="head">D · AUTH + RBAC + TRACE</text>
 
