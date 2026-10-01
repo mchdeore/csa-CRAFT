@@ -16,31 +16,30 @@ lin: 1.10
 
 ```text
 ┌─────────────────┐
-│Mission Eng      │──▶┌──────────────────────────────────────────┐
-│Systems Eng      │──▶│                CRAFT                     │
-│Program Admin    │──▶│           Flask + Dash                   │
-│HITL Reviewer    │──▶│                                          │
-└─────────────────┘   └──┬─────────┬─────────┬─────────┬────────┘
-                         │         │         │         │
-                         ▼         ▼         ▼         ▼
-                    ┌─────────┐┌────────┐┌────────┐┌────────────┐
-                    │LLM & AI ││Data Src││ID+Edge ││Ops & Audit │
-                    │AzureOA  ││LocalFs ││Local(t)││JSONL(t)    │
-                    │AI Srch(e)│ShPt(e)││Entra(e)││LogAnalyt(e)│
-                    │ContSfty ││SAP(e) ││APIM(e) ││AppSvc PBMM │
-                    │(e)      ││STK(e) ││AppGW(e)││LaunchP(e)  │
-                    └─────────┘└────────┘└────────┘└────────────┘
+│Mission Eng      │──▶┌─────────────────────────────────────────────────┐
+│Systems Eng      │──▶│                   CRAFT                         │
+│Program Admin    │──▶│              Flask + Dash                       │
+│HITL Reviewer    │──▶│                                                 │
+└─────────────────┘   └──┬────────┬─────────┬──────────┬────────┬───────┘
+                         ▼        ▼         ▼          ▼        ▼
+                    ┌────────┐┌────────┐┌─────────┐┌────────┐┌─────────┐
+                    │LLM & AI││Internal││External ││ID+Edge ││Ops+Audit│
+                    │AzureOA ││ Data   ││  Data   ││Local(t)││JSONL(t) │
+                    │AgentFW ││LocalFs ││ShPt(e)  ││Entra(e)││LogAn(e) │
+                    │Foundry ││SQLite  ││SAP(e)   ││APIM(e) ││AppSvc   │
+                    │(e)     ││⟨I⟩DS   ││STK(e)   ││AppGW(e)││ PBMM    │
+                    │ContSfty││⟨I⟩WS   ││AISrch(e)││        ││LaunchP  │
+                    │(e)     ││        ││⟨I⟩DS    ││        ││(e)      │
+                    └────────┘└────────┘└─────────┘└────────┘└─────────┘
 ```
-In: `/chat/send [base]` `/admin/* [admin]`. Out: thin italic. (t)=today, (e)=end-state.
 
-**Agent runtime, stage one (today).** The primary agent is a bounded ReAct loop written directly on `openai.AsyncAzureOpenAI` — ~250 lines in `chat/agent.py`. The pattern is: LLM turn → tool-call parse → tool.execute → audit → repeat, capped by `AGENT_RECURSION_LIMIT=25`. One primary agent, ten tools, HITL interrupt as an exception-and-resume pattern. **No orchestration framework installed.** Microsoft documents this exact "hand-roll it on the SDK" pattern; Azure OpenAI's native tool-calling (`tools=` request / `tool_calls` response) is the only contract we need.
+In: `/chat/send [base]` `/admin/* [admin]`. Out: thin italic. (t)=today, (e)=end-state. **Internal data** stays inside the CRAFT process + SQLite file; **external data** reaches CRAFT through `⟨I⟩ DataSource` adapters (MSAL / OAuth at end state).
 
-**Agent runtime, stage two (if and when).** Azure does not mandate an orchestration framework. If a trigger below materialises, we swap behind the stable `⟨I⟩ ChatProvider` protocol — one class change, no routes / audit / storage / data-source impact. Two candidates, ranked by Azure-native fit:
+**Agent runtime, stage one (today).** The primary agent runs on **Microsoft Agent Framework** (`pip install agent-framework`, v1.12.x, GA April 2026 — Microsoft's enterprise successor to Semantic Kernel). An `agent_framework.ChatAgent` is constructed with `AzureOpenAIChatClient` and a list of `@agent_framework.tool`-decorated functions that wrap our existing `⟨I⟩ Tool.execute(args)` singletons. Bounded via the framework's iteration cap; HITL via `approval_mode="always_require"` on risky tools; `⟨I⟩ ChatProvider` protocol stays stable so the implementation (`MsAgentFrameworkChatProvider`) is one of several that could satisfy it.
 
-1. **Microsoft Agent Framework** (GA April 2026, Microsoft's enterprise-ready successor to Semantic Kernel; the Microsoft-blessed choice for Azure-consolidated deployments). First-class Azure OpenAI + Foundry integration, multi-language SDK (Python / C# / Java), long-term support commitment.
-2. **LangGraph** (third-party, LangChain Inc.). Rich ecosystem (LangSmith, retriever abstractions), but adds a `pydantic` + `langchain-*` dep tree. Fine, not Azure-native.
+**Agent runtime, fallback plan (if Agent Framework access is blocked).** Hand-rolled bounded ReAct loop directly on `openai.AsyncAzureOpenAI` — ~250 lines in `chat/agent.py`. Same protocol, same tool shapes, same HITL pattern (`AgentPaused` exception + resume route). Microsoft documents this hand-rolled pattern; it is viable as a backstop and recorded under `docs-depo/exploration/azure-openai-sdk-usage.md`.
 
-Triggers that would make either worth adopting: ≥ 3 specialist agents coordinating under a planner, dynamic tool composition from user input, LangSmith tracing as a procurement line, or hybrid-retrieval chains with self-correction loops that grow past ~400 lines.
+**Agent runtime, stage two (if and when).** Expansions that outgrow a single primary agent — multi-agent orchestration, workflow-level HITL via `RequestPort`, hybrid-retrieval chains with self-correction — fit as additions inside the Agent Framework stack. LangGraph remains a third-party alternative but is not on the roadmap: adopting it would mean leaving the Microsoft-blessed path and adding `langchain-*` deps for capability the framework already provides.
 
 ### Figure 2 · L1 Context
 
@@ -58,32 +57,39 @@ Triggers that would make either worth adopting: ≥ 3 specialist agents coordina
 ### Figure 3 · L3 — Internal Clusters
 
 ```text
-Panel A · Agent (today = Azure SDK direct):
-   User msg → chatbot node → should_continue?
-                              │
-             respond ◀────────┤
-                              │
-                           tool_call ──▶ Tool exec ──▶ Audit ──▶ loop (max 25)
-                                                │
-                                           ◇ HITL gate (if risky) ──▶ ApprovalQueue
-                                                                        │
-                                                                   ◇ approve/deny
-                                                                        │
-                                                                   resume loop
-Panel A · Agent (end-state = LangGraph swap-in behind ⟨I⟩ ChatProvider):
-   Same shape; `interrupt_before=["tool_node"]` instead of AgentPaused exception.
+Panel A · Agent (today = Microsoft Agent Framework):
+   User msg → ChatAgent.run()
+              │
+              └─▶ LLM turn ◀──────────────┐
+                     │                    │
+                 user_input_requests?  tool_call ──▶ @tool exec ──▶ Audit
+                     │  no                                              │
+                 (none → respond)                                       │
+                     │  yes (approval_mode="always_require")            │
+                     ▼                                                  │
+                 ApprovalQueue (SQLite)  ──▶ ◇ approve/deny   ──────────┘
+                                                   │   resume
+                                                   ▼
+                                              (loop capped by iteration limit)
 
-Panel B · Tool Registry (⟨I⟩ Tool):
-   documents  charts  query_data              ← live today
-   classifier(r)  historical_mission(r)       ← reserved stubs
+Panel B · Tool Registry (⟨I⟩ Tool, wrapped by @agent_framework.tool):
+   documents    charts    query_data              ← live today
+   classifier(r)  historical_mission(r)           ← reserved stubs
    cost_aggregator(r)  vendor_aggregator(r)
    code_exec(r)
-   POST /tools/execute/<name>  — validated, audited
+   POST /tools/execute/<name>  — validated, audited (external invocation path)
 
-Panel C · DataSource Registry (⟨I⟩ DataSource):
-   LocalFile                                  ← live today
-   SharePoint(e)  SAP(e)  STK/MATLAB(e)  AzureAISearch(e)
-   per-request · RBAC-scoped · MSAL/OAuth (e)
+Panel C · DataSource Registry (⟨I⟩ DataSource) — Internal vs External:
+   INTERNAL (today):
+     LocalFileSource    — filesystem under CONNECTORS_ROOT
+     SqliteDataStore    — per-user scoped data
+     Workspace/scratch  — SqliteStore
+   EXTERNAL (end state, planned):
+     SharePoint   (Graph API via MSAL)
+     SAP          (OData / REST via OAuth)
+     STK / MATLAB (vendor adapter)
+     AzureAISearch (hybrid retrieval endpoint)
+   per-request · RBAC-scoped · MSAL/OAuth at perimeter (e)
    response carries doc/page/section + confidence
 
 Panel D · Auth / Route gate:
@@ -136,7 +142,7 @@ Component / end-state choice / current alternative / why. "Today" is what ships 
 | Component | End-state choice | Current alternative (today) | Why |
 |---|---|---|---|
 | HTTP surface | **Flask + Dash** reviewer UI | — (live) | Routes are the integration contract — any token-bearing caller (user, cron, agent) can hit CRAFT; Dash shares the auth and audit perimeter. |
-| Agent runtime | **Azure OpenAI SDK direct** (hand-rolled ReAct loop in `chat/agent.py`). If a trigger materialises: **Microsoft Agent Framework** (Azure-native, GA April 2026) OR **LangGraph** (third-party) — both swap behind `⟨I⟩ ChatProvider` | — (live, Azure SDK direct, no framework) | Azure does **not** require an orchestration framework; the SDK's native tool-calling is sufficient for one primary agent + ~10 tools. Minimum dep surface (no `pydantic`, no `langchain-*`, no `semantic-kernel`). ~250 lines carry bounded recursion, HITL interrupt, tool-call audit. Framework swap deferred until multi-agent, dynamic tool composition, or vendor-tracing requirements land. |
+| Agent runtime | **Microsoft Agent Framework** (`agent-framework`, GA April 2026 — Microsoft's enterprise successor to Semantic Kernel). `MsAgentFrameworkChatProvider` satisfies `⟨I⟩ ChatProvider`; `ChatAgent` + `AzureOpenAIChatClient`; tools via `@agent_framework.tool`; HITL via `approval_mode="always_require"`. | **Microsoft Agent Framework (live)**; hand-rolled ReAct loop on `openai.AsyncAzureOpenAI` kept documented as fallback if framework access is blocked | Azure-native, first-class Azure OpenAI + Foundry integration, long-term support commitment. Replaces the hand-rolled loop with maintained primitives (ReAct, workflow, HITL, telemetry). Trade-off accepted: `pydantic` returns as a transitive dep (framework uses it in `@tool` schemas); we tolerate installation, forbid direct `import pydantic` in our source. LangGraph not adopted — framework already covers the capability. |
 | LLM inference | **Azure AI Foundry** (Azure IQ) — model routing + rate limits + Content Safety | **Azure OpenAI direct** (Canadian PBMM region, Chat Completions API, native tool-calling, structured outputs) | Foundry collapses model routing, rate-limit and guardrail procurement into one line while PBMM residency stays. SDK stays `openai.AsyncAzureOpenAI`; the endpoint URL changes. |
 | Retrieval | **Azure AI Foundry index / Azure AI Search** hybrid (vector + BM25) | **LocalFileSource** via `⟨I⟩ DataSource` with filename/path search | Same `⟨I⟩ DataSource` call site; cutover is config. Satisfies UMR-004/005/006. |
 | Guardrails + sandbox | **Content Safety** + **Azure Container Apps** | Guardrail hook disabled (`GUARDRAIL_HOOK=""`); `CodeExecTool` slot reserved | End-state wires into the tool wrapper CRAFT already runs. UMR-020 / UMR-093. |
@@ -149,28 +155,28 @@ Component / end-state choice / current alternative / why. "Today" is what ships 
 | Protocol contracts | `⟨I⟩ Tool`, `⟨I⟩ DataSource`, `⟨I⟩ ChatProvider`, `⟨I⟩ WorkspaceStore`, `⟨I⟩ AgentActionLog`, `⟨I⟩ ApprovalQueue` | — (live) | New capability or backend = one class satisfying a protocol; agent unchanged. Pyright-strict verified. |
 | Invariants | pytest + pyright (strict) + ruff + bandit + pip-audit + detect-secrets + doctest coverage + stateful-module coverage | — (live) | Route × role matrix, protocol contracts, audit-envelope present, every public function has an executable example, every stateful module has a test file. Industry-standard, maintained. |
 
-### Azure services and orchestration frameworks — explicit stage map
+### Azure services and the agent framework — explicit stage map
 
-A one-glance view of what Azure services and what orchestration framework (if any) are in use at each stage. "Today" is the shipping MVP; "Next" is reached by adding one targeted dep and one class behind an existing protocol; "End state" is the Azure-consolidated target.
+A one-glance view of what Azure services and what framework code is in use at each stage. "Today" is the shipping MVP; "Next" is reached by adding one targeted dep and one class behind an existing protocol; "End state" is the Azure-consolidated target.
 
-**Correction on a common assumption.** Azure OpenAI does **not** require any orchestration framework. The SDK's native tool-calling (`tools=` request / `tool_calls` response) is a self-contained contract; Microsoft's own documentation shows the hand-rolled pattern. The Azure-native framework option — if we ever decide to adopt one — is Microsoft Agent Framework (GA April 2026). LangChain / LangGraph are third-party alternatives, not Azure requirements.
+**Framework choice.** We adopt **Microsoft Agent Framework** (`pip install agent-framework`) as the primary agent runtime from day one — it is Microsoft's enterprise successor to Semantic Kernel, GA'd April 2026, with first-class Azure OpenAI and Azure AI Foundry integration. Rationale and alternatives in Section 4 Design Decisions. LangChain / LangGraph are not adopted.
 
-| Capability | Today (Azure SDK direct, no framework) | Next (one dep, one class) | End state (Azure IQ / Foundry) |
+| Capability | Today | Next (one dep, one class) | End state (Azure IQ / Foundry) |
 |---|---|---|---|
-| LLM transport | `openai.AsyncAzureOpenAI` → Azure OpenAI (PBMM) | same | same, endpoint behind Azure AI Foundry |
-| Agent runtime | Hand-rolled ReAct loop in `chat/agent.py`; `AGENT_RECURSION_LIMIT=25`; `AgentPaused` exception-and-resume for HITL | **unchanged** | Trigger-driven swap behind `⟨I⟩ ChatProvider`: either **Microsoft Agent Framework** (Azure-native, deeper Foundry integration) or **LangGraph** (third-party, richer tracing via LangSmith). Triggered by multi-agent, dynamic tools, or vendor-tracing requirements. |
-| Tool schemas | Each `⟨I⟩ Tool.definition()` returns an OpenAI JSON Schema dict; passed verbatim to `tools=` | same | same (framework-native tool decorators would also work, not required) |
-| Guardrails | `GUARDRAIL_HOOK=""` — hook call site in tool wrapper, no-op | `GUARDRAIL_HOOK="azure_content_safety"` — read `content_filter_results` from the SDK response in the hook | Content Safety deployment-side + explicit `azure-ai-contentsafety` SDK if needed |
-| Retrieval | `LocalFileSource` filesystem search via `⟨I⟩ DataSource` | Add `azure-search-documents`; one new `AzureAISearchSource` class; one JSON row in `data_sources.json` | Hybrid (vector + BM25) in Azure AI Search |
-| External connectors | — | SharePoint via `msgraph-sdk`; SAP via `requests` (OData); STK/MATLAB via vendor Python APIs — each one `⟨I⟩ DataSource` class, one JSON row | same |
+| LLM transport | `AzureOpenAIChatClient` (part of `agent-framework`) → Azure OpenAI (PBMM) | same | same, endpoint behind Azure AI Foundry |
+| Agent runtime | `agent_framework.ChatAgent` + registered `@agent_framework.tool` functions; iteration cap set at construction; HITL via `approval_mode="always_require"` on risky tools | **unchanged** | Add workflow-level HITL via `RequestPort` + multi-agent orchestration from the same framework when triggers land. |
+| Tool schemas | Each `⟨I⟩ Tool.definition()` returns a JSON Schema; thin `@agent_framework.tool` wrapper exposes it to the agent | same | same |
+| Guardrails | `GUARDRAIL_HOOK=""` — hook call site in tool wrapper, no-op | `GUARDRAIL_HOOK="azure_content_safety"` — read `content_filter_results` from the chat response in the hook | Content Safety deployment-side + explicit `azure-ai-contentsafety` SDK if needed |
+| Retrieval | `LocalFileSource` filesystem search via `⟨I⟩ DataSource` (internal) | Add `azure-search-documents`; one new `AzureAISearchSource` class; one JSON row in `data_sources.json` (external) | Hybrid (vector + BM25) in Azure AI Search |
+| External connectors | — | SharePoint via `msgraph-sdk`; SAP via `requests` (OData); STK/MATLAB via vendor Python APIs — each a `⟨I⟩ DataSource` class, one JSON row | same |
 | Identity | `InMemoryAuth` hydrated from SQLite via `scripts/seed.py` | Replace `InMemoryAuth` body with MSAL-backed check; `msal` already a dep | Entra ID; same `⟨I⟩ AuthProvider` contract |
-| HITL queue | `SqliteApprovalQueue` + `/admin/approvals/*` routes | Replace with `PostgresApprovalQueue` behind `⟨I⟩ ApprovalQueue`; add `psycopg[binary]` | Postgres, same schema |
+| HITL queue | `SqliteApprovalQueue` + `/admin/approvals/*` routes, triggered by framework's `user_input_requests` | Replace with `PostgresApprovalQueue` behind `⟨I⟩ ApprovalQueue`; add `psycopg[binary]` | Postgres, same schema |
 | Audit sink | `HashChainedJsonlLog` on disk | Sidecar forwarder reads the JSONL; no code change in-repo | Azure Log Analytics (immutable retention) |
 | Code-exec sandbox | `CodeExecTool` reserved stub | Local Docker runner behind `⟨I⟩ Tool` | Azure Container Apps |
-| Grounding / confidence | Prompt engineering + second LLM call via same `openai` client | add RAGAS-style scorer behind a `GroundingTool` | Foundry evaluation plugs into the same node |
-| Observability | pytest + pyright + ruff + bandit + pip-audit + detect-secrets | add OpenTelemetry via `azure-monitor-opentelemetry` on the Flask app | Azure Monitor + Log Analytics; LangSmith only if LangGraph is adopted |
+| Grounding / confidence | Prompt engineering + second LLM call via the same `AzureOpenAIChatClient` | Add RAGAS-style scorer behind a `GroundingTool` | Foundry evaluation plugs into the same node |
+| Observability | pytest + pyright + ruff + bandit + pip-audit + detect-secrets; Agent Framework's built-in telemetry via OpenTelemetry | add `azure-monitor-opentelemetry` on the Flask app | Azure Monitor + Log Analytics; Foundry traces end-to-end |
 
-**Rule of thumb.** The LLM transport (Azure OpenAI) is live from day one. Every other Azure service is a reserved slot behind an existing protocol — adding it is one targeted dep and one class, not a rewrite. Orchestration frameworks (Microsoft Agent Framework or LangChain / LangGraph) are explicitly deferred; we adopt one only when the triggers in the Agent-runtime row materialise, and the choice at that point favours the Azure-native option.
+**Rule of thumb.** The LLM transport and agent runtime (Azure OpenAI + Microsoft Agent Framework) are live from day one. Every other Azure service is a reserved slot behind an existing protocol — adding it is one targeted dep and one class, not a rewrite. Fallback: if Agent Framework access is blocked, swap in a hand-rolled ReAct loop on `openai.AsyncAzureOpenAI` behind the same `⟨I⟩ ChatProvider` — see `docs-depo/exploration/azure-openai-sdk-usage.md`.
 
 ## 5. Solving the Problems — Today and at End State
 
@@ -194,7 +200,7 @@ The system is already running against stubs or local alternatives wired through 
 
 | Capability | Requirements | Design |
 |---|---|---|
-| Primary agent | UMR-001/011/013/016/018/019/094/095, AAR-001/003/006, ASG-005 | **Azure OpenAI SDK direct · hand-rolled ReAct loop · `⟨I⟩ ChatProvider` · `AGENT_RECURSION_LIMIT=25`** (framework swap-in reserved — Microsoft Agent Framework preferred Azure-native, LangGraph as third-party alternative) |
+| Primary agent | UMR-001/011/013/016/018/019/094/095, AAR-001/003/006, ASG-005 | **Microsoft Agent Framework · `ChatAgent` + `AzureOpenAIChatClient` · `⟨I⟩ ChatProvider` · bounded iteration cap** (fallback: hand-rolled ReAct loop on `openai.AsyncAzureOpenAI` behind the same protocol) |
 | Retrieval + RAG | UMR-002/003/004/005/006/009/010/060/067, ARR-002–007 | Hybrid search tool · `⟨I⟩ DataSource` registry (declarative JSON) · citation + grounding schema |
 | Audit + traceability | UMR-015/027/045/061/062/093, AAR-005, ASG-003 | `AgentAction` envelope · `⟨I⟩ AgentActionLog` · **hash-chained JSONL** → Log Analytics |
 | HITL approvals | UMR-021–026/035/039/044/049, HITL-001–007, ASG-002 | **`AgentPaused` + `⟨I⟩ ApprovalQueue` (SQLite today)** · Dash reviewer UI reserved · Postgres end state |
@@ -223,7 +229,7 @@ Each row is an Azure-consolidated end-state component wired through the registry
 | SSC LaunchPad HA | Single-region App Service |
 | CSA risk taxonomy | Stub taxonomy drives the classifier for tests |
 | Historical mission DB | CSV fixtures through `LocalFileSource` (UC-F1 runs) |
-| Microsoft Agent Framework / LangGraph (multi-agent orchestration) | Hand-rolled bounded ReAct loop on Azure OpenAI SDK; swap behind `⟨I⟩ ChatProvider` if triggers land |
+| Workflow-level HITL via `RequestPort` + multi-agent orchestration (same framework) | Function-level `approval_mode` on risky tools; single primary agent (sufficient for pitch use cases) |
 | Postgres (HITL queue + 3-tier memory) | SQLite `approvals` table + resume routes |
 
 ## 8. System-Health Tooling
@@ -236,9 +242,9 @@ Runs on every commit and in CI; these are invariants, not blockages.
 | pyright (strict) | Type checking · protocol conformance |
 | pytest + coverage | Route × role matrix · protocol contracts · audit-envelope invariants |
 | **doctest** | Every public pure function carries an executable example; `pytest --doctest-modules` runs them |
-| **architecture tests** | AST-walkers in `app/tests/test_architecture.py` fail CI if a public function lacks a doctest or a stateful module lacks a `tests/test_*.py`; forbidden-import guard rejects `pydantic`, `pydantic_ai`, `langchain`, `langgraph`, `semantic-kernel`, `agent-framework` from the installed set until a swap-in trigger fires |
+| **architecture tests** | AST-walkers in `app/tests/test_architecture.py` fail CI if a public function lacks a doctest or a stateful module lacks a `tests/test_*.py`; forbidden-import guard rejects direct `import pydantic`, `pydantic_ai`, `langchain`, `langgraph` from our source (pydantic is tolerated transitively via Agent Framework) |
 | bandit | Security scan |
 | pip-audit | Dependency CVE audit |
 | detect-secrets | No credentials in git |
 
-**Dependency surface (today):** `dash`, `flask`, `flask-login`, `openai`, `pandas`, `plotly`, `python-dotenv`, `requests`, `werkzeug`, `msal`, `pdfplumber`, `python-docx`. Twelve runtime packages. Each pitch end-state row adds **one targeted dep** behind an existing protocol — not a tree.
+**Dependency surface (today):** `agent-framework` (umbrella; or narrower `agent-framework-core` + `agent-framework-openai` + `agent-framework-foundry`), `openai` (via framework), `dash`, `flask`, `flask-login`, `pandas`, `plotly`, `python-dotenv`, `requests`, `werkzeug`, `msal`, `pdfplumber`, `python-docx`. Agent Framework pulls `pydantic` and other Microsoft/Azure deps transitively. Each end-state row still adds **one targeted dep** behind an existing protocol — not a tree.
