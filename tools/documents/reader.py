@@ -145,6 +145,8 @@ class TextAnalysisTool:
         >>> len(chunks) >= 1
         True
         """
+        paragraphs = text.split("\n\n")
+
         chunks: list[str] = []
         current = ""
 
