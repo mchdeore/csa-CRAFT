@@ -4,23 +4,24 @@
 
 ## Why
 
-Pitch §2 Internals Panel A shows the HITL interrupt branching off the tool-call node; §4 Design Decisions "HITL queue + memory" row names Postgres at end state with SQLite today; §5 Solving the Problems — Today maps UMR-021–026 and HITL-001–007 to "LangGraph `interrupt` → Postgres approval queue → Dash reviewer UI". The code today has no HITL at all. This plan builds the SQLite-backed skeleton:
+Pitch §2 Internals Panel A shows the HITL interrupt branching off the tool-call node; §4 Design Decisions "HITL queue + memory" row names Postgres at end state with SQLite today; §5 Solving the Problems — Today maps UMR-021–026 and HITL-001–007 to "LangGraph `interrupt` → Postgres approval queue → Dash reviewer UI". The code today has no HITL at all. This plan builds the SQLite-backed persistence + resume layer behind Microsoft Agent Framework's native function-approval primitive (plan 03):
 
-- an approval queue the agent writes to when a `risky=True` tool is about to run,
-- resume routes (admin-only) that re-enter the loop with the saved state,
-- an audit emission for every decision.
+- Agent Framework pauses the agent run when a tool with `approval_mode="always_require"` is proposed, and returns a `user_input_requests` list on the response instead of invoking the tool.
+- We drain `user_input_requests` into an `approvals` SQLite table and raise `AgentPaused` so the chat route returns a "pending review" message to the user.
+- Admin-only resume routes read the row, surface the decision, feed approval back to Agent Framework, and re-run the turn.
+- An audit emission (`kind="hitl_requested"` / `kind="hitl_decision"`) fires on every pause and every decision.
 
-The reviewer UI (Dash page) is reserved; the routes return JSON for now. Postgres cutover is a one-class swap behind the same queue protocol.
+The reviewer UI (Dash page) is reserved; the routes return JSON for now. Postgres cutover is a one-class swap behind the same `⟨I⟩ ApprovalQueue` protocol.
 
 ## Scope
 
 **In**
-- `storage/approvals.py` — `ApprovalQueue` protocol + `SqliteApprovalQueue` concrete implementation.
-- `AgentPaused` exception path from plan 03 wired to the queue.
+- `storage/approvals.py` — `ApprovalQueue` protocol + `SqliteApprovalQueue` concrete implementation. Same shape as the first iteration; the **trigger** is now Agent Framework's `user_input_requests`, not a bespoke `risky` check inside a hand-rolled ReAct loop.
+- `AgentPaused` exception path from plan 03 wired to the queue (plan 03's `run_agent` already raises it when the framework response carries `user_input_requests`).
 - `/admin/approvals` and `/admin/approvals/<trace_id>/<decision>` routes.
 - Audit emission (`kind="hitl_decision"`) on every approve / deny.
 - `permissions.json` already covers `/admin/*` admin-only (plan 06).
-- `settings.ENABLE_HITL` gate.
+- `settings.ENABLE_HITL` gate — when off, our tool adapter in plan 03 registers risky tools **without** `approval_mode`, so Agent Framework invokes them directly (regression check).
 
 **Out**
 - The Dash reviewer UI (reserved).
@@ -96,22 +97,27 @@ class AgentPaused(Exception):
     def __init__(self, trace_id: str, step: int): ...
 ```
 
-In the ReAct loop (`chat/agent.py`), before calling a tool with `risky=True`:
+Plan 03's `chat/tool_adapter.py` wraps every risky tool with `approval_mode="always_require"` when `settings.ENABLE_HITL` is on. When the model proposes a risky call, Agent Framework returns a response with `user_input_requests` populated instead of invoking the tool. Plan 03's `run_agent` drains that list:
+
 ```python
-if settings.ENABLE_HITL and getattr(tool, "risky", False):
-    approval_queue.enqueue(ApprovalRequest(
-        trace_id=deps.trace_id, step=step, tool_name=call.function.name,
-        args=json.loads(call.function.arguments or "{}"),
-        state_json=json.dumps(messages),
-        created_at=now_iso(), created_by=deps.username,
-    ))
-    agent_action_log.emit(AgentAction(kind="hitl_requested", ...))
-    raise AgentPaused(deps.trace_id, step)
+# chat/agent.py (plan 03), simplified
+response = await agent.run(messages=messages)
+pending = getattr(response, "user_input_requests", None) or []
+if pending:
+    enqueue_pending(deps.trace_id, response, pending, messages)
+    agent_action_log.emit(AgentAction(kind="hitl_requested", trace_id=deps.trace_id, ...))
+    raise AgentPaused(deps.trace_id, step=len(messages))
 ```
 
-The approve route reads the row, deserialises `state_json` back into `messages`, re-enters `run_agent` with the saved step — but this time with the tool invocation marked as approved (we add a transient `__approved_trace_ids: set[str]` on the loop's `deps` so the risky check does not fire again this turn).
+`enqueue_pending(...)` lives in `storage/approvals.py` (this plan). It serialises the framework-side pending state (`response` plus the `messages` list) so the resume route can hand it back to Agent Framework.
 
-The deny route emits `AgentAction(kind="hitl_denied", ...)` and does **not** re-enter the loop; the user sees an assistant message like "This request was denied by review."
+The **approve** route reads the row, deserialises the saved state, calls Agent Framework's resume API with the approvals granted (exact call shape — likely `agent.resume(approvals=[…])` or re-running `agent.run(messages=…, approvals=…)` — **TBD, verify against 1.12.x at execution time**), and emits `AgentAction(kind="hitl_decision", decision="approve")`.
+
+The **deny** route marks the row denied, emits `AgentAction(kind="hitl_decision", decision="deny")`, and does **not** feed approval back to Agent Framework. The user sees an assistant message like "This request was denied by review."
+
+### Backup path (if Agent Framework's approval primitive is unusable at adoption)
+
+If the framework's approval API turns out to be unstable or missing a feature we need (e.g. no clean way to carry approvals across process restarts), we fall back to a pre-registration gate: our tool adapter in plan 03 *does not register* risky tools on the first `agent.run(...)` call. Instead, we inspect the model's proposed `tool_calls` on the response and raise `AgentPaused` ourselves if any match a known-risky name. The approve route then re-registers the tool and re-runs the turn. Same `⟨I⟩ ApprovalQueue` protocol, same routes, same audit — only the trigger moves from framework-managed to us-managed. Noted here so the implementer knows the shape of the backup is already baked into plan 03's adapter.
 
 ## Files touched
 
@@ -121,7 +127,8 @@ The deny route emits `AgentAction(kind="hitl_denied", ...)` and does **not** re-
   - `storage/tests/test_approvals.py`.
   - `app/core/routes.py` (edit) — register `/admin/approvals*` routes when the feature is enabled or always (admin-gated regardless).
 - **Edit**
-  - `chat/agent.py` — fill in the `_enqueue_approval` placeholder; raise `AgentPaused`; add the "already-approved" bypass flag on `deps`.
+  - `chat/agent.py` — `enqueue_pending(...)` import + call wired into the `AgentPaused` branch (plan 03 reserves the import stub).
+  - `chat/tool_adapter.py` — `approval_mode="always_require"` branch depends on both `tool.risky` **and** `settings.ENABLE_HITL`; already present in plan 03's sketch.
   - `app/core/services.py` — construct and wire `approval_queue: ApprovalQueue = SqliteApprovalQueue()`.
   - `app/core/permissions.json` — already covers `/admin/*` from plan 06; no change required.
 
@@ -180,8 +187,8 @@ The deny route emits `AgentAction(kind="hitl_denied", ...)` and does **not** re-
 - "LangGraph interrupt → Postgres approval queue → Dash reviewer UI, same auth as routes; decisions logged immutably with reasoning chain, confidence, sources." (§5 HITL approvals row).
 - "HITL queue + memory — Postgres (approval queue + 3-tier memory) end state; SQLite scratch; approval table staged" (§4 Design Decisions).
 
-**Why implement HITL without LangGraph:**
-LangGraph's `interrupt` primitive is useful but is a single construct that we re-create in ~60 lines (enqueue + raise + resume with saved state). The pitch's end-state Postgres cutover is a swap behind the same `ApprovalQueue` protocol, independent of whether the agent runtime is LangGraph or our ReAct loop. We get HITL in-pitch mechanics with zero LangChain dep.
+**Why use Agent Framework's native approval primitive:**
+Microsoft Agent Framework (plan 03) exposes function-tool approval via `approval_mode="always_require"`. When the model proposes to call such a tool, the run returns `user_input_requests` instead of invoking it — exactly the "interrupt → queue → decision" shape the pitch wants. Reusing the framework's primitive keeps the Microsoft-native story end-to-end, and keeps the "if we drop Agent Framework, we fall back to our own gate" backup path in scope (sketched above). Either way the `⟨I⟩ ApprovalQueue` protocol and the `/admin/approvals*` routes stay identical, so the Postgres cutover at end state is still a one-class swap.
 
 **Why mark `ClassifierTool` as risky:**
 Pitch UC-E2 explicitly runs the risk classifier through HITL. Marking the reserved stub (plan 08) as `risky=True` lets the HITL loop be exercised end-to-end before the real classifier lands.

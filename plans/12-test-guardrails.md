@@ -4,7 +4,7 @@
 
 ## Why
 
-The pitch calls out "Route × role matrix · protocol contracts · audit-envelope invariants" as the test posture (§4 Design Decisions, Invariants row; §8 System-Health Tooling). After the refactor the invariants grow: `os.environ` reads must be centralised, `pydantic`/`langchain` must be absent, `DEFAULT_USERS` must not come back, the hash chain must verify. These are things humans forget to re-check during review — put them in the test suite so pre-commit catches them.
+The pitch calls out "Route × role matrix · protocol contracts · audit-envelope invariants" as the test posture (§4 Design Decisions, Invariants row; §8 System-Health Tooling). After the refactor the invariants grow: `os.environ` reads must be centralised, LangChain / LangGraph / `pydantic-ai` must stay out of the install **and** our source, direct `import pydantic` must stay out of **our source** (Agent Framework pulls `pydantic` as a transitive dep so the install itself is permitted — plan 03), `DEFAULT_USERS` must not come back, the hash chain must verify. These are things humans forget to re-check during review — put them in the test suite so pre-commit catches them.
 
 ## Scope
 
@@ -55,15 +55,27 @@ def test_no_weather_news():
 
 ### `app/tests/test_imports.py` (new)
 
+Two separate forbidden lists:
+
+- `FORBIDDEN_SOURCE_IMPORTS` — not allowed as a `from`/`import` line anywhere in our source. Includes `pydantic` because we never want our source to depend on it directly, even though it is now installed transitively via `agent-framework`.
+- `FORBIDDEN_INSTALLED` — not allowed to appear in `importlib.metadata.distributions()` at all. **Does not include `pydantic`** (Agent Framework pulls it as a transitive dep — plan 03). Keeps `langchain*`, `langgraph`, `pydantic-ai`: those must stay out of the install entirely.
+
 ```python
 from importlib.metadata import distributions
 
-FORBIDDEN = {"pydantic", "pydantic_core", "pydantic-ai", "langchain", "langchain-core",
-             "langchain-openai", "langgraph"}
+FORBIDDEN_SOURCE_IMPORTS = {"pydantic", "pydantic_core", "pydantic_ai",
+                            "langchain", "langchain_core", "langchain_openai",
+                            "langgraph"}
+
+# `pydantic` deliberately absent: Agent Framework pulls it as a transitive dep
+# via its `@tool` decorator (typing.Annotated[..., pydantic.Field(...)]). We
+# tolerate the install; we do not tolerate direct use in our source (above).
+FORBIDDEN_INSTALLED = {"pydantic-ai", "langchain", "langchain-core",
+                       "langchain-openai", "langgraph"}
 
 def test_forbidden_packages_not_installed():
     installed = {d.metadata["Name"].lower() for d in distributions()}
-    hits = FORBIDDEN & installed
+    hits = FORBIDDEN_INSTALLED & installed
     assert not hits, f"forbidden packages installed: {hits}"
 
 def test_forbidden_imports_not_in_source():
@@ -72,11 +84,13 @@ def test_forbidden_imports_not_in_source():
         if ".git" in py.parts or "/.venv/" in str(py):
             continue
         text = py.read_text()
-        for mod in FORBIDDEN:
+        for mod in FORBIDDEN_SOURCE_IMPORTS:
             if re.search(fr"^\s*(from|import)\s+{re.escape(mod)}(\s|\.|$)", text, re.M):
                 offenders.append((py, mod))
     assert not offenders, offenders
 ```
+
+**Why the asymmetry on `pydantic`:** Microsoft Agent Framework (adopted in plan 03) is the primary agent runtime; its `@tool` decorator relies on `typing.Annotated[..., pydantic.Field(...)]` for parameter descriptions, so `pydantic` is a hard transitive install. We make the honest trade: tolerate installation, forbid direct use. If a `from pydantic import …` line ever appears in our source the import test fails loudly — someone is reaching past Agent Framework into pydantic directly, which is the thing we wanted to avoid when we rejected pydantic-settings / pydantic-ai.
 
 ### `app/tests/test_config.py` (new)
 
@@ -138,7 +152,8 @@ Implementation: enumerate `app.url_map.iter_rules()`, cross-join with role list,
 
 **Verify**
 - `pytest -q` green across the whole suite.
-- `pytest app/tests/test_imports.py` fails loudly if someone `pip install pydantic`s.
+- `pytest app/tests/test_imports.py` fails loudly if someone `pip install langchain`s or `pip install pydantic-ai`s. It **does not** fail on `pydantic` alone, because Agent Framework pulls it transitively (plan 03).
+- `pytest app/tests/test_imports.py` fails loudly if someone adds a `from pydantic import …` to our source.
 - `pytest app/tests/test_rules.py` fails loudly if someone sneaks an `os.environ.get` into `chat/foo.py`.
 
 **Commit**
@@ -174,3 +189,6 @@ Implementation: enumerate `app.url_map.iter_rules()`, cross-join with role list,
 
 **Why `test_imports.py` goes beyond source grep:**
 A dep can be pulled in transitively by a well-intentioned new package. Walking `importlib.metadata.distributions()` catches that at the first `make check` after someone adds the new dep, not months later during a dep audit.
+
+**Why the two forbidden lists diverge on `pydantic`:**
+Plan 03 adopts Microsoft Agent Framework, whose `@tool` decorator uses `typing.Annotated[..., pydantic.Field(...)]`; `pydantic` is therefore a hard transitive install and the "zero pydantic installed" rule from the first refactor iteration is no longer achievable without dropping Agent Framework. The honest middle: tolerate installation, forbid *direct* use. If a future refactor removes Agent Framework the install check for `pydantic` can be restored.
