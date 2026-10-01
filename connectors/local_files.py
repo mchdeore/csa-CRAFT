@@ -46,7 +46,7 @@ class LocalFileSource(DataSource):
             return []
 
         entries: list[FileEntry] = []
-        for child in sorted(target.iterdir()):
+        for child in sorted(target.rglob("*")):
             if child.is_file():
                 stat = child.stat()
                 entries.append(

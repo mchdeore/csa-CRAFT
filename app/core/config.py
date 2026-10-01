@@ -20,8 +20,10 @@ SYSTEM_PROMPT = (
     "Never call a tool with empty arguments."
 )
 
-# Default root for local file connectors
-CONNECTORS_ROOT = Path(os.environ.get("CONNECTORS_ROOT", Path.home() / "Documents"))
+# Default root for local file connectors — the repo's /data folder so the
+# demo has something to show out of the box. Override with CONNECTORS_ROOT.
+_DEFAULT_CONNECTORS_ROOT = Path(__file__).parent.parent.parent / "data"
+CONNECTORS_ROOT = Path(os.environ.get("CONNECTORS_ROOT") or _DEFAULT_CONNECTORS_ROOT)
 
 # Weather (Open-Meteo) — free, no API key needed
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
