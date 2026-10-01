@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 720" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 300" font-family="-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif">
   <defs>
     <marker id="arrUC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#000"/>
@@ -10,23 +10,21 @@
       .box  { fill: #fff; stroke: #000; stroke-width: 0.9; }
       .gate { fill: #fff; stroke: #000; stroke-width: 1; }
       .term { fill: #000; stroke: #000; stroke-width: 1; }
-      .lbl  { font-size: 10px; fill: #000; text-anchor: middle; }
-      .lbl-b { font-size: 10px; fill: #000; text-anchor: middle; font-style: italic; text-decoration: underline; }
-      .lbl-s{ font-size: 8.5px; fill: #000; text-anchor: middle; font-style: italic; }
-      .req  { font-size: 8px; fill: #000; text-anchor: middle; font-style: italic; }
-      .h    { font-size: 11px; font-weight: 600; fill: #000; }
-      .sub  { font-size: 9.5px; fill: #000; font-style: italic; }
+      .lbl  { font-size: 10.5px; fill: #000; text-anchor: middle; }
+      .lbl-s{ font-size: 9px; fill: #000; text-anchor: middle; font-style: italic; }
+      .h    { font-size: 12px; font-weight: 700; fill: #000; }
+      .sub  { font-size: 10px; fill: #000; font-style: italic; }
       .foot { font-size: 10px; fill: #000; text-anchor: middle; font-style: italic; }
       .edge { stroke: #000; stroke-width: 0.9; fill: none; }
-      .swim { font-size: 9px; font-weight: 600; fill: #000; text-anchor: middle; }
+      .swim { font-size: 9.5px; font-weight: 600; fill: #000; text-anchor: middle; }
       .title { font-size: 13px; font-weight: 600; fill: #000; text-anchor: middle; }
     ]]></style>
   </defs>
 
-  <text x="380" y="18" class="title">Figure 3 · Use-Case Lanes — E2 · F1 · F4</text>
+  <text x="380" y="18" class="title">Figure 3 · Generic Use-Case Lane</text>
 
   <!-- Swim lane header -->
-  <g transform="translate(0,30)">
+  <g transform="translate(0,34)">
     <text x="90"  y="10" class="swim">USER</text>
     <text x="240" y="10" class="swim">AGENT</text>
     <text x="470" y="10" class="swim">SERVICES</text>
@@ -34,147 +32,64 @@
     <line x1="30" y1="14" x2="730" y2="14" class="div"/>
   </g>
 
-  <!-- ===== LANE 1 : UC-E2 ===== -->
-  <g transform="translate(0,54)">
+  <!-- ===== GENERIC LANE ===== -->
+  <g transform="translate(0,56)">
     <rect x="30" y="0" width="700" height="200" class="lane"/>
-    <text x="40" y="18" class="h">UC-E2 · Risk ID + HITL</text>
-    <text x="40" y="32" class="sub">Engineering · upload CADRe → retrieve → classify → HITL</text>
+    <text x="40" y="20" class="h">Use-Case Pattern</text>
+    <text x="40" y="36" class="sub">one shape fits every case — the Tool, DataSource, and HITL steps are swapped for the mission</text>
 
-    <line x1="160" y1="40" x2="160" y2="200" class="div"/>
-    <line x1="340" y1="40" x2="340" y2="200" class="div"/>
-    <line x1="590" y1="40" x2="590" y2="200" class="div"/>
+    <line x1="160" y1="46" x2="160" y2="200" class="div"/>
+    <line x1="340" y1="46" x2="340" y2="200" class="div"/>
+    <line x1="590" y1="46" x2="590" y2="200" class="div"/>
 
-    <rect x="48" y="90" width="100" height="32" class="box"/>
-    <text x="98" y="107" class="lbl">Engineer</text>
-    <text x="98" y="118" class="lbl-s">upload Part A</text>
-
-    <polygon points="178,106 196,90 258,90 276,106 258,122 196,122" class="gate"/>
-    <text x="227" y="109" class="lbl">Auth</text>
-    <text x="227" y="120" class="lbl-s">role · trace</text>
-
-    <rect x="286" y="90" width="48" height="32" class="box"/>
-    <text x="310" y="107" class="lbl">Agent</text>
-    <text x="310" y="118" class="lbl-s">ReAct</text>
-
-    <rect x="352" y="82" width="100" height="32" class="box"/>
-    <text x="402" y="99" class="lbl">DataSource</text>
-    <text x="402" y="110" class="req">retrieve · UMR-002…006</text>
-
-    <rect x="470" y="82" width="100" height="32" class="box"/>
-    <text x="520" y="99" class="lbl">Tool</text>
-    <text x="520" y="110" class="req">classify · UMR-036…040</text>
-
-    <polygon points="400,136 420,122 500,122 520,136 500,150 420,150" class="gate"/>
-    <text x="460" y="138" class="lbl">HITL</text>
-    <text x="460" y="148" class="req">HITL-001</text>
-
-    <rect x="420" y="162" width="100" height="24" class="box"/>
-    <text x="470" y="178" class="lbl">DataSource write</text>
-
-    <circle cx="650" cy="106" r="12" class="term"/>
-    <text x="650" y="110" class="lbl" fill="#fff">●</text>
-    <text x="650" y="132" class="lbl-s">audit · end</text>
-
-    <line x1="148" y1="106" x2="176" y2="106" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="276" y1="106" x2="284" y2="106" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="334" y1="106" x2="350" y2="98"  class="edge" marker-end="url(#arrUC)"/>
-    <line x1="452" y1="98"  x2="468" y2="98"  class="edge" marker-end="url(#arrUC)"/>
-    <path d="M 520 114 L 520 122" class="edge" marker-end="url(#arrUC)"/>
-    <path d="M 460 150 L 460 162" class="edge" marker-end="url(#arrUC)"/>
-    <path d="M 520 136 L 580 136 L 580 106 L 636 106" class="edge" marker-end="url(#arrUC)"/>
-  </g>
-
-  <!-- ===== LANE 2 : UC-F1 ===== -->
-  <g transform="translate(0,264)">
-    <rect x="30" y="0" width="700" height="200" class="lane"/>
-    <text x="40" y="18" class="h">UC-F1 · Parametric Cost + HITL</text>
-    <text x="40" y="32" class="sub">Finance · historical lookup → aggregate → HITL commit</text>
-
-    <line x1="160" y1="40" x2="160" y2="200" class="div"/>
-    <line x1="340" y1="40" x2="340" y2="200" class="div"/>
-    <line x1="590" y1="40" x2="590" y2="200" class="div"/>
-
-    <rect x="48" y="90" width="100" height="32" class="box"/>
-    <text x="98" y="107" class="lbl">Admin</text>
-    <text x="98" y="118" class="lbl-s">request estimate</text>
-
-    <polygon points="178,106 196,90 258,90 276,106 258,122 196,122" class="gate"/>
-    <text x="227" y="109" class="lbl">Auth</text>
-    <text x="227" y="120" class="lbl-s">role · trace</text>
-
-    <rect x="286" y="90" width="48" height="32" class="box"/>
-    <text x="310" y="107" class="lbl">Agent</text>
-    <text x="310" y="118" class="lbl-s">ReAct</text>
-
-    <rect x="352" y="82" width="100" height="32" class="box"/>
-    <text x="402" y="99" class="lbl">DataSource</text>
-    <text x="402" y="110" class="req">historical · UMR-031</text>
-
-    <rect x="470" y="82" width="100" height="32" class="box"/>
-    <text x="520" y="99" class="lbl">Tool</text>
-    <text x="520" y="110" class="req">cost agg · UMR-032…034</text>
-
-    <polygon points="400,136 420,122 500,122 520,136 500,150 420,150" class="gate"/>
-    <text x="460" y="138" class="lbl">HITL</text>
-    <text x="460" y="148" class="req">UMR-035</text>
-
-    <rect x="420" y="162" width="100" height="24" class="box"/>
-    <text x="470" y="178" class="lbl">DataSource write</text>
-
-    <circle cx="650" cy="106" r="12" class="term"/>
-    <text x="650" y="110" class="lbl" fill="#fff">●</text>
-    <text x="650" y="132" class="lbl-s">audit · end</text>
-
-    <line x1="148" y1="106" x2="176" y2="106" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="276" y1="106" x2="284" y2="106" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="334" y1="106" x2="350" y2="98"  class="edge" marker-end="url(#arrUC)"/>
-    <line x1="452" y1="98"  x2="468" y2="98"  class="edge" marker-end="url(#arrUC)"/>
-    <path d="M 520 114 L 520 122" class="edge" marker-end="url(#arrUC)"/>
-    <path d="M 460 150 L 460 162" class="edge" marker-end="url(#arrUC)"/>
-    <path d="M 520 136 L 580 136 L 580 106 L 636 106" class="edge" marker-end="url(#arrUC)"/>
-  </g>
-
-  <!-- ===== LANE 3 : UC-F4 ===== -->
-  <g transform="translate(0,474)">
-    <rect x="30" y="0" width="700" height="180" class="lane"/>
-    <text x="40" y="18" class="h">UC-F4 · Vendor Cost Roll-up</text>
-    <text x="40" y="32" class="sub">Finance · "How much did we spend with vendor X across missions?" — DataSource → aggregate by vendor → report</text>
-
-    <line x1="160" y1="40" x2="160" y2="180" class="div"/>
-    <line x1="340" y1="40" x2="340" y2="180" class="div"/>
-    <line x1="590" y1="40" x2="590" y2="180" class="div"/>
-
+    <!-- USER -->
     <rect x="48" y="94" width="100" height="36" class="box"/>
-    <text x="98" y="112" class="lbl">Analyst</text>
-    <text x="98" y="124" class="lbl-s">vendor cost query</text>
+    <text x="98" y="112" class="lbl">Caller</text>
+    <text x="98" y="124" class="lbl-s">human or external</text>
 
+    <!-- AUTH gate -->
     <polygon points="178,112 196,96 258,96 276,112 258,128 196,128" class="gate"/>
     <text x="227" y="115" class="lbl">Auth</text>
     <text x="227" y="126" class="lbl-s">role · trace</text>
 
+    <!-- AGENT -->
     <rect x="286" y="94" width="48" height="36" class="box"/>
     <text x="310" y="112" class="lbl">Agent</text>
     <text x="310" y="124" class="lbl-s">ReAct</text>
 
+    <!-- DataSource retrieve -->
     <rect x="352" y="94" width="110" height="36" class="box"/>
     <text x="407" y="112" class="lbl">DataSource</text>
-    <text x="407" y="124" class="req">vendor costs · UMR-053…055</text>
+    <text x="407" y="124" class="lbl-s">retrieve</text>
 
-    <rect x="478" y="94" width="100" height="36" class="box"/>
-    <text x="528" y="112" class="lbl">Tool</text>
-    <text x="528" y="124" class="lbl-s">aggregate</text>
+    <!-- Tool (process) -->
+    <rect x="470" y="94" width="110" height="36" class="box"/>
+    <text x="525" y="112" class="lbl">Tool</text>
+    <text x="525" y="124" class="lbl-s">process · plan</text>
 
+    <!-- HITL gate (optional, below services) -->
+    <polygon points="398,158 420,142 500,142 522,158 500,174 420,174" class="gate"/>
+    <text x="460" y="160" class="lbl">HITL</text>
+    <text x="460" y="172" class="lbl-s">if risky</text>
+
+    <!-- DataSource write (optional, below HITL) -->
+    <rect x="400" y="182" width="120" height="18" class="box"/>
+    <text x="460" y="195" class="lbl">DataSource write</text>
+
+    <!-- Terminal -->
     <circle cx="650" cy="112" r="12" class="term"/>
     <text x="650" y="116" class="lbl" fill="#fff">●</text>
-    <text x="650" y="138" class="lbl-s">report + audit</text>
+    <text x="650" y="140" class="lbl-s">audit · end</text>
 
+    <!-- edges -->
     <line x1="148" y1="112" x2="176" y2="112" class="edge" marker-end="url(#arrUC)"/>
     <line x1="276" y1="112" x2="284" y2="112" class="edge" marker-end="url(#arrUC)"/>
     <line x1="334" y1="112" x2="350" y2="112" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="462" y1="112" x2="476" y2="112" class="edge" marker-end="url(#arrUC)"/>
-    <line x1="578" y1="112" x2="636" y2="112" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="462" y1="112" x2="468" y2="112" class="edge" marker-end="url(#arrUC)"/>
+    <line x1="580" y1="112" x2="636" y2="112" class="edge" marker-end="url(#arrUC)"/>
+    <path d="M 525 130 L 525 142" class="edge" marker-end="url(#arrUC)"/>
+    <path d="M 460 174 L 460 182" class="edge" marker-end="url(#arrUC)"/>
   </g>
 
-  <text x="380" y="686" class="foot">Service blocks are the <tspan font-weight="700">⟨I⟩ Tool</tspan> and <tspan font-weight="700">⟨I⟩ DataSource</tspan> abstractions — the concrete provider sits behind them and is swappable.</text>
-  <text x="380" y="702" class="foot">Role-check · AgentAction audit · HITL interrupt stay fixed across use cases, so new flows land safely.</text>
+  <text x="380" y="286" class="foot">Role check · AgentAction audit · HITL interrupt stay fixed; the Tool + DataSource behind each block are swapped per use case.</text>
 </svg>

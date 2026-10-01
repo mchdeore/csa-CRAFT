@@ -158,9 +158,17 @@ blockquote {
 <h2>3. Use Cases</h2>
 <div class="figure">
 <object type="image/svg+xml" data="diagrams/UC-lanes.svg"></object>
-<div class="caption">Figure 3 · UC-E2 risk + HITL · UC-F1 parametric cost + HITL · UC-F4 vendor cost roll-up (SAP).</div>
+<div class="caption">Figure 3 · Generic lane — the Tool and DataSource behind each block change per use case.</div>
 </div>
 
+<p>Each case below swaps a different Tool + DataSource into the generic lane. The role check, <code>AgentAction</code> audit, and HITL interrupt stay fixed.</p>
+<ul>
+<li><strong>UC-E2 · Risk ID + HITL (Engineering).</strong> Engineer uploads a CADRe part; retrieval pulls risk sections from the corpus; a classifier tool scores severity; HITL approves; a DataSource write lands the entry in the risk register. <em>Tools:</em> <code>DocumentSearchTool</code>, risk <code>ClassifierTool</code>. <em>Requirements:</em> UMR-002/006, UMR-036–040, HITL-001.</li>
+<li><strong>UC-F1 · Parametric Cost + HITL (Finance).</strong> Admin asks for a mission cost estimate; retrieval returns similar historical missions; an aggregator tool computes weighted distance; HITL approves; the commitment is written. <em>Tools:</em> <code>HistoricalMissionTool</code>, <code>CostAggregatorTool</code>. <em>Requirements:</em> UMR-031–035.</li>
+<li><strong>UC-F4 · Vendor Cost Roll-up (Finance).</strong> Analyst asks "how much did we spend with vendor X across missions?"; a DataSource (SAP connector at end state, CSV fixtures today) returns line items; a <code>VendorAggregatorTool</code> sums by vendor; a report is returned. <em>Requirements:</em> UMR-053–055.</li>
+<li><strong>UC · Bilingual Chat / RAG (All).</strong> User asks in English or French; retrieval + <code>DocumentSearchTool</code> return cited passages; the agent responds with citations and a confidence score. <em>Requirements:</em> UMR-001/002/003/007/010.</li>
+</ul>
+<p>New mission flows (budget scenarios, anomaly triage, cross-mission compare) land as new <code>Tool</code> + optional <code>DataSource</code> behind the same lane.</p>
 <h2>4. Design Decisions</h2>
 <table>
 <thead>

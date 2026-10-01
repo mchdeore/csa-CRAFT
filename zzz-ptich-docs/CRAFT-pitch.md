@@ -22,8 +22,17 @@ HITL (UMR-021–026/HITL-001–007) is a graph interrupt off `tool_node`, not mi
 
 <div class="figure">
 <object type="image/svg+xml" data="diagrams/UC-lanes.svg"></object>
-<div class="caption">Figure 3 · UC-E2 risk + HITL · UC-F1 parametric cost + HITL · UC-F4 vendor cost roll-up (SAP).</div>
+<div class="caption">Figure 3 · Generic lane — the Tool and DataSource behind each block change per use case.</div>
 </div>
+
+Each case below swaps a different Tool + DataSource into the generic lane. The role check, `AgentAction` audit, and HITL interrupt stay fixed.
+
+- **UC-E2 · Risk ID + HITL (Engineering).** Engineer uploads a CADRe part; retrieval pulls risk sections from the corpus; a classifier tool scores severity; HITL approves; a DataSource write lands the entry in the risk register. *Tools:* `DocumentSearchTool`, risk `ClassifierTool`. *Requirements:* UMR-002/006, UMR-036–040, HITL-001.
+- **UC-F1 · Parametric Cost + HITL (Finance).** Admin asks for a mission cost estimate; retrieval returns similar historical missions; an aggregator tool computes weighted distance; HITL approves; the commitment is written. *Tools:* `HistoricalMissionTool`, `CostAggregatorTool`. *Requirements:* UMR-031–035.
+- **UC-F4 · Vendor Cost Roll-up (Finance).** Analyst asks "how much did we spend with vendor X across missions?"; a DataSource (SAP connector at end state, CSV fixtures today) returns line items; a `VendorAggregatorTool` sums by vendor; a report is returned. *Requirements:* UMR-053–055.
+- **UC · Bilingual Chat / RAG (All).** User asks in English or French; retrieval + `DocumentSearchTool` return cited passages; the agent responds with citations and a confidence score. *Requirements:* UMR-001/002/003/007/010.
+
+New mission flows (budget scenarios, anomaly triage, cross-mission compare) land as new `Tool` + optional `DataSource` behind the same lane.
 
 ## 4. Design Decisions
 
