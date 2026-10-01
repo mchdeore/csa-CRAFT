@@ -101,10 +101,10 @@
     <rect x="0" y="0" width="350" height="220" class="boundary"/>
     <text x="175" y="20" class="head">C · DATASOURCE REGISTRY   ⟨I⟩ DataSource</text>
     <text x="14" y="46"  class="lbl">• LocalFile      — filesystem · live</text>
-    <text x="14" y="62"  class="lbl">• SharePoint     — Graph API · MSAL · dev flag</text>
-    <text x="14" y="78"  class="lbl">• SAP            — REST · OData · dev flag</text>
-    <text x="14" y="94"  class="lbl">• STK / MATLAB   — adapter · license · dev flag</text>
-    <text x="14" y="110" class="lbl">• Vector index   — Azure AI Search · dev flag</text>
+    <text x="14" y="62"  class="lbl">• SharePoint     — Graph API [blocked · LocalFile mirror]</text>
+    <text x="14" y="78"  class="lbl">• SAP            — REST / OData [blocked · CSV fixtures]</text>
+    <text x="14" y="94"  class="lbl">• STK / MATLAB   — adapter [blocked · slot reserved]</text>
+    <text x="14" y="110" class="lbl">• Vector index   — AI Search [blocked · LocalFile hybrid]</text>
     <text x="14" y="126" class="lbl">• Per-source auth — MSAL · OAuth · svc acct</text>
 
     <text x="14" y="156" class="lbl-i">datasources are swappable: a tool reads through the</text>

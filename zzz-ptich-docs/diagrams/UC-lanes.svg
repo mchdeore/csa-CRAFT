@@ -191,7 +191,7 @@
     <rect x="0" y="-10" width="18" height="12" class="node"/>
     <text x="24" y="0" font-size="9">solid · live</text>
     <rect x="110" y="-10" width="18" height="12" class="node-dashed"/>
-    <text x="134" y="0" font-size="9">dashed · dev flag</text>
+    <text x="134" y="0" font-size="9">dashed · end-state (via alternative today)</text>
     <polygon points="260,-10 270,-16 300,-16 310,-10 300,-4 270,-4" class="gate"/>
     <text x="318" y="0" font-size="9">hex · gate (auth / HITL)</text>
     <circle cx="455" cy="-5" r="7" class="terminal"/>

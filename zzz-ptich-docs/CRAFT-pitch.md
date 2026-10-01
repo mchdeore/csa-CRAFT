@@ -79,19 +79,36 @@ Four protocol boundaries carry the extensibility story. Each one is a single Pyt
 | Domain capabilities | UMR-007/008/031–034/036–038/040–043/046–048/050/075, ARR-001 | New `⟨I⟩ Tool` instances over existing abstraction points | E2, F1 |
 | Deployment, SLA | UMR-028/056/057/059/064/069/070/074/085, ASG-006 | Azure App Service PBMM · APIM + WAF · SSC LaunchPad HA · git config | all |
 
-## 7. Development Flags & System-Health Tooling
+## 7. Blockages — End State vs Current Alternative
 
-| Item | Kind | Owner / tool | Notes |
+The architecture is designed for its end state: an Azure-consolidated runtime (Foundry, AI Search, Content Safety, Container Apps, Log Analytics, Entra ID, App Service, APIM) with CSA-owned data staying in Azure Canadian regions. Consolidating on one cloud shortens the vendor surface, puts every dependency under one procurement path, and lets us reuse the same identity, networking, and audit plane across every component. **Each row below names an end-state component, the owner it is waiting on, and the current alternative CRAFT runs against while that component is in the pipeline.** The alternative is wired through the same `⟨I⟩` abstraction point as the end-state component, so moving to the end state is a configuration change, not a rewrite.
+
+Models are the one deliberate exception: inference lives in Azure OpenAI today and may route through Azure AI Foundry (Azure IQ) tomorrow, but the `⟨I⟩ ChatProvider` abstraction keeps the agent indifferent to where inference actually runs. Some data (session scratch, local corpora) stays on-box by design even in the end state.
+
+| End-state component | Role | Owner | Current alternative in the running system |
 |---|---|---|---|
-| Azure AI Search | Dev flag | IT | Hybrid retrieval + citations. Abstraction: `⟨I⟩ DataSource`. |
-| Log Analytics + immutability | Dev flag | IT | Tamper-proof audit sink. Abstraction: `⟨I⟩ AgentActionLog`. |
-| Content Safety + Container Apps | Dev flag | Procurement | Guardrails + sandboxed code exec. Abstraction: `CodeExecTool`. |
-| Entra ID + SharePoint / SAP | Dev flag | IT + Finance | CSA corpus + cost data. Abstraction: `⟨I⟩ DataSource`. |
-| CSA risk taxonomy | Dev flag | Domain | Risk ID + HITL classification. |
-| Historical mission DB | Dev flag | Finance | Parametric cost estimation. |
-| ruff | Health | pre-commit + CI | Lint (flake8 + isort + pyupgrade). |
-| pyright | Health | pre-commit + CI | Strict type checking. |
-| pytest + coverage | Health | pre-commit + CI | 156 tests, 91% coverage. |
-| bandit | Health | pre-commit | Security scan. |
-| pip-audit | Health | pre-commit | Dependency CVE audit. |
-| detect-secrets | Health | pre-commit | No credentials in git. |
+| Azure AI Search (serverless) | Hybrid retrieval + citations behind `⟨I⟩ DataSource` | IT | `LocalFileSource` — filesystem search; same `⟨I⟩ DataSource` protocol, no agent change on cutover. |
+| Azure Log Analytics + immutability policy | Tamper-proof audit sink behind `⟨I⟩ AgentActionLog` | IT | JSONL append-only files on local disk, 90-day retention; same envelope, same sink interface. |
+| Azure Content Safety | Moderation hook on every tool invocation | Procurement | Guardrails off at the tool wrapper; call site exists, moderation call is a config flag. |
+| Azure Container Apps sandbox | Isolated code execution for `CodeExecTool` | Procurement | `CodeExecTool` disabled; the abstraction is present so routing switches at deploy time. |
+| Entra ID (app registration) | Identity + MSAL token flow for routes | IT | Local auth provider stub satisfying `⟨I⟩ AuthProvider`; token issuance mocked for tests. |
+| SharePoint connector | CSA corpus behind `⟨I⟩ DataSource` | IT + CSA | `LocalFileSource` reads a mirror of the corpus; identical call site. |
+| SAP connector | Vendor cost data behind `⟨I⟩ DataSource` | Finance + Procurement | CSV fixtures loaded through a `LocalFileSource` adapter; UC-F4 lane runs end-to-end. |
+| STK / MATLAB adapters | Mission simulation / analysis `⟨I⟩ Tool` | Procurement (licenses) | Not instantiated; `⟨I⟩ Tool` registration slot reserved. |
+| Azure AI Foundry / Azure IQ (model routing) | Routes `⟨I⟩ ChatProvider` across model families | IT | Azure OpenAI direct (Canadian region); same `⟨I⟩ ChatProvider`, swap at config. |
+| SSC LaunchPad HA | HA topology on PBMM landing zone | SSC | Single-region App Service deployment; infra-only change at cutover. |
+| CSA risk taxonomy | Risk tier definitions for the classifier + HITL | CSA Domain | Stub taxonomy drives the classifier under test; swap by schema import. |
+| Historical mission DB | Parametric cost reference set | CSA Finance | Fixture CSV through `LocalFileSource`; UC-F1 lane runs on fixtures. |
+
+## 8. System-Health Tooling
+
+Health tooling runs on every commit (pre-commit) and in CI. These are not blockages — they are the invariants that keep the architecture honest while the end-state components come online.
+
+| Tool | Role | Where it runs |
+|---|---|---|
+| ruff | Lint — flake8 + isort + pyupgrade rules | pre-commit + CI |
+| pyright (strict) | Type checking — protocol conformance for `⟨I⟩ Tool`, `⟨I⟩ DataSource` | pre-commit + CI |
+| pytest + coverage | Architecture invariants, route × role matrix, protocol contracts, audit-envelope presence (156 tests, 91 % coverage) | pre-commit + CI |
+| bandit | Security scan on source | pre-commit |
+| pip-audit | Dependency CVE audit | pre-commit |
+| detect-secrets | No credentials in git | pre-commit |

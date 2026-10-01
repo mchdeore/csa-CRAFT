@@ -358,88 +358,133 @@ blockquote {
 </tr>
 </tbody>
 </table>
-<h2>7. Development Flags &amp; System-Health Tooling</h2>
+<h2>7. Blockages — End State vs Current Alternative</h2>
+<p>The architecture is designed for its end state: an Azure-consolidated runtime (Foundry, AI Search, Content Safety, Container Apps, Log Analytics, Entra ID, App Service, APIM) with CSA-owned data staying in Azure Canadian regions. Consolidating on one cloud shortens the vendor surface, puts every dependency under one procurement path, and lets us reuse the same identity, networking, and audit plane across every component. <strong>Each row below names an end-state component, the owner it is waiting on, and the current alternative CRAFT runs against while that component is in the pipeline.</strong> The alternative is wired through the same <code>⟨I⟩</code> abstraction point as the end-state component, so moving to the end state is a configuration change, not a rewrite.</p>
+<p>Models are the one deliberate exception: inference lives in Azure OpenAI today and may route through Azure AI Foundry (Azure IQ) tomorrow, but the <code>⟨I⟩ ChatProvider</code> abstraction keeps the agent indifferent to where inference actually runs. Some data (session scratch, local corpora) stays on-box by design even in the end state.</p>
 <table>
 <thead>
 <tr>
-<th>Item</th>
-<th>Kind</th>
-<th>Owner / tool</th>
-<th>Notes</th>
+<th>End-state component</th>
+<th>Role</th>
+<th>Owner</th>
+<th>Current alternative in the running system</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Azure AI Search</td>
-<td>Dev flag</td>
+<td>Azure AI Search (serverless)</td>
+<td>Hybrid retrieval + citations behind <code>⟨I⟩ DataSource</code></td>
 <td>IT</td>
-<td>Hybrid retrieval + citations. Abstraction: <code>⟨I⟩ DataSource</code>.</td>
+<td><code>LocalFileSource</code> — filesystem search; same <code>⟨I⟩ DataSource</code> protocol, no agent change on cutover.</td>
 </tr>
 <tr>
-<td>Log Analytics + immutability</td>
-<td>Dev flag</td>
+<td>Azure Log Analytics + immutability policy</td>
+<td>Tamper-proof audit sink behind <code>⟨I⟩ AgentActionLog</code></td>
 <td>IT</td>
-<td>Tamper-proof audit sink. Abstraction: <code>⟨I⟩ AgentActionLog</code>.</td>
+<td>JSONL append-only files on local disk, 90-day retention; same envelope, same sink interface.</td>
 </tr>
 <tr>
-<td>Content Safety + Container Apps</td>
-<td>Dev flag</td>
+<td>Azure Content Safety</td>
+<td>Moderation hook on every tool invocation</td>
 <td>Procurement</td>
-<td>Guardrails + sandboxed code exec. Abstraction: <code>CodeExecTool</code>.</td>
+<td>Guardrails off at the tool wrapper; call site exists, moderation call is a config flag.</td>
 </tr>
 <tr>
-<td>Entra ID + SharePoint / SAP</td>
-<td>Dev flag</td>
-<td>IT + Finance</td>
-<td>CSA corpus + cost data. Abstraction: <code>⟨I⟩ DataSource</code>.</td>
+<td>Azure Container Apps sandbox</td>
+<td>Isolated code execution for <code>CodeExecTool</code></td>
+<td>Procurement</td>
+<td><code>CodeExecTool</code> disabled; the abstraction is present so routing switches at deploy time.</td>
+</tr>
+<tr>
+<td>Entra ID (app registration)</td>
+<td>Identity + MSAL token flow for routes</td>
+<td>IT</td>
+<td>Local auth provider stub satisfying <code>⟨I⟩ AuthProvider</code>; token issuance mocked for tests.</td>
+</tr>
+<tr>
+<td>SharePoint connector</td>
+<td>CSA corpus behind <code>⟨I⟩ DataSource</code></td>
+<td>IT + CSA</td>
+<td><code>LocalFileSource</code> reads a mirror of the corpus; identical call site.</td>
+</tr>
+<tr>
+<td>SAP connector</td>
+<td>Vendor cost data behind <code>⟨I⟩ DataSource</code></td>
+<td>Finance + Procurement</td>
+<td>CSV fixtures loaded through a <code>LocalFileSource</code> adapter; UC-F4 lane runs end-to-end.</td>
+</tr>
+<tr>
+<td>STK / MATLAB adapters</td>
+<td>Mission simulation / analysis <code>⟨I⟩ Tool</code></td>
+<td>Procurement (licenses)</td>
+<td>Not instantiated; <code>⟨I⟩ Tool</code> registration slot reserved.</td>
+</tr>
+<tr>
+<td>Azure AI Foundry / Azure IQ (model routing)</td>
+<td>Routes <code>⟨I⟩ ChatProvider</code> across model families</td>
+<td>IT</td>
+<td>Azure OpenAI direct (Canadian region); same <code>⟨I⟩ ChatProvider</code>, swap at config.</td>
+</tr>
+<tr>
+<td>SSC LaunchPad HA</td>
+<td>HA topology on PBMM landing zone</td>
+<td>SSC</td>
+<td>Single-region App Service deployment; infra-only change at cutover.</td>
 </tr>
 <tr>
 <td>CSA risk taxonomy</td>
-<td>Dev flag</td>
-<td>Domain</td>
-<td>Risk ID + HITL classification.</td>
+<td>Risk tier definitions for the classifier + HITL</td>
+<td>CSA Domain</td>
+<td>Stub taxonomy drives the classifier under test; swap by schema import.</td>
 </tr>
 <tr>
 <td>Historical mission DB</td>
-<td>Dev flag</td>
-<td>Finance</td>
-<td>Parametric cost estimation.</td>
+<td>Parametric cost reference set</td>
+<td>CSA Finance</td>
+<td>Fixture CSV through <code>LocalFileSource</code>; UC-F1 lane runs on fixtures.</td>
 </tr>
+</tbody>
+</table>
+<h2>8. System-Health Tooling</h2>
+<p>Health tooling runs on every commit (pre-commit) and in CI. These are not blockages — they are the invariants that keep the architecture honest while the end-state components come online.</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Role</th>
+<th>Where it runs</th>
+</tr>
+</thead>
+<tbody>
 <tr>
 <td>ruff</td>
-<td>Health</td>
+<td>Lint — flake8 + isort + pyupgrade rules</td>
 <td>pre-commit + CI</td>
-<td>Lint (flake8 + isort + pyupgrade).</td>
 </tr>
 <tr>
-<td>pyright</td>
-<td>Health</td>
+<td>pyright (strict)</td>
+<td>Type checking — protocol conformance for <code>⟨I⟩ Tool</code>, <code>⟨I⟩ DataSource</code></td>
 <td>pre-commit + CI</td>
-<td>Strict type checking.</td>
 </tr>
 <tr>
 <td>pytest + coverage</td>
-<td>Health</td>
+<td>Architecture invariants, route × role matrix, protocol contracts, audit-envelope presence (156 tests, 91 % coverage)</td>
 <td>pre-commit + CI</td>
-<td>156 tests, 91% coverage.</td>
 </tr>
 <tr>
 <td>bandit</td>
-<td>Health</td>
+<td>Security scan on source</td>
 <td>pre-commit</td>
-<td>Security scan.</td>
 </tr>
 <tr>
 <td>pip-audit</td>
-<td>Health</td>
+<td>Dependency CVE audit</td>
 <td>pre-commit</td>
-<td>Dependency CVE audit.</td>
 </tr>
 <tr>
 <td>detect-secrets</td>
-<td>Health</td>
+<td>No credentials in git</td>
 <td>pre-commit</td>
-<td>No credentials in git.</td>
 </tr>
 </tbody>
 </table></body></html>
