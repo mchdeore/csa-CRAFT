@@ -1,0 +1,41 @@
+[
+  {
+    "title": "Add aggregation pipeline for mission data",
+    "description": "Build SQL aggregation queries that roll up cadre_params data by mission type, power band, and payload mass range. Output goes to global_datasets for charting.",
+    "column": "backlog",
+    "github_pr_url": null,
+    "github_pr_number": null,
+    "development_plan_file": "plans/aggregation-pipeline.md",
+    "development_description_file": "specs/aggregation-design.md",
+    "priority": "high",
+    "assignee": "cheddar",
+    "tags": ["data", "aggregation", "backend"],
+    "estimated_hours": 8
+  },
+  {
+    "title": "Create mission comparison view in UI",
+    "description": "Frontend component that loads global_datasets aggregation results and renders a side-by-side mission comparison table with sorting and filtering.",
+    "column": "backlog",
+    "github_pr_url": null,
+    "github_pr_number": null,
+    "development_plan_file": "plans/mission-comparison-ui.md",
+    "development_description_file": "specs/comparison-view-design.md",
+    "priority": "high",
+    "assignee": null,
+    "tags": ["frontend", "ui", "comparison"],
+    "estimated_hours": 12
+  },
+  {
+    "title": "Audit trail enhancements for compliance workflow",
+    "description": "Extend audit_log table to capture full decision context. Add export endpoint for generating compliance reports. Wire up approve/reject actions with mandatory notes.",
+    "column": "backlog",
+    "github_pr_url": null,
+    "github_pr_number": null,
+    "development_plan_file": "plans/audit-trail-v2.md",
+    "development_description_file": "specs/audit-enhancements.md",
+    "priority": "medium",
+    "assignee": null,
+    "tags": ["compliance", "audit", "backend"],
+    "estimated_hours": 16
+  }
+]
